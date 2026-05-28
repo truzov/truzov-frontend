@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>truzov Homepage</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "error": "#C82333",
+                "neutral-dark-gray": "#333333",
+                "secondary": "#645e53",
+                "on-secondary-fixed": "#1f1b13",
+                "on-background": "#181d16",
+                "inverse-primary": "#81db74",
+                "primary-fixed-dim": "#81db74",
+                "surface-container-highest": "#dfe4d8",
+                "primary": "#00600a",
+                "surface-container-low": "#f0f5e9",
+                "on-tertiary-fixed-variant": "#841a4f",
+                "inverse-surface": "#2c322a",
+                "on-primary": "#ffffff",
+                "secondary-container": "#ebe1d3",
+                "inverse-on-surface": "#edf3e6",
+                "secondary-fixed": "#ebe1d3",
+                "accent-link": "#477DCA",
+                "success": "#218838",
+                "on-tertiary-fixed": "#3e0020",
+                "surface-container-lowest": "#ffffff",
+                "on-secondary": "#ffffff",
+                "on-tertiary": "#ffffff",
+                "surface-variant": "#dfe4d8",
+                "on-secondary-fixed-variant": "#4c463c",
+                "on-error-container": "#93000a",
+                "surface-dim": "#d6dcd0",
+                "on-surface": "#181d16",
+                "on-tertiary-container": "#ffe5eb",
+                "neutral-mid-gray": "#CCCCCC",
+                "secondary-fixed-dim": "#cec5b8",
+                "on-surface-variant": "#404a3c",
+                "tertiary": "#93275a",
+                "on-error": "#ffffff",
+                "outline-variant": "#bfcab8",
+                "primary-fixed": "#9cf88d",
+                "outline": "#707a6b",
+                "tertiary-fixed": "#ffd9e4",
+                "tertiary-fixed-dim": "#ffb0cc",
+                "surface-bright": "#f6fbef",
+                "neutral-white": "#FFFFFF",
+                "surface-container": "#eaf0e4",
+                "warning": "#E0A800",
+                "tertiary-container": "#b24073",
+                "on-primary-fixed": "#002201",
+                "on-primary-container": "#adff9d",
+                "on-primary-fixed-variant": "#005308",
+                "surface-tint": "#0d6e13",
+                "background": "#ffffff",
+                "surface-container-high": "#e5eade",
+                "error-container": "#ffdad6",
+                "on-secondary-container": "#6a6459",
+                "surface": "#ffffff",
+                "primary-container": "#1f7a1f",
+                "neutral-light-gray": "#F0F0F0"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "md": "16px",
+                "base": "4px",
+                "margin": "20px",
+                "sm": "8px",
+                "gutter": "24px",
+                "lg": "24px",
+                "xl": "32px",
+                "xs": "4px",
+                "xxl": "64px"
+        },
+        "fontFamily": {
+                "label-sm": [
+                        "Inter"
+                ],
+                "caption": [
+                        "Inter"
+                ],
+                "h1": [
+                        "Inter"
+                ],
+                "h2": [
+                        "Inter"
+                ],
+                "h4": [
+                        "Inter"
+                ],
+                "body-md": [
+                        "Inter"
+                ],
+                "h6-bold": [
+                        "Inter"
+                ],
+                "h5-bold": [
+                        "Inter"
+                ],
+                "h3": [
+                        "Inter"
+                ]
+        },
+        "fontSize": {
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "caption": [
+                        "12px",
+                        {
+                                "lineHeight": "1.4",
+                                "fontWeight": "400"
+                        }
+                ],
+                "h1": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "700"
+                        }
+                ],
+                "h2": [
+                        "24px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "600"
+                        }
+                ],
+                "h4": [
+                        "18px",
+                        {
+                                "lineHeight": "1.4",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "h6-bold": [
+                        "14px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "700"
+                        }
+                ],
+                "h5-bold": [
+                        "16px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "700"
+                        }
+                ],
+                "h3": [
+                        "20px",
+                        {
+                                "lineHeight": "1.4",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Hide scrollbar for horizontal scroll areas */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        @keyframes ticker {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-ticker {
+            animation: ticker 20s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased pb-20 md:pb-0">
+<!-- Top Navigation (Mobile Version) -->
+<header class="sticky top-0 z-50 bg-white border-b border-surface-variant flex flex-col md:hidden w-full shadow-sm">
+<!-- Trust Strip -->
+<div class="bg-primary-container text-on-primary text-[10px] py-1 px-4 flex justify-between items-center font-medium overflow-x-auto whitespace-nowrap no-scrollbar space-x-4">
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">science</span> Lab Tested</div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">check_circle</span> Authentic Products</div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">verified_user</span> Trusted Vendors</div>
+</div>
+<!-- Logo & Actions -->
+<div class="flex justify-between items-center px-4 py-3">
+<div class="text-xl font-black tracking-tighter text-primary-container">truzov</div>
+<div class="flex items-center gap-4 text-primary-container">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<div class="relative">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="absolute -top-1 -right-1 bg-primary text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">2</span>
+</div>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="px-4 pb-3">
+<div class="relative flex items-center w-full">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="search">search</span>
+</div>
+<input class="block w-full pl-9 pr-3 py-2 border border-outline-variant rounded-none leading-5 bg-surface-container-lowest placeholder-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition duration-150 ease-in-out font-body-md" placeholder="Search verified products..." type="text"/>
+</div>
+</div>
+</header>
+<!-- Top Navigation (Web Version - Hidden on Mobile) -->
+<header class="hidden md:flex flex-col w-full sticky top-0 z-50 bg-white border-b border-surface-variant shadow-sm">
+<div class="bg-primary-container text-on-primary text-xs py-1.5 px-6 flex justify-center items-center gap-8 font-medium">
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">science</span> Lab Tested</div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">check_circle</span> Authentic Products</div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">verified_user</span> Trusted Vendors</div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">security</span> Transparency You Can Trust</div>
+</div>
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-8">
+<div class="text-2xl font-black tracking-tighter text-primary-container">truzov</div>
+<div class="relative hidden lg:block w-96">
+<input class="block w-full pl-4 pr-10 py-2 border border-outline-variant rounded-none leading-5 bg-surface-container-lowest placeholder-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm font-body-md" placeholder="Search verified products..." type="text"/>
+<button class="absolute inset-y-0 right-0 px-3 flex items-center bg-primary-container text-white hover:bg-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="search">search</span>
+</button>
+</div>
+</div>
+<nav class="flex items-center gap-6 font-inter text-sm font-medium tracking-tight">
+<a class="text-primary-container font-bold border-b-2 border-primary-container pb-1" href="#">Marketplace</a>
+<a class="text-secondary hover:text-primary-container transition-colors" href="#">Verify Product</a>
+<a class="text-secondary hover:text-primary-container transition-colors" href="#">Labs</a>
+<a class="text-secondary hover:text-primary-container transition-colors" href="#">Wholesale</a>
+</nav>
+<div class="flex items-center gap-6">
+<button class="flex items-center gap-1.5 text-xs font-bold text-primary-container bg-surface-container px-3 py-1.5 border border-primary-container/20">
+<span class="material-symbols-outlined text-sm text-primary-container fill">verified</span> truzov Verified
+                </button>
+<div class="flex items-center gap-4 text-primary-container">
+<button class="flex items-center gap-1 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="text-sm font-medium hidden lg:block">Sign In</span>
+</button>
+<button class="flex items-center gap-1 hover:opacity-80 transition-opacity">
+<div class="relative">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">2</span>
+</div>
+<span class="text-sm font-medium hidden lg:block">Cart</span>
+</button>
+</div>
+</div>
+</div>
+</header>
+<main class="w-full">
+<!-- Hero Section (Mobile Optimized) -->
+<section class="bg-primary-container text-white px-4 py-8 md:py-12 md:px-8 lg:px-20 relative overflow-hidden border-b-4 border-primary">
+<div class="max-w-[1440px] mx-auto flex flex-row items-center gap-4 lg:gap-16">
+<div class="w-2/3 lg:w-1/2 flex flex-col z-10">
+<div class="inline-flex items-center gap-1 bg-white text-primary-container text-[9px] md:text-xs font-bold px-2 py-0.5 md:py-1 mb-2 md:mb-4 uppercase tracking-wider self-start border border-primary-container">
+<span class="material-symbols-outlined text-[12px]">science</span> Clinical Data
+                    </div>
+<h1 class="text-2xl md:text-4xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-1 md:mb-2 text-white">
+                        Truth in Data.
+</h1>
+<p class="text-sm md:text-lg text-inverse-primary font-bold mb-3 md:mb-6">
+                        100% Lab-Verified Supply Chain.
+                    </p>
+<div class="flex flex-row gap-2 md:gap-4 w-full">
+<button class="bg-white text-primary-container font-bold text-xs md:text-base py-2 px-3 md:py-3.5 md:px-6 shadow-sm hover:bg-surface-container transition-colors w-auto text-center flex justify-center items-center border border-primary-container">
+                            View Lab Protocols
+                        </button>
+</div>
+</div>
+<div class="w-1/3 lg:w-1/2 relative">
+<div class="aspect-square w-full max-w-md mx-auto relative overflow-hidden shadow-2xl border-2 border-white/20">
+<img alt="Premium glass lab beakers and flasks containing clear and golden liquids arranged artfully on a clean white surface in a bright laboratory setting." class="w-full h-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida/ADBb0uiL4ODWsfz_N5qlUILFDlZ7PngrA0edVXtsFnAyW_lrAUpY2C1A8jfmVqUOdYnN3knvGblERajIv0qn1K9Pydhyzw48069bO_vuc5DwqZHlow7EYCg38BF9CQ-I07AbHctf8Z6GZ_okCAXUkee-CDVAVw9r2rkCteJTzHxo_C7J0el1ByM2QgaZl7xmZAYlkAioMViwzjNBcpb7pMBXiO4bHE_mNt_j-XGbbRxUP0zJCZ633_-E9ddHVPs"/>
+<div class="absolute inset-0 bg-primary/20 mix-blend-multiply"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Live Verification Ticker -->
+<div class="bg-surface-container-high border-b border-outline-variant overflow-hidden flex items-center py-2 relative">
+<div class="absolute left-0 bg-surface-container-high z-10 px-2 flex items-center h-full border-r border-outline-variant">
+<span class="text-[10px] font-bold text-primary flex items-center gap-1"><span class="w-1.5 h-1.5 bg-error rounded-full animate-pulse"></span> LIVE</span>
+</div>
+<div class="flex whitespace-nowrap animate-ticker pl-16">
+<span class="text-xs text-on-surface-variant mx-4 flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-success">check_circle</span> Batch #8492 (Honey) - Purity: 99.8% - Heavy Metals: ND</span>
+<span class="text-xs text-on-surface-variant mx-4 flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-success">check_circle</span> Batch #8491 (Ghee) - Adulterants: ND - A2 Beta-Casein: Verified</span>
+<span class="text-xs text-on-surface-variant mx-4 flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-success">check_circle</span> Batch #8490 (Olive Oil) - Acidity: 0.2% - Peroxides: 4.1</span>
+<span class="text-xs text-on-surface-variant mx-4 flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-success">check_circle</span> Batch #8489 (Turmeric) - Curcumin: 6.5% - Lead: ND</span>
+</div>
+</div>
+<!-- Category Section (Horizontal Scroll on Mobile) -->
+<section class="py-10 bg-white px-4 md:px-8 lg:px-20 border-b border-surface-variant">
+<div class="max-w-[1440px] mx-auto">
+<h2 class="font-h3 mb-6 text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">category</span> Verified Categories</h2>
+<div class="flex overflow-x-auto gap-4 md:grid md:grid-cols-3 lg:grid-cols-6 pb-4 no-scrollbar snap-x">
+<!-- Category Item -->
+<a class="flex flex-col items-center gap-3 min-w-[120px] snap-start group" href="#">
+<div class="w-24 h-24 md:w-32 md:h-32 overflow-hidden shadow-sm border border-outline-variant group-hover:border-primary transition-all bg-white relative">
+<img alt="Raw Honey" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A jar of raw golden honey with a wooden dipper inside, placed on a clean white background. The lighting is bright and crisp, highlighting the amber color of the honey. The style is premium organic food photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADz7mq4T5phZ4G4zV86GEgWsNsjoDG0tv5qix1p0WGrWDPfTLmO-468fCNHd8FE9hoRnAIRa_LniJGI3wnagBw9oATkDw3JIQx16HPy2XT7m-mTvEFxMpktfz717uLUOMl1xUoo2NAKTRD8hNWJEzefXK67WR9X9XIKVzGn7cRQEmXXqRnXXXZf1TYgID5u0Xe_LJscda08gzlMqY53N9iYAPyHyFEARJb3UQEgz2rhPW6pGxG1FZO9iCcEWbTU63Mm6xgWcJitRo"/>
+<div class="absolute bottom-0 w-full bg-white/90 text-[9px] text-center py-0.5 border-t border-outline-variant font-mono">142 PROTOCOLS</div>
+</div>
+<span class="font-label-sm text-center text-on-surface group-hover:text-primary transition-colors">Raw Honey</span>
+</a>
+<!-- Category Item -->
+<a class="flex flex-col items-center gap-3 min-w-[120px] snap-start group" href="#">
+<div class="w-24 h-24 md:w-32 md:h-32 overflow-hidden shadow-sm border border-outline-variant group-hover:border-primary transition-all bg-white relative">
+<img alt="Grass-fed Dairy" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A glass bottle of fresh milk on a rustic wooden table. Bright morning light pours in from the side, creating a wholesome, farm-fresh atmosphere. The style is natural and clean." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBs3uf72oBeEl-uJXqQZ2OjG1wNbdCJJXpv9xrjpI7PblIRUCffGART3hdy0zqV9Oyr9zc088Yw6T-EMtGqqQ1UjOxf5DFUFE7bqzHOuwTkqqABdvWBaKmPK-jOUsmrSglcpz2IV9tkQEBSb14oLRkAtpT1CZDhKU-TY73no7cqrJm14djfg76zXQoEuxIyhyXkHAbaJ5FEQlACim3rIeRrbfs45i0j6KSNjh0BQ80XuYoc5Pnsr8AWKhDutDYqnZA0EPtqeW911yc"/>
+<div class="absolute bottom-0 w-full bg-white/90 text-[9px] text-center py-0.5 border-t border-outline-variant font-mono">89 PROTOCOLS</div>
+</div>
+<span class="font-label-sm text-center text-on-surface group-hover:text-primary transition-colors">Grass-fed Dairy</span>
+</a>
+<!-- Category Item -->
+<a class="flex flex-col items-center gap-3 min-w-[120px] snap-start group" href="#">
+<div class="w-24 h-24 md:w-32 md:h-32 overflow-hidden shadow-sm border border-outline-variant group-hover:border-primary transition-all bg-white relative">
+<img alt="Supplements" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="Several amber glass apothecary bottles and small jars of supplements arranged neatly on a sterile white lab counter. The lighting is clinical and sharp, emphasizing the scientific purity of the products." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBATBmEvTb3sx44CJN0j9UwRvpaD9fQAmRMY-SsqY-2V98w0SEZVRDspY_RU22Yyux9aXdm1e31EZucD4YLhLHp7108KqExCTsL1KlxR9TXNiwRqQPdrtvBFpmpfnN5hgTvnvqXIMErUFqb_vUvcYViL3cXC3S0fS6PM0U6wgXq__3pfkcEK6It9JQbIRNJuqyMCcO-GGMo90zE47e0lvHmfDNIIVk6vXHRYuJNIob1IjgeeVGpabYHYpv3aswFDj4BWooeTUYMP8I"/>
+<div class="absolute bottom-0 w-full bg-white/90 text-[9px] text-center py-0.5 border-t border-outline-variant font-mono">215 PROTOCOLS</div>
+</div>
+<span class="font-label-sm text-center text-on-surface group-hover:text-primary transition-colors">Supplements</span>
+</a>
+<!-- Category Item -->
+<a class="flex flex-col items-center gap-3 min-w-[120px] snap-start group" href="#">
+<div class="w-24 h-24 md:w-32 md:h-32 overflow-hidden shadow-sm border border-outline-variant group-hover:border-primary transition-all bg-white relative">
+<img alt="Fresh Produce" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A vibrant assortment of fresh vegetables including broccoli, tomatoes, and leafy greens arranged tightly together. The colors are rich and saturated, shot from directly above in a flat lay style. The mood is healthy and vibrant." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzFkEA72LDqMXCOJE8U4P3EOUIYcnfgYswhCbRGPBzSy5-gVAVdHZW0IfRKlNG0ecBd925RbMAxqO_jINhCleuZsWlhCcrTd6Vk33tJUE3mYfwUY3Qxck5idJzv4UGrm4zmSGFZFgG9KUqLOQCnmy4TlNyStsMz0yuSGmpzaQgO51ct9ut32BNc4_3OvLRpbJ21gz3hn83XSiGXYhWa-zF7OVDTFATyPAFdA1_pi7rYZukoo1nnqOBSC6ABYoEUVhxDdHMCb8cPK8"/>
+<div class="absolute bottom-0 w-full bg-white/90 text-[9px] text-center py-0.5 border-t border-outline-variant font-mono">56 PROTOCOLS</div>
+</div>
+<span class="font-label-sm text-center text-on-surface group-hover:text-primary transition-colors">Produce</span>
+</a>
+</div>
+</div>
+</section>
+<!-- Best-Sellers Section -->
+<section class="py-12 bg-white px-4 md:px-8 lg:px-20">
+<div class="max-w-[1440px] mx-auto">
+<div class="flex justify-between items-end mb-6 border-b-2 border-outline-variant pb-2">
+<h2 class="font-h3 text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">data_usage</span> Verified Data Portfolio</h2>
+<a class="text-primary-container font-label-sm hover:underline hidden sm:flex items-center gap-1" href="#">View Full Registry <span class="material-symbols-outlined text-[14px]">arrow_forward</span></a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<!-- Product Card 1 -->
+<div class="bg-white overflow-hidden border border-outline-variant flex flex-col hover:border-primary transition-colors group">
+<div class="relative aspect-square bg-surface-container-lowest p-2 border-b border-outline-variant">
+<img alt="High-Potency Manuka MGO 850+" class="object-cover w-full h-full" data-alt="A premium jar of Manuka honey sitting on a white pedestal. Soft studio lighting highlights the gold label." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ52DLgmdfOsrFbbJPXH5Tyt3tVxFOkXqoloWAoxb1C1sc2QO9rgyMPUlTTTYwRLX4gIMbT4-MzNeJPPyUwwJX5sibKZMVhQbScDo0s2lYAq3Iu5Vlw9RLrSu5A2IESDzwNw3vODEWnz473Ja9nBTcP4DGWN9JA03zj66pFnZ8Pz3TG3-ddGHJQYV4fzn0221y_TueuosoNponjDMbq6DTtSCu25ULJXUyZOeAsurtqD5I8osL2fyPvVct52lhYvJFlY2e_ZhXAwo"/>
+<div class="absolute top-2 left-2 bg-white border border-outline-variant text-on-surface text-[10px] font-mono px-2 py-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-success">qr_code</span> BATCH: 8492
+                            </div>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-h6-bold text-on-surface mb-2 line-clamp-1">Manuka MGO 850+</h3>
+<div class="bg-surface-container-low p-2 border border-outline-variant mb-4 font-mono text-[10px] text-on-surface">
+<div class="flex justify-between border-b border-outline-variant border-dashed pb-1 mb-1"><span>Adulterants:</span><span class="text-success font-bold">ND</span></div>
+<div class="flex justify-between border-b border-outline-variant border-dashed pb-1 mb-1"><span>Pesticides:</span><span class="text-success font-bold">ND</span></div>
+<div class="flex justify-between"><span>MGO Level:</span><span class="font-bold">865 mg/kg</span></div>
+</div>
+<div class="flex justify-between items-center mt-auto pt-2">
+<div>
+<span class="font-h5-bold text-on-surface">₹6,999</span>
+</div>
+<button aria-label="Add to cart" class="bg-white border border-primary-container text-primary-container px-3 py-1 text-xs font-bold hover:bg-primary hover:text-white transition-colors">
+ADD
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-white overflow-hidden border border-outline-variant flex flex-col hover:border-primary transition-colors group">
+<div class="relative aspect-square bg-surface-container-lowest p-2 border-b border-outline-variant">
+<img alt="Detox Green Juice Bundle" class="object-cover w-full h-full" data-alt="Several bottles of cold-pressed green juice nestled in crushed ice. Bright, vibrant green colors indicating freshness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIM2lFPFdgg4sZXljNbJ0L9SZCbxiIuWXrK8jHKyGlTl5TtRrRGjt8iYvw973xYdm5vqW0IoPB3TbOi2u-2T6n85COvaWiaMqQFmzp4OjhODZGa6iCY4ymvW8l8QUOhu3gpslJkfnUBdXe2Yu-RNQ2gFvM5DGapRj2KzrThxniOlWZ33eGj9uxo4Hz_1gRxXYnbPg54vJoVFm1rDAev4LxLI9o5QGidKzI8T3KPSekdX3ogbXBg8EAIMrvbB90Sd-klF16zZnMYIQ"/>
+<div class="absolute top-2 left-2 bg-white border border-outline-variant text-on-surface text-[10px] font-mono px-2 py-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-success">qr_code</span> BATCH: 7721
+                            </div>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-h6-bold text-on-surface mb-2 line-clamp-1">Green Juice Bundle</h3>
+<div class="bg-surface-container-low p-2 border border-outline-variant mb-4 font-mono text-[10px] text-on-surface">
+<div class="flex justify-between border-b border-outline-variant border-dashed pb-1 mb-1"><span>Heavy Metals:</span><span class="text-success font-bold">ND</span></div>
+<div class="flex justify-between border-b border-outline-variant border-dashed pb-1 mb-1"><span>Pathogens:</span><span class="text-success font-bold">ND</span></div>
+<div class="flex justify-between"><span>Microbes:</span><span class="font-bold">&lt;10 CFU/g</span></div>
+</div>
+<div class="flex justify-between items-center mt-auto pt-2">
+<div>
+<span class="font-h5-bold text-on-surface">₹2,699</span>
+</div>
+<button aria-label="Add to cart" class="bg-white border border-primary-container text-primary-container px-3 py-1 text-xs font-bold hover:bg-primary hover:text-white transition-colors">
+ADD
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="bg-white overflow-hidden border border-outline-variant flex flex-col hover:border-primary transition-colors group">
+<div class="relative aspect-square bg-surface-container-lowest p-2 border-b border-outline-variant">
+<img alt="Artisan Heritage Olive Oil" class="object-cover w-full h-full" data-alt="Olive oil pouring from a dark bottle into a glass bowl. Warm, golden lighting highlighting the purity of the oil." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwUxGwPx-XVI_MyEMl-IgLdPEbLxUNlVE4S2YwAljil8oHAxaDkLxblMTWtdOmwz59GATWBl0uYF38XoT9j-5QpRBA60cePEhsNtelVB-nkkp987XpwRuNIvlvunFKAdsAWIWmYVje0ifYcgGpkzgBPzb4nrDeNMEjA0_ZJVhGJZ8LQrJnSJrPg5om2IEgI6Bl96VMXSvoN53ja5wOM5QuUXYQhrxwI4mlxyGjYxENazd5P8fVSFRWT87eZOoXKSCXj4i5g3vUQi4"/>
+<div class="absolute top-2 left-2 bg-white border border-outline-variant text-on-surface text-[10px] font-mono px-2 py-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-success">qr_code</span> BATCH: 9014
+                            </div>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-h6-bold text-on-surface mb-2 line-clamp-1">Heritage Olive Oil</h3>
+<div class="bg-surface-container-low p-2 border border-outline-variant mb-4 font-mono text-[10px] text-on-surface">
+<div class="flex justify-between border-b border-outline-variant border-dashed pb-1 mb-1"><span>Adulterants:</span><span class="text-success font-bold">ND</span></div>
+<div class="flex justify-between border-b border-outline-variant border-dashed pb-1 mb-1"><span>Acidity:</span><span class="font-bold">0.18%</span></div>
+<div class="flex justify-between"><span>Peroxides:</span><span class="font-bold">4.2 mEq/kg</span></div>
+</div>
+<div class="flex justify-between items-center mt-auto pt-2">
+<div>
+<span class="font-h5-bold text-on-surface">₹1,999</span>
+</div>
+<button aria-label="Add to cart" class="bg-white border border-primary-container text-primary-container px-3 py-1 text-xs font-bold hover:bg-primary hover:text-white transition-colors">
+ADD
+</button>
+</div>
+</div>
+</div>
+</div>
+<a class="block sm:hidden text-center text-primary-container font-label-sm border border-primary-container py-3 mt-6 uppercase tracking-wider" href="#">
+                    View Full Registry
+                </a>
+</div>
+</section>
+<!-- Trust Dashboard Section -->
+<section class="py-12 bg-white px-4 md:px-8 lg:px-20 border-t-2 border-outline-variant">
+<div class="max-w-[1440px] mx-auto">
+<h2 class="font-h3 text-on-surface mb-8 border-b-2 border-outline-variant pb-2 flex items-center gap-2"><span class="material-symbols-outlined text-primary">dashboard</span> Trust Dashboard</h2>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Metrics -->
+<div class="lg:col-span-2 grid grid-cols-2 gap-4">
+<div class="border border-outline-variant p-4">
+<div class="text-xs text-secondary font-mono mb-2">PURITY METRIC</div>
+<div class="text-3xl font-bold text-primary mb-2">99.9%</div>
+<div class="w-full bg-surface-variant h-1 mb-2"><div class="bg-primary h-1" style="width: 99.9%"></div></div>
+<div class="text-[10px] text-secondary">Average purity across all tested batches this month.</div>
+</div>
+<div class="border border-outline-variant p-4">
+<div class="text-xs text-secondary font-mono mb-2">ADULTERANTS</div>
+<div class="text-3xl font-bold text-success mb-2">0.0%</div>
+<div class="w-full bg-surface-variant h-1 mb-2"><div class="bg-success h-1" style="width: 0%"></div></div>
+<div class="text-[10px] text-secondary">Zero tolerance policy for chemical adulteration.</div>
+</div>
+<div class="border border-outline-variant p-4 col-span-2 flex items-center justify-between">
+<div>
+<div class="text-xs text-secondary font-mono mb-1">TOTAL LAB PROTOCOLS RUN</div>
+<div class="text-2xl font-bold text-on-surface">14,289</div>
+</div>
+<span class="material-symbols-outlined text-4xl text-outline-variant">science</span>
+</div>
+</div>
+<!-- Protocol Access -->
+<div class="bg-surface-container-low border border-outline-variant p-6 flex flex-col justify-center">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">description</span>
+<h3 class="font-bold text-on-surface">Open Data Access</h3>
+</div>
+<p class="text-sm text-secondary mb-6">Every product carries a unique Batch ID. Enter it to view the unredacted NABL laboratory report.</p>
+<div class="flex gap-2">
+<input class="block w-full px-3 py-2 border border-outline-variant rounded-none bg-white placeholder-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm font-mono" placeholder="Enter Batch ID" type="text"/>
+<button class="bg-primary-container text-white px-4 py-2 text-sm font-bold hover:bg-primary transition-colors whitespace-nowrap">
+                    Verify
+                </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 px-6 bg-white border-t border-outline-variant">
+<div class="max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
+<!-- Legal Links -->
+<div class="flex flex-wrap justify-center gap-4 mb-4">
+<a class="font-inter text-xs text-secondary hover:underline hover:text-primary transition-all font-mono" href="#">DATA POLICY</a>
+<span class="text-outline-variant">|</span>
+<a class="font-inter text-xs text-secondary hover:underline hover:text-primary transition-all font-mono" href="#">TERMS</a>
+<span class="text-outline-variant">|</span>
+<a class="font-inter text-xs text-secondary hover:underline hover:text-primary transition-all font-mono" href="#">LAB CONTACT</a>
+</div>
+<p class="font-inter text-[10px] text-secondary font-mono">
+                © 2024 TRUZOV CLINICAL DATA. ALL PROTOCOLS VERIFIED.
+            </p>
+</div>
+</footer>
+<!-- Floating Action Button for Lab Reports (Mobile) -->
+<a class="md:hidden fixed bottom-20 right-4 bg-primary text-white p-3 shadow-lg z-40 border border-white/20 flex items-center justify-center rounded-none group hover:bg-primary-container transition-colors" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="ml-2 text-xs font-bold uppercase tracking-wider hidden group-hover:block transition-all duration-300">Lab Data</span>
+</a>
+<!-- Bottom Navigation Bar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-2 md:hidden bg-white border-t border-outline-variant z-50">
+<a class="flex flex-col items-center justify-center text-primary border-t-2 border-primary pt-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl mb-1">dashboard</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-mono">DATA</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary border-t-2 border-transparent pt-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl mb-1">qr_code_scanner</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-mono">SCAN</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary border-t-2 border-transparent pt-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl mb-1">science</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-mono">LABS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary border-t-2 border-transparent pt-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl mb-1">person</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-mono">ACCT</span>
+</a>
+</nav>
+</body></html>

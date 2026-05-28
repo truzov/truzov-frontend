@@ -1,0 +1,256 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>TRUZOV - Sign Up</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#bfcab8",
+                        "surface-dim": "#d6dcd0",
+                        "neutral-white": "#FFFFFF",
+                        "error-container": "#ffdad6",
+                        "warning": "#E0A800",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffd9e4",
+                        "primary-fixed-dim": "#81db74",
+                        "neutral-mid-gray": "#CCCCCC",
+                        "accent-link": "#477DCA",
+                        "success": "#218838",
+                        "secondary-container": "#ebe1d3",
+                        "on-primary-fixed-variant": "#005308",
+                        "on-tertiary-fixed": "#3e0020",
+                        "surface": "#f6fbef",
+                        "on-primary-container": "#adff9d",
+                        "secondary": "#645e53",
+                        "surface-variant": "#dfe4d8",
+                        "surface-container": "#eaf0e4",
+                        "surface-tint": "#0d6e13",
+                        "outline": "#707a6b",
+                        "inverse-primary": "#81db74",
+                        "on-tertiary-container": "#ffe5eb",
+                        "inverse-surface": "#2c322a",
+                        "inverse-on-surface": "#edf3e6",
+                        "tertiary-fixed-dim": "#ffb0cc",
+                        "on-tertiary-fixed-variant": "#841a4f",
+                        "on-surface": "#181d16",
+                        "on-error-container": "#93000a",
+                        "neutral-light-gray": "#F0F0F0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#404a3c",
+                        "on-background": "#181d16",
+                        "surface-container-low": "#f0f5e9",
+                        "on-error": "#ffffff",
+                        "background": "#f6fbef",
+                        "on-secondary-container": "#6a6459",
+                        "primary-fixed": "#9cf88d",
+                        "secondary-fixed-dim": "#cec5b8",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#4c463c",
+                        "on-secondary-fixed": "#1f1b13",
+                        "on-primary-fixed": "#002201",
+                        "neutral-dark-gray": "#333333",
+                        "surface-container-high": "#e5eade",
+                        "on-secondary": "#ffffff",
+                        "primary": "#00600a",
+                        "primary-container": "#1f7a1f",
+                        "tertiary": "#93275a",
+                        "tertiary-container": "#b24073",
+                        "secondary-fixed": "#ebe1d3",
+                        "surface-container-highest": "#dfe4d8",
+                        "surface-bright": "#f6fbef",
+                        "error": "#C82333"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "xxl": "64px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "xl": "32px",
+                        "margin": "20px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "h5-bold": ["Inter"],
+                        "h4": ["Inter"],
+                        "caption": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "h6-bold": ["Inter"],
+                        "h3": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-md-mobile": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h5-bold": ["16px", {"lineHeight": "1.5", "fontWeight": "700"}],
+                        "h4": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "h2-mobile": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "h1-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                        "h6-bold": ["14px", {"lineHeight": "1.5", "fontWeight": "700"}],
+                        "h3": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .truzov-logo { font-variant: small-caps; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="clinical-gradient pt-20 pb-16 px-6 text-white relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<div class="absolute top-0 right-0 w-64 h-64 border-[24px] border-white/20 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center"><div class="mb-4">
+    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaII8wCo2BKWvF0ImpUmEIRHR6vJqPsR_y6ozz2Kq2NxxAFMHn-W6WmVn0SEOGzvy2KQfH6_vJ6122r1JAbUtHN_J5mLy4iNjVHg78J3805Ggefoh8ISz4r5OqhclltVfn8K_tgOysuuP68JxrdiUq9MpVCL2c4D-_Hyp8oK7jdeFrMgoQop2nE4B6zu95G4Ip96zsnf6AgBHsReK2yaQqP7gPMw7CVjeEQyb76OlaDE_-sjOyIruoVnIllHlQhXNOULJGnWdveW4" alt="truzov" class="h-8 w-auto">
+  </div>
+  <p class="font-body-md text-sm opacity-90 max-w-[280px]">The standard in clinical verification and global health reporting.</p></div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-4 -mt-8 relative z-20 pb-24">
+<!-- Signup Card -->
+<div class="bg-neutral-white rounded-xl shadow-lg border border-neutral-light-gray p-6 mb-8">
+<div class="mb-6"><h2 class="font-h2-mobile text-h2-mobile text-on-surface mb-1 text-[#1F7A1F] font-display">Create Account</h2>
+<p class="font-caption text-caption text-secondary">Join the verified health marketplace</p></div>
+<form class="space-y-4" onsubmit="return false;">
+<!-- Full Name -->
+<div>
+<label class="block font-h6-bold text-h6-bold text-on-surface mb-2">Full Name</label>
+<input class="w-full px-4 border border-neutral-mid-gray rounded-lg focus:ring-primary focus:border-primary outline-none transition-all text-sm focus:ring-1" placeholder="John Doe" type="text">
+</div>
+<!-- Email or Phone -->
+<div>
+<label class="block font-h6-bold text-h6-bold text-on-surface mb-2">Email or Phone Number</label>
+<input class="w-full px-4 border border-neutral-mid-gray rounded-lg focus:ring-primary focus:border-primary outline-none transition-all text-sm focus:ring-1" placeholder="name@example.com" type="text">
+</div>
+<!-- Password -->
+<div>
+<label class="block font-h6-bold text-h6-bold text-on-surface mb-2">Password</label>
+<div class="relative">
+<input class="w-full px-4 border border-neutral-mid-gray rounded-lg focus:ring-primary focus:border-primary outline-none transition-all text-sm focus:ring-1" id="pw" placeholder="••••••••" type="password">
+<span class="material-symbols-outlined absolute right-3 top-3.5 text-secondary cursor-pointer" onclick="togglePw()">visibility</span>
+</div>
+<!-- Password Strength -->
+<div class="mt-2 flex items-center gap-2">
+<div class="flex-grow h-1.5 bg-neutral-light-gray rounded-full overflow-hidden">
+<div class="h-full bg-[#1F7A1F] transition-all duration-500 w-2/3" id="pw-strength"></div>
+</div>
+<span class="font-caption text-[10px] uppercase font-bold text-[#1F7A1F]">Secure Password</span>
+</div>
+</div>
+<!-- Confirm Password -->
+<div>
+<label class="block font-h6-bold text-h6-bold text-on-surface mb-2">Confirm Password</label>
+<input class="w-full px-4 border border-neutral-mid-gray rounded-lg focus:ring-primary focus:border-primary outline-none transition-all text-sm focus:ring-1" placeholder="••••••••" type="password">
+</div>
+<!-- CTA -->
+<button class="w-full bg-[#1F7A1F] text-white font-h5-bold py-4 rounded-lg shadow-md hover:bg-[#145214] active:scale-[0.98] transition-all mt-4 font-display" type="submit">Continue</button>
+</form>
+<!-- Social Auth -->
+<div class="mt-8">
+<div class="flex items-center gap-4 mb-6">
+<div class="flex-grow h-px bg-neutral-mid-gray"></div>
+<span class="font-label-sm text-[10px] text-secondary tracking-widest uppercase">OR SIGN UP WITH</span>
+<div class="flex-grow h-px bg-neutral-mid-gray"></div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 border border-outline rounded-lg py-3 hover:bg-surface-container transition-colors">
+<img alt="Google" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1U-cd-M1qXJYL_bYKB8Jil3ux8dHfs1YBVhUcTajd5ZSkB6-_V7DWQJ5MdDS1WQv0V6AAgy_W64j8k-GG9BoZsY6xGImh201TeM4UZBpRBrQHsVC4ZhEpGjIJewa0a64BfA2C3f45XN8G8DBuoFln5rhQ26uP8W1fWEZMi6G14aJr9SHZxGoovIYjOlQ-DyozYyBj_K7wsfB3ddepN9lRC9l3HiErfuZquk7g22c1pO6ZrFe4ju67r4YfhksWJ1ASnQ1tuDIs9fw">
+<span class="font-h6-bold text-on-surface">Google</span>
+</button>
+<button class="flex items-center justify-center gap-2 border border-outline rounded-lg py-3 hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-primary text-xl">badge</span>
+<span class="font-h6-bold text-on-surface">Vendor Login</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Trust Signals -->
+<section class="mt-10 mb-12">
+<div class="grid grid-cols-2 gap-4">
+
+
+</div>
+</section>
+<!-- Footnote Image -->
+
+</main>
+<!-- Footer Area (Flush at bottom, before mobile nav) -->
+<footer class="bg-background-light border-t border-neutral-mid-gray/20 py-10 px-6">
+  <div class="max-w-7xl mx-auto flex flex-col items-center space-y-6">
+    <div class="mb-2">
+      <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRveEKU1aH6HlCJWteVl8z6aNU85YRiwmGs1QKnvpsPLXpUJobZTjZodqagltoZA28wd1QKc56HclS4qq67KAvezvJ0boe8KBBiK77uXGc61gp2u3XJNOkeO-N9NghmZAaJcM70F-iZ0Z3p0P5AeH6yQvaeZxq02xDzvKTVzdGBqbySvIkssN7T3S8Xi7DEkj1mFlQpXQp4UlsJ8xwL-TKXftDHo4v8fz9iXB6M6PPuqIetGYjkmAL5NTQiSMn-UEIastabmsFIvQ" alt="truzov logo" class="h-6 w-auto">
+    </div>
+    <div class="flex flex-wrap justify-center gap-x-6 gap-y-3">
+      <a class="font-inter text-[11px] text-secondary hover:underline hover:text-primary transition-all uppercase tracking-wider font-medium" href="#">Privacy Policy</a>
+      <a class="font-inter text-[11px] text-secondary hover:underline hover:text-primary transition-all uppercase tracking-wider font-medium" href="#">Terms of Service</a>
+      <a class="font-inter text-[11px] text-secondary hover:underline hover:text-primary transition-all uppercase tracking-wider font-medium" href="#">Contact Support</a>
+    </div>
+    <p class="font-inter text-[10px] text-on-surface-variant/70 text-center leading-relaxed">
+      © 2024 truzov Verification Health. All Lab Reports Certified.
+    </p>
+  </div>
+</footer>
+<!-- Bottom Navigation Bar (Persistent Mobile Shell) -->
+
+<script>
+        function togglePw() {
+            const input = document.getElementById('pw');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Simple interaction for the strength bar
+        const pwInput = document.getElementById('pw');
+        const strengthBar = document.getElementById('pw-strength');
+        pwInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if(val.length === 0) strengthBar.style.width = '0%';
+            else if(val.length < 5) {
+                strengthBar.style.width = '30%';
+                strengthBar.className = 'h-full bg-error transition-all duration-500';
+            }
+            else if(val.length < 10) {
+                strengthBar.style.width = '60%';
+                strengthBar.className = 'h-full bg-warning transition-all duration-500';
+            }
+            else {
+                strengthBar.style.width = '100%';
+                strengthBar.className = 'h-full bg-success transition-all duration-500';
+            }
+        });
+    </script>
+
+
+
+
+
+
+
+
+</body></html>

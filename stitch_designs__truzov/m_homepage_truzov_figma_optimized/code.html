@@ -1,0 +1,367 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>truzov Homepage</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#1F7A1F',
+              dark: '#145214',
+              light: '#f1f8f1',
+            },
+            beige: {
+              50: '#FAF9F6',
+              100: '#F5F5DC',
+              200: '#E8E4C9',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="base-styles">
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FAF9F6;
+      color: #333;
+      -webkit-font-smoothing: antialiased;
+    }
+    .text-shadow {
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    /* Hide scrollbar for horizontal scrolling areas if added later */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="w-full max-w-[375px] mx-auto overflow-x-hidden bg-white max-w-md">
+<!-- BEGIN: TopBar -->
+<div class="bg-brand text-white text-[10px] py-1.5 px-2 flex justify-between items-center" data-purpose="top-announcement-bar">
+<div class="flex items-center space-x-1">
+<i class="fas fa-flask text-[8px]"></i>
+<span class="">Lab Tested</span>
+</div>
+<div class="flex items-center space-x-1">
+<i class="fas fa-check-circle text-[8px]"></i>
+<span class="">Authentic Products</span>
+</div>
+<div class="flex items-center space-x-1">
+<i class="fas fa-shield-alt text-[8px]"></i>
+<span class="">Trusted Vendors</span>
+</div>
+</div>
+<!-- END: TopBar -->
+<!-- BEGIN: MainHeader -->
+<header class="bg-white border-b border-gray-100 sticky top-0 z-50 p-4" data-purpose="main-header">
+<div class="flex justify-between items-center mb-3">
+<!-- Logo -->
+<a class="flex items-center space-x-1" href="#">
+<span class="text-xl font-bold tracking-tight text-gray-900">truz<span class="text-brand">o</span>v</span>
+<i class="fas fa-leaf text-brand text-xs"></i>
+</a>
+<!-- Actions -->
+<div class="flex items-center space-x-4 text-gray-600">
+<button class="text-sm border border-brand text-brand px-2 py-0.5 rounded flex items-center space-x-1">
+<i class="fas fa-shield-check text-xs"></i>
+<span class="text-[10px] font-semibold">Verified</span>
+</button>
+<button><i class="far fa-user text-lg"></i></button>
+<button class="relative">
+<i class="fas fa-shopping-cart text-lg"></i>
+<span class="absolute -top-1 -right-1.5 bg-brand text-white text-[8px] font-bold h-3.5 w-3.5 rounded-full flex items-center justify-center">1</span>
+</button>
+<button class="md:hidden"><i class="fas fa-bars text-lg"></i></button>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="flex items-center bg-gray-50 rounded-md border border-gray-200 overflow-hidden">
+<div class="px-3 border-r border-gray-200 text-xs text-gray-500 py-2 flex items-center bg-white whitespace-nowrap">
+        All Categories <i class="fas fa-chevron-down ml-1 text-[8px]"></i>
+</div>
+<input class="w-full bg-transparent border-none text-xs px-3 py-2 focus:ring-0 text-gray-700" placeholder="Search verified products, brands, categories..." type="text">
+<button class="bg-brand text-white px-4 py-2">
+<i class="fas fa-search text-xs"></i>
+</button>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: HeroSection -->
+<section class="relative bg-brand text-white overflow-hidden min-h-[400px]" data-purpose="hero">
+<!-- Hero Background Image placeholder - Using a dark green gradient for mobile if image is not fully clear, but will try to match the glass lab feel -->
+<div class="absolute inset-0 bg-gradient-to-b from-brand to-brand-dark z-0"></div>
+<div class="absolute inset-0 z-0 opacity-40 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDJA0Tnkc18kjohTqG_Ax5rTKtn0nF5rvkPIcKEG3mGWI-tKxxg4V7iJzAiVVg6Rh2dueXN-LiAbOnJP5Jz2raoLnygELjQ2Yip7ymgbXQbyiUuOkwAa09NKCMbeBip4rLsh4t7D7CBZfSYCFvCS-ZWwGyQ7s5y6KStTPNJrLy9koGSw49YPO-h_cUKGlVTHI0MmnM3LFTSATsU8sB9NZQ9vyWwqIqs4M7nPRNCp9ip_oLL5eTzx8OQkjR27roAoL_kfgNInfjhMkY');"></div>
+<div class="relative z-10 p-6 pt-12 flex flex-col justify-center h-full">
+<div class="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-2 py-1 text-[10px] font-semibold mb-4 w-max uppercase tracking-wider">
+<i class="fas fa-check-circle mr-1"></i> Clinically Audited Inventory
+      </div>
+<h1 class="text-4xl font-extrabold leading-tight mb-4 tracking-tight">
+        Scientific Purity.<br>
+<span class="text-[#D4ED9A]">Every batch lab-verified.</span>
+</h1>
+<p class="text-sm mb-8 max-w-[280px] leading-relaxed text-gray-100">
+        Shop with absolute confidence. We lab-test random batches from every vendor to ensure zero pesticides and 100% potency.
+      </p>
+<div class="flex flex-col space-y-3">
+<button class="bg-white text-brand font-bold py-3 px-6 rounded-md text-sm text-center shadow-md">
+          Browse Marketplace
+        </button>
+<button class="bg-transparent border border-white text-white font-semibold py-3 px-6 rounded-md text-sm text-center hover:bg-white/10">
+          View Sample Reports
+        </button>
+</div>
+</div>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: Categories Section -->
+<section class="py-8 px-4 bg-white w-full" data-purpose="categories">
+<h2 class="text-sm font-semibold text-gray-800 mb-4">Shop by Lab-Verified Category</h2>
+<div class="grid grid-cols-2 gap-4">
+<!-- Category 1 -->
+<a class="flex flex-col items-center" href="#">
+<div class="w-full aspect-square rounded-lg overflow-hidden bg-beige-50 mb-2 border border-gray-100">
+<img alt="Raw Honey" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0hgRXdoZC7lMDqnseAo_WqPKnWWmYG7UKQtDW6aV0iPozDdLd0GvMCb9sKuRQSnoWpkAPrqh3Jmg3nnFOv5nXKASnQS5xo4Sq5EQEqosGY-ZrzVWo19asj-l3yfJDI49rg-GK4EWn3wBM9wz6VBdkMCyV9ruLjE44brEyPB4jkzbyhUkxU6cULjX4_ezBs2ksaL670s_WKPYt0vn4S0mkojcqI_odSYvVp0G1q2-MeFyPxvdGbaWr2FRN3FJBd9hNI4Nvbl5IjRo">
+</div>
+<span class="text-xs font-medium text-gray-700">Raw Honey</span>
+</a>
+<!-- Category 2 -->
+<a class="flex flex-col items-center" href="#">
+<div class="w-full aspect-square rounded-lg overflow-hidden bg-beige-50 mb-2 border border-gray-100">
+<img alt="Grass-fed Dairy" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBph2WiF2B8jp-fZ7Cy619ZaYPhNJlnWzT3Rja74fDK4ppR3yL98ikgGE4YkQt0hJIk9hYWYEVnBFLTzvRfaxpwB-MTPe_jjzQYobH6VeUZQz7urETCl9dSqpB95RfZvrZQjxXgRTE0xP-PnicBvAgF7ixi6DA681ClIYmomYuKaeL3sZf77L72d4lyygeyME15iJfI4kMxyMLR-Nr82biP9pne-bVpY7tZPvudTsgIR8Kzw5qIZ-QIdzFgo3yDHhE14gb7fsGhEds">
+</div>
+<span class="text-xs font-medium text-gray-700">Grass-fed Dairy</span>
+</a>
+<!-- Category 3 -->
+<a class="flex flex-col items-center" href="#">
+<div class="w-full aspect-square rounded-lg overflow-hidden bg-beige-50 mb-2 border border-gray-100">
+<img alt="Supplements" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5UDShsWy3uYbmT_v2mWpbHoiTmi1gviC-DLhjsYDeRCckrJL2gq2e4NZQnDhMwLINII2GE9nxZUr74dbrBb3UoEhBQ2CtM8hYt9Ir-Ep5bYVEaQGlF3vD3xgn4UtsDw_V2WckXS8yVKMrTbRG8CkzosTql-7wPuk3rq1VD-30Gy2BKyE8fp04XeHG4YfMsMRv3cvV40wYVAS-Tm2RG03fj3SBtxbZMzUT1hmTKBEZZ6stWvWuSTFsAZvdFDb98AGxxswcXY5gCo0">
+</div>
+<span class="text-xs font-medium text-gray-700">Supplements</span>
+</a>
+<!-- Category 4 -->
+<a class="flex flex-col items-center" href="#">
+<div class="w-full aspect-square rounded-lg overflow-hidden bg-beige-50 mb-2 border border-gray-100">
+<img alt="Fresh Produce" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCulGFMIG7hei69FLU42m9x1F3tQlbnfkGzuBBcNJZN3EaVmxcNB4emji740iuY6QOJ6aS-1grAM8EUo2rHAvpwXI6oLxY8EHKhKmTJ2nFB9lf2-FIFG5lbn8-U9oG63ns-szn6mSGOQH8x1-qFDVLC0IonlIFxKdwxs5msNZVhe2cC78aWWjIUp7g6y2Aa-mopvO1udrocOEi-sd3B8A4pkC7Q8_7RhjVA0G43davXF4Nmc7EMUUeGYQcNWirLsHqsgwx3e2_9rlY">
+</div>
+<span class="text-xs font-medium text-gray-700">Fresh Produce</span>
+</a>
+</div>
+</section>
+<!-- END: Categories Section -->
+<!-- BEGIN: Best Sellers -->
+<section class="py-8 px-4 bg-[#F8F7F3] w-full" data-purpose="best-sellers">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-sm font-semibold text-gray-800">Verified Best-Sellers</h2>
+<a class="text-brand text-xs font-semibold flex items-center" href="#">View All Marketplace <i class="fas fa-arrow-right ml-1 text-[10px]"></i></a>
+</div>
+<div class="flex flex-col space-y-4"><!-- Product Card 1 -->
+<div class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+  <div class="relative aspect-[16/9] bg-gray-50">
+    <img alt="High-Potency Manuka MGO 850+" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPZF28cEv1XkNORVPwuvvbLm0Wc4I3S_OWoCP0A9cebHPy-x9x4V6BfxtEZd1J_zSca3dB3vGV2VSMXn5h7979Ro3Gfyd3eeB87Opp6ztkEd7Wf4Zc49uZ0d5-qNJNDYA1l8rTb99FArXBB7IkpISCSsHCKiF18yk7RHhuvkVjJAsrTCNxiPl-G252GM-PIZKfyDsuC6w9UUxUfrB-qkfIAM_cOeJXMYH0JyMUyjZiDp4-8abJ_3-uFZzwmtu6ij-qBo9eVuch7Vo">
+  </div>
+  <div class="p-4 flex flex-col flex-grow">
+    <span class="text-[8px] font-bold uppercase tracking-wider text-gray-500 mb-1">Pure Organic</span>
+    <h3 class="text-sm font-bold text-gray-900 leading-tight mb-1">High-Potency Manuka MGO 850+</h3>
+    <div class="flex items-center space-x-1 mb-3">
+      <div class="flex text-yellow-400 text-[10px]">
+        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+      </div>
+      <span class="text-xs text-gray-500">(1,204)</span>
+    </div>
+    <div class="mt-auto flex justify-between items-end">
+      <div>
+        <span class="text-base font-bold text-gray-900">₹6,999</span>
+        <span class="text-xs text-gray-400 line-through ml-1">₹8,500</span>
+      </div>
+      <button class="bg-brand text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md">
+        <i class="fas fa-cart-plus text-xs"></i>
+      </button>
+    </div>
+  </div>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+  <div class="relative aspect-[16/9] bg-gray-50">
+    <img alt="Detox Green Juice Bundle" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7OTO1SaF3tn1wUE0Blb0oFuXQfiRLM8Ql7eRPPs4BwUmKNFVbIEIE5oqJCTp9cLRQLxDblwbQFaV93kYZfW-ubpm5zJa_xNUqjkm62JPHIjXYXA3vSfTywMUj4qFYLPfpXzyEJp-BWCjZqzx9VR3My42FRYmaIfmwDcG8QcJNrNOT1ZeCUEnumNW6le6yACKzGP86YXuaAjTp9LJN-KIWeh5gWgw5gCN3DMXeDE_LfWE2zS7_1evURmA1mSNWu4C2AGghDCSxMxo">
+  </div>
+  <div class="p-4 flex flex-col flex-grow">
+    <span class="text-[8px] font-bold uppercase tracking-wider text-gray-500 mb-1">Cold Pressed</span>
+    <h3 class="text-sm font-bold text-gray-900 leading-tight mb-1">Detox Green Juice Bundle</h3>
+    <div class="flex items-center space-x-1 mb-3">
+      <div class="flex text-yellow-400 text-[10px]">
+        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+      </div>
+      <span class="text-xs text-gray-500">(582)</span>
+    </div>
+    <div class="mt-auto flex justify-between items-end">
+      <div>
+        <span class="text-base font-bold text-gray-900">₹2,699</span>
+      </div>
+      <button class="bg-brand text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md">
+        <i class="fas fa-cart-plus text-xs"></i>
+      </button>
+    </div>
+  </div>
+</div></div>
+</section>
+<!-- END: Best Sellers -->
+<!-- BEGIN: Value Prop & Proof -->
+<section class="py-8 px-4 bg-[#F8F7F3] flex flex-col space-y-4 w-full" data-purpose="value-proposition">
+<!-- Why Truzov Box -->
+<div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+<h2 class="text-base font-bold text-gray-900 mb-6">Why truzov?</h2>
+<div class="grid grid-cols-2 gap-y-6 gap-x-4 relative">
+<!-- Connecting lines could go here in desktop, omitted for mobile flow -->
+<div class="flex flex-col items-center text-center">
+<div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center text-brand mb-2 border border-green-100">
+<i class="fas fa-seedling"></i>
+</div>
+<h4 class="text-xs font-bold text-gray-900 mb-1">1. Sourced</h4>
+<p class="text-[10px] text-gray-500 leading-tight">Carefully sourced from trusted farmers &amp; brands</p>
+</div>
+<div class="flex flex-col items-center text-center">
+<div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center text-brand mb-2 border border-green-100">
+<i class="fas fa-flask"></i>
+</div>
+<h4 class="text-xs font-bold text-gray-900 mb-1">2. Lab Tested</h4>
+<p class="text-[10px] text-gray-500 leading-tight">Every batch tested in NABL accredited labs</p>
+</div>
+<div class="flex flex-col items-center text-center">
+<div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center text-brand mb-2 border border-green-100">
+<i class="fas fa-shield-check"></i>
+</div>
+<h4 class="text-xs font-bold text-gray-900 mb-1">3. Verified</h4>
+<p class="text-[10px] text-gray-500 leading-tight">We verify the results for purity &amp; authenticity</p>
+</div>
+<div class="flex flex-col items-center text-center">
+<div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center text-brand mb-2 border border-green-100">
+<i class="fas fa-truck"></i>
+</div>
+<h4 class="text-xs font-bold text-gray-900 mb-1">4. Delivered</h4>
+<p class="text-[10px] text-gray-500 leading-tight">Delivered to you with complete transparency</p>
+</div>
+</div>
+</div>
+<!-- Proof Box -->
+<div class="bg-[#EAF3EA] rounded-xl p-5 relative overflow-hidden flex flex-col justify-between min-h-[160px]">
+<div class="z-10 relative w-2/3">
+<h2 class="text-base font-bold text-gray-900 mb-2">See the Proof, Always</h2>
+<p class="text-xs text-gray-700 mb-4 leading-relaxed">Every product comes with a lab report. Because you deserve to know what you eat.</p>
+<button class="bg-brand text-white font-semibold py-2 px-4 rounded text-xs">
+          View Lab Reports
+        </button>
+</div>
+<!-- Decorative icon/image for report -->
+<div class="absolute -right-4 -bottom-4 opacity-50 z-0">
+<i class="fas fa-file-contract text-7xl text-brand"></i>
+</div>
+</div>
+</section>
+<!-- END: Value Prop & Proof -->
+<!-- BEGIN: Trust Badges -->
+<section class="py-6 px-4 bg-white border-y border-gray-100 w-full" data-purpose="trust-badges">
+<div class="grid grid-cols-2 gap-4">
+<div class="flex items-start space-x-3">
+<i class="fas fa-truck-fast text-brand mt-0.5 text-lg"></i>
+<div>
+<h4 class="text-xs font-bold text-gray-900">2-3 Days Delivery</h4>
+<p class="text-[10px] text-gray-500">Across Major Cities</p>
+</div>
+</div>
+<div class="flex items-start space-x-3">
+<i class="fas fa-undo text-brand mt-0.5 text-lg"></i>
+<div>
+<h4 class="text-xs font-bold text-gray-900">Hassle Free Returns</h4>
+<p class="text-[10px] text-gray-500">Easy 7 Days Return</p>
+</div>
+</div>
+<div class="flex items-start space-x-3">
+<i class="fas fa-lock text-brand mt-0.5 text-lg"></i>
+<div>
+<h4 class="text-xs font-bold text-gray-900">Secure Payments</h4>
+<p class="text-[10px] text-gray-500">100% Safe &amp; Secure</p>
+</div>
+</div>
+<div class="flex items-start space-x-3">
+<i class="fas fa-headset text-brand mt-0.5 text-lg"></i>
+<div>
+<h4 class="text-xs font-bold text-gray-900">Dedicated Support</h4>
+<p class="text-[10px] text-gray-500">We're Here to Help</p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Trust Badges -->
+<!-- BEGIN: Footer -->
+<footer class="bg-[#EBECE8] pt-10 pb-6 px-6 w-full" data-purpose="main-footer">
+<div class="flex flex-col space-y-8">
+<!-- Brand Info -->
+<div>
+<a class="flex items-center space-x-1 mb-4" href="#">
+<span class="text-2xl font-bold tracking-tight text-gray-900">truz<span class="text-brand">o</span>v</span>
+<i class="fas fa-leaf text-brand text-sm"></i>
+</a>
+<p class="text-xs text-gray-600 leading-relaxed mb-4 max-w-[280px]">
+          The world's first verification-led health marketplace. We use science to bridge the gap between marketing claims and nutritional truth.
+        </p>
+<div class="flex space-x-4">
+<a class="text-gray-500 hover:text-brand" href="#"><i class="fab fa-facebook text-lg"></i></a>
+<a class="text-gray-500 hover:text-brand" href="#"><i class="fab fa-instagram text-lg"></i></a>
+<a class="text-gray-500 hover:text-brand" href="#"><i class="fab fa-twitter text-lg"></i></a>
+</div>
+</div>
+<!-- Links Grid -->
+<div class="grid grid-cols-2 gap-6">
+<div>
+<h4 class="text-xs font-bold uppercase tracking-wider text-gray-900 mb-3">Shop Verified</h4>
+<ul class="space-y-2 text-xs text-gray-600">
+<li class=""><a class="hover:text-brand" href="#">New Lab Arrivals</a></li>
+<li class=""><a class="hover:text-brand" href="#">Verified Bestsellers</a></li>
+<li class=""><a class="hover:text-brand" href="#">Wholesale Inquiries</a></li>
+<li class=""><a class="hover:text-brand" href="#">Gift Certificates</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-xs font-bold uppercase tracking-wider text-gray-900 mb-3">Transparency</h4>
+<ul class="space-y-2 text-xs text-gray-600">
+<li class=""><a class="hover:text-brand" href="#">Lab Partners</a></li>
+<li class=""><a class="hover:text-brand" href="#">Audit Methodology</a></li>
+<li class=""><a class="hover:text-brand" href="#">Privacy Protocol</a></li>
+<li class=""><a class="hover:text-brand" href="#">Terms of Service</a></li>
+</ul>
+</div>
+<div class="col-span-2">
+<h4 class="text-xs font-bold uppercase tracking-wider text-gray-900 mb-3">Support</h4>
+<ul class="space-y-2 text-xs text-gray-600 grid grid-cols-2 gap-x-4">
+<li class=""><a class="hover:text-brand" href="#">Quality Support</a></li>
+<li class=""><a class="hover:text-brand" href="#">Vendor Onboarding</a></li>
+<li class=""><a class="hover:text-brand" href="#">Shipping &amp; Logistics</a></li>
+<li class=""><a class="hover:text-brand" href="#">Health Knowledge Base</a></li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Copyright -->
+<div class="mt-10 pt-6 border-t border-gray-300 text-center">
+<p class="text-[10px] text-gray-500">
+        © 2026 truzov Verification Health. All Lab Reports ISO/IEC 17025 Certified.
+      </p>
+</div>
+</footer>
+<!-- END: Footer -->
+
+
+</body></html>

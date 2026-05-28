@@ -1,0 +1,401 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>TRUZOV - Pure Honey Marketplace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#841a4f",
+                        "background": "#f6fbef",
+                        "surface-container": "#eaf0e4",
+                        "on-primary-fixed": "#002201",
+                        "surface-container-lowest": "#ffffff",
+                        "neutral-dark-gray": "#333333",
+                        "tertiary-container": "#b24073",
+                        "neutral-mid-gray": "#CCCCCC",
+                        "primary-fixed": "#9cf88d",
+                        "on-primary-container": "#adff9d",
+                        "on-tertiary-container": "#ffe5eb",
+                        "on-primary-fixed-variant": "#005308",
+                        "tertiary": "#93275a",
+                        "success": "#218838",
+                        "accent-link": "#477DCA",
+                        "on-secondary-fixed": "#1f1b13",
+                        "surface-variant": "#dfe4d8",
+                        "primary-container": "#1f7a1f",
+                        "outline": "#707a6b",
+                        "on-secondary-fixed-variant": "#4c463c",
+                        "outline-variant": "#bfcab8",
+                        "on-secondary-container": "#6a6459",
+                        "surface": "#f6fbef",
+                        "secondary-fixed-dim": "#cec5b8",
+                        "on-surface-variant": "#404a3c",
+                        "secondary-fixed": "#ebe1d3",
+                        "on-tertiary-fixed": "#3e0020",
+                        "neutral-white": "#FFFFFF",
+                        "surface-container-high": "#e5eade",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f0f5e9",
+                        "error-container": "#ffdad6",
+                        "error": "#C82333",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#81db74",
+                        "surface-dim": "#d6dcd0",
+                        "on-background": "#181d16",
+                        "inverse-surface": "#2c322a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#dfe4d8",
+                        "primary-fixed-dim": "#81db74",
+                        "surface-tint": "#0d6e13",
+                        "neutral-light-gray": "#F0F0F0",
+                        "secondary": "#645e53",
+                        "on-error-container": "#93000a",
+                        "primary": "#00600a",
+                        "tertiary-fixed": "#ffd9e4",
+                        "warning": "#E0A800",
+                        "on-surface": "#181d16",
+                        "surface-bright": "#f6fbef",
+                        "tertiary-fixed-dim": "#ffb0cc",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#ebe1d3",
+                        "inverse-on-surface": "#edf3e6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "xxl": "64px",
+                        "xl": "32px",
+                        "margin": "20px"
+                    },
+                    "fontFamily": {
+                        "caption": ["Inter"],
+                        "body-md": ["Inter"],
+                        "h2": ["Inter"],
+                        "h3": ["Inter"],
+                        "h6-bold": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "h1": ["Inter"],
+                        "h5-bold": ["Inter"],
+                        "h4": ["Inter"]
+                    },
+                    "fontSize": {
+                        "caption": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "h2": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "h3": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "h6-bold": ["14px", { "lineHeight": "1.5", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "h1": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "h5-bold": ["16px", { "lineHeight": "1.5", "fontWeight": "700" }],
+                        "h4": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md text-body-md pb-[80px]">
+<!-- Top App Bar (Mobile Adaptation) -->
+<header class="bg-surface-container-lowest sticky top-0 z-50 border-b border-surface-variant shadow-sm flex justify-between items-center px-4 py-3 w-full max-w-[1440px] mx-auto md:hidden">
+<div class="flex items-center gap-2">
+<span class="font-h2 text-h2 font-black tracking-tighter text-primary-container">TRUZOV</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">search</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary-container transition-colors relative">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shopping_cart</span>
+<span class="absolute -top-1 -right-1 bg-primary-container text-on-primary rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">2</span>
+</button>
+</div>
+</header>
+<main class="w-full">
+<!-- Utility / Title Area -->
+<div class="px-4 py-4 bg-surface-container-low border-b border-surface-variant">
+<div class="flex items-center gap-2 mb-2 text-on-surface-variant font-caption text-caption">
+<span class="material-symbols-outlined text-[14px]">home</span>
+<span>/</span>
+<span>Marketplace</span>
+<span>/</span>
+<span class="font-semibold text-on-background">Pure Honey</span>
+</div>
+<h1 class="font-h3 text-h3 text-on-background">Pure Honey</h1>
+<p class="font-caption text-caption text-on-surface-variant mt-1">124 products found. All laboratory tested and verified.</p>
+</div>
+<!-- Sticky Filter Bar -->
+<div class="sticky top-[60px] z-40 bg-surface-container-lowest border-b border-surface-variant px-4 py-3 flex items-center justify-between shadow-sm">
+<button class="flex items-center gap-2 px-3 py-1.5 border border-outline-variant rounded-lg font-label-sm text-label-sm text-on-surface hover:bg-surface-container-low transition-colors" id="mobileFilterBtn">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+                Filter &amp; Sort
+            </button>
+<label class="flex items-center gap-2 cursor-pointer">
+<span class="font-label-sm text-label-sm text-on-surface">Lab Verified Only</span>
+<div class="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-neutral-white border-4 appearance-none cursor-pointer border-primary-container bg-primary-container transition-transform duration-200 ease-in-out translate-x-5" id="toggle1" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary-container cursor-pointer" for="toggle1"></label>
+</div>
+</label>
+</div>
+<style>
+            .toggle-checkbox:checked {
+                right: 0;
+                border-color: #1f7a1f;
+            }
+            .toggle-checkbox:checked + .toggle-label {
+                background-color: #1f7a1f;
+            }
+            .toggle-checkbox {
+                right: 0;
+                border-color: #ccc;
+            }
+            .toggle-label {
+                background-color: #ccc;
+            }
+        </style>
+<!-- Product Grid (2 Column Mobile) -->
+<div class="p-4 grid grid-cols-2 gap-4">
+<!-- Product Card 1 -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden flex flex-col shadow-sm relative hover:shadow-md transition-shadow">
+<div class="absolute top-2 left-2 z-10 bg-surface-container-lowest border border-success text-success px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-[10px] uppercase font-bold tracking-wider">Verified</span>
+</div>
+<div class="aspect-square bg-surface-container-low relative">
+<img alt="Jar of TRUZOV organic wildflower honey on a clean white laboratory style table." class="w-full h-full object-cover" data-alt="A jar of premium organic wildflower honey sitting on a pristine, sterile white laboratory table. The lighting is bright and clinical, highlighting the golden amber color of the honey. The background is a soft, minimalist medical setting with a hint of lush green foliage out of focus. High-end product photography style, clean and authoritative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQxKVoMlhX752qgg-Qx1eDAxtsSfv2PVVR_nRBvK1G85kzQYiwz2ZN_FgG7CBeB2x_ecxeCSIPQYQogk1XR4mw94gt_U62h8ed4N6iUidSXIf3td9yu2ND_xsE2wiZOcX1wIa-rGE8zYX4lMLCmQ3fXL8D3QNG48oh6Vh_ra8r9MPFFfM0U2MkSMUuM-Bb5ZDKdNZtJgBmoCS2mmEkKn1IEMi6ImDKFrOU0l4T4mTWLCvnSVy9dJ3iqkaTa3WQk7xxCnW63IPn9OE">
+</div>
+<div class="p-3 flex flex-col flex-grow">
+<span class="font-caption text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold mb-1">TRUZOV LABS</span>
+<h3 class="font-body-md text-caption font-semibold text-on-background line-clamp-2 leading-tight mb-2">Organic Wildflower Honey (500g)</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="material-symbols-outlined text-[14px] text-warning" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-caption text-[12px] font-semibold text-on-background">4.9</span>
+<span class="font-caption text-[10px] text-on-surface-variant">(128)</span>
+</div>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<div class="font-h5-bold text-h5-bold text-on-background">₹850</div>
+<div class="font-caption text-[10px] text-on-surface-variant line-through">₹1,200</div>
+</div>
+<button class="bg-primary-container text-on-primary w-8 h-8 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden flex flex-col shadow-sm relative hover:shadow-md transition-shadow">
+<div class="absolute top-2 left-2 z-10 bg-surface-container-lowest border border-success text-success px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-[10px] uppercase font-bold tracking-wider">Verified</span>
+</div>
+<div class="aspect-square bg-surface-container-low relative">
+<img alt="Raw Manuka Honey jar in a clinical setting." class="w-full h-full object-cover" data-alt="A jar of raw Manuka honey presented in a bright, clinical environment. The jar rests on a sterile stainless steel surface, illuminated by cool, crisp laboratory lighting. The overall aesthetic is highly professional and medical, emphasizing purity and rigorous testing. The honey itself is dark and thick, contrasting with the bright surroundings." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnvAr9XBe-jmUmwDn8VIql_HHlbsR-eLOhzKH5oHWxaqHXl3siE9fy0xacCLlEtsYMeFuaF23pfOiJ-cn7OrmtKOd2zRfJs4A_vI4zqfPFP9x_W6ziCGO8mebIeL_4Fbhww89IFPr7pqbVQCaDTxEoSGiSV0zKrCRMf2EX00M4bhfO4dRsCXr0NYJekdbjCb_k7jDp2zKZ3f-K8foHxZgk6ZVygDcH5dyntNfH96WYo5YxRH6ghVlW-ykKroAgnODmPNPK_Vt-EaY">
+</div>
+<div class="p-3 flex flex-col flex-grow">
+<span class="font-caption text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold mb-1">NATURE'S TESTED</span>
+<h3 class="font-body-md text-caption font-semibold text-on-background line-clamp-2 leading-tight mb-2">Raw Manuka Honey MGO 400+ (250g)</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="material-symbols-outlined text-[14px] text-warning" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-caption text-[12px] font-semibold text-on-background">4.8</span>
+<span class="font-caption text-[10px] text-on-surface-variant">(84)</span>
+</div>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<div class="font-h5-bold text-h5-bold text-on-background">₹3,450</div>
+<div class="font-caption text-[10px] text-on-surface-variant line-through">₹4,000</div>
+</div>
+<button class="bg-primary-container text-on-primary w-8 h-8 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden flex flex-col shadow-sm relative hover:shadow-md transition-shadow">
+<div class="absolute top-2 left-2 z-10 bg-surface-container-lowest border border-success text-success px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-[10px] uppercase font-bold tracking-wider">Verified</span>
+</div>
+<div class="aspect-square bg-surface-container-low relative">
+<img alt="Acacia Honey bottle with verification seal." class="w-full h-full object-cover" data-alt="A tall bottle of clear Acacia honey, positioned centrally against a stark white backdrop. The setting implies a sterile, scientific environment, perhaps a testing facility. The honey is luminous and light golden, glowing under neutral, bright studio lights. A prominent, crisp focus is maintained on the bottle's label, emphasizing its verified status." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARAUdK5LFSApwekSzm0Rt2hlZtwmnxBn1T8ZYk0UpS3jpRn86qeJVGuIR8sxTDqXHJjx3pV9eB1o_yeDX-gEoR2GJqZDVWGOVJtaYjCWob_oVRgC9KiGOOlHFcaV1Lh7KlPddW8WLsavF6FnWw1Mw24dDheDN8q575-8yVZ6SlrWwjnxrrXJvvylydGfPUf8Q2TUEgfFUyTcC5zE0Cjw3TgfzhOj0ALXSHqFedcb-a9x57i_lm1rX9neogv0eNxS3snbpe_gk_TrI">
+</div>
+<div class="p-3 flex flex-col flex-grow">
+<span class="font-caption text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold mb-1">CLINICAL ORGANICS</span>
+<h3 class="font-body-md text-caption font-semibold text-on-background line-clamp-2 leading-tight mb-2">Pure Acacia Honey - Lab Certified (1kg)</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="material-symbols-outlined text-[14px] text-warning" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-caption text-[12px] font-semibold text-on-background">4.7</span>
+<span class="font-caption text-[10px] text-on-surface-variant">(45)</span>
+</div>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<div class="font-h5-bold text-h5-bold text-on-background">₹1,200</div>
+</div>
+<button class="bg-primary-container text-on-primary w-8 h-8 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 4 (Pending) -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden flex flex-col shadow-sm relative hover:shadow-md transition-shadow opacity-80">
+<div class="absolute top-2 left-2 z-10 bg-surface-container-lowest border border-warning text-warning px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[12px]">schedule</span>
+<span class="font-label-sm text-[10px] uppercase font-bold tracking-wider">Pending Lab</span>
+</div>
+<div class="aspect-square bg-surface-container-low relative grayscale-[30%]">
+<img alt="Eucalyptus honey jar." class="w-full h-full object-cover" data-alt="A jar of dark Eucalyptus honey on a neutral grey surface. The lighting is slightly muted compared to other verified products, indicating a pending status. The setting is clean but lacks the stark, bright medical feel of the verified items, creating a subtle visual distinction. The overall mood is expectant." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjtsV4k8fFslLr-ZzjoMuVcKPdwXOeJ4UPnI5fFHk8mQblUcLXsfLLcSODdA_-MT38WaqxeokDpqW7g9x-u0WZVs3HJadlbvVgUjx9pzR1u9tDthA7C4jSnmqKjDfo1soDxaJTQImZ8hoJgOi0tip9xF_n1QzbZs4Jx9nwUoOYIjIDtfM3Lvk2Fs2awSfY_WzvGzzJtVZMpSkRmrTC4dYx2kabtR8CvR9uBqt9KAKMd7O1QoW3fgddrNzBFkHida0IscPfHqvttd0">
+</div>
+<div class="p-3 flex flex-col flex-grow">
+<span class="font-caption text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold mb-1">LOCAL FARMS</span>
+<h3 class="font-body-md text-caption font-semibold text-on-surface-variant line-clamp-2 leading-tight mb-2">Eucalyptus Raw Honey (500g)</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="material-symbols-outlined text-[14px] text-surface-variant" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-caption text-[12px] font-semibold text-on-surface-variant">New</span>
+</div>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<div class="font-h5-bold text-h5-bold text-on-background">₹600</div>
+</div>
+<button class="bg-surface-variant text-on-surface-variant w-8 h-8 rounded-full flex items-center justify-center cursor-not-allowed">
+<span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (From JSON Component) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-2 md:hidden bg-surface-container-lowest border-t border-surface-variant shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50">
+<a class="flex flex-col items-center justify-center text-primary-container bg-surface-container-low rounded-xl p-2 w-16" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">storefront</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Shop</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">verified_user</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Verify</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">biotech</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Account</span>
+</a>
+</nav>
+<!-- Fullscreen Filter Overlay (Hidden by default, triggered by JS) -->
+<div class="fixed inset-0 z-[100] bg-surface-container-lowest flex flex-col hidden transform translate-y-full transition-transform duration-300" id="filterOverlay">
+<div class="px-4 py-4 border-b border-surface-variant flex items-center justify-between sticky top-0 bg-surface-container-lowest">
+<h2 class="font-h3 text-h3 text-on-background">Filter &amp; Sort</h2>
+<button class="text-on-surface-variant p-2" id="closeFilterBtn">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-grow overflow-y-auto p-4 flex flex-col gap-6">
+<!-- Sort -->
+<section>
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">Sort By</h4>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-3 py-2">
+<input checked="" class="w-4 h-4 text-primary-container focus:ring-primary-container" name="sort" type="radio">
+<span class="font-body-md text-caption text-on-background">Recommended</span>
+</label>
+<label class="flex items-center gap-3 py-2">
+<input class="w-4 h-4 text-primary-container focus:ring-primary-container" name="sort" type="radio">
+<span class="font-body-md text-caption text-on-background">Price: Low to High</span>
+</label>
+<label class="flex items-center gap-3 py-2">
+<input class="w-4 h-4 text-primary-container focus:ring-primary-container" name="sort" type="radio">
+<span class="font-body-md text-caption text-on-background">Highest Rated</span>
+</label>
+</div>
+</section>
+<!-- Verification Status -->
+<section>
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">Verification Status</h4>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-3 py-2">
+<input checked="" class="w-4 h-4 text-primary-container rounded focus:ring-primary-container" type="checkbox">
+<span class="font-body-md text-caption text-on-background">Lab Verified</span>
+<span class="ml-auto font-caption text-caption text-on-surface-variant">(112)</span>
+</label>
+<label class="flex items-center gap-3 py-2">
+<input class="w-4 h-4 text-primary-container rounded focus:ring-primary-container" type="checkbox">
+<span class="font-body-md text-caption text-on-background">Pending Verification</span>
+<span class="ml-auto font-caption text-caption text-on-surface-variant">(12)</span>
+</label>
+</div>
+</section>
+<!-- Category (Honey Type) -->
+<section>
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">Honey Type</h4>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1.5 border border-primary-container bg-surface-container-low text-primary-container rounded-full font-caption text-caption cursor-pointer">Wildflower</span>
+<span class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-full font-caption text-caption cursor-pointer">Manuka</span>
+<span class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-full font-caption text-caption cursor-pointer">Acacia</span>
+<span class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-full font-caption text-caption cursor-pointer">Clover</span>
+</div>
+</section>
+<!-- Price Range -->
+<section>
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">Price Range (₹)</h4>
+<div class="flex items-center gap-4">
+<input class="w-full border border-outline-variant rounded-md px-3 py-2 font-caption text-caption focus:ring-primary-container focus:border-primary-container" placeholder="Min" type="number">
+<span class="text-on-surface-variant">-</span>
+<input class="w-full border border-outline-variant rounded-md px-3 py-2 font-caption text-caption focus:ring-primary-container focus:border-primary-container" placeholder="Max" type="number">
+</div>
+</section>
+</div>
+<div class="p-4 border-t border-surface-variant sticky bottom-0 bg-surface-container-lowest flex gap-3">
+<button class="flex-1 py-3 border border-outline-variant text-on-surface-variant font-h6-bold text-h6-bold rounded-lg text-center">Clear All</button>
+<button class="flex-1 py-3 bg-primary-container text-on-primary font-h6-bold text-h6-bold rounded-lg text-center">Apply (124)</button>
+</div>
+</div>
+<script>
+        // Simple script for filter overlay interaction
+        const filterBtn = document.getElementById('mobileFilterBtn');
+        const filterOverlay = document.getElementById('filterOverlay');
+        const closeFilterBtn = document.getElementById('closeFilterBtn');
+
+        filterBtn.addEventListener('click', () => {
+            filterOverlay.classList.remove('hidden');
+            // Small delay to allow display:block to apply before animating transform
+            setTimeout(() => {
+                filterOverlay.classList.remove('translate-y-full');
+            }, 10);
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        });
+
+        closeFilterBtn.addEventListener('click', () => {
+            filterOverlay.classList.add('translate-y-full');
+            setTimeout(() => {
+                filterOverlay.classList.add('hidden');
+            }, 300); // match transition duration
+            document.body.style.overflow = '';
+        });
+    </script>
+</body></html>

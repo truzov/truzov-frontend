@@ -1,0 +1,236 @@
+<!DOCTYPE html><html lang="en" style="width: 1280px; height: 920px; overflow: hidden; position: relative;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Login | TRUZOV Verification Health</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed-variant": "#841a4f",
+                      "background": "#f6fbef",
+                      "outline-variant": "#bfcab8",
+                      "surface-container": "#eaf0e4",
+                      "on-primary-fixed-variant": "#005308",
+                      "tertiary-fixed": "#ffd9e4",
+                      "neutral-mid-gray": "#CCCCCC",
+                      "on-surface-variant": "#404a3c",
+                      "surface-bright": "#f6fbef",
+                      "secondary-fixed-dim": "#cec5b8",
+                      "surface-container-high": "#e5eade",
+                      "on-error": "#ffffff",
+                      "surface-container-low": "#f0f5e9",
+                      "warning": "#E0A800",
+                      "surface-tint": "#0d6e13",
+                      "primary-fixed-dim": "#81db74",
+                      "surface": "#f6fbef",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#dfe4d8",
+                      "on-surface": "#181d16",
+                      "secondary": "#645e53",
+                      "on-tertiary": "#ffffff",
+                      "surface-variant": "#dfe4d8",
+                      "on-secondary-container": "#6a6459",
+                      "accent-link": "#477DCA",
+                      "secondary-container": "#ebe1d3",
+                      "on-secondary-fixed-variant": "#4c463c",
+                      "primary": "#00600a",
+                      "on-tertiary-fixed": "#3e0020",
+                      "inverse-primary": "#81db74",
+                      "primary-fixed": "#9cf88d",
+                      "success": "#218838",
+                      "neutral-dark-gray": "#333333",
+                      "on-secondary-fixed": "#1f1b13",
+                      "tertiary-fixed-dim": "#ffb0cc",
+                      "inverse-on-surface": "#edf3e6",
+                      "on-primary": "#ffffff",
+                      "on-background": "#181d16",
+                      "on-primary-container": "#adff9d",
+                      "neutral-white": "#FFFFFF",
+                      "surface-dim": "#d6dcd0",
+                      "on-secondary": "#ffffff",
+                      "on-primary-fixed": "#002201",
+                      "error": "#C82333",
+                      "on-error-container": "#93000a",
+                      "tertiary": "#93275a",
+                      "primary-container": "#1f7a1f",
+                      "secondary-fixed": "#ebe1d3",
+                      "inverse-surface": "#2c322a",
+                      "tertiary-container": "#b24073",
+                      "on-tertiary-container": "#ffe5eb",
+                      "outline": "#707a6b",
+                      "neutral-light-gray": "#F0F0F0",
+                      "error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "xl": "32px",
+                      "margin": "20px",
+                      "sm": "8px",
+                      "gutter": "24px",
+                      "xxl": "64px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "h3": ["Inter"],
+                      "h4": ["Inter"],
+                      "h2": ["Inter"],
+                      "caption": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "h6-bold": ["Inter"],
+                      "h1": ["Inter"],
+                      "body-md": ["Inter"],
+                      "h5-bold": ["Inter"]
+              },
+              "fontSize": {
+                      "h3": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "h4": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                      "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                      "h6-bold": ["14px", {"lineHeight": "1.5", "fontWeight": "700"}],
+                      "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "h5-bold": ["16px", {"lineHeight": "1.5", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .trust-gradient {
+            background: linear-gradient(135deg, #1F7A1F 0%, #155a15 100%);
+        }
+    </style>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .trust-gradient {
+            background: linear-gradient(135deg, #1F7A1F 0%, #155a15 100%);
+        }
+    </style></head>
+<body class="bg-background font-body-md text-on-background min-h-screen">
+<main class="p-gutter lg:p-0">
+<div class="w-full max-w-[1440px] flex flex-col lg:flex-row min-h-[870px] bg-surface-container-lowest shadow-sm overflow-hidden border border-neutral-mid-gray">
+<!-- Visual Branding Panel -->
+<div class="hidden lg:flex flex-col justify-between p-xl trust-gradient relative overflow-hidden w-full lg:w-1/2">
+<div class="relative z-10 flex flex-col">
+<div class="mb-xxl"><img alt="truzov logo" class="h-9 brightness-0 invert" src="https://lh3.googleusercontent.com/aida/ADBb0ujqK896URH8EasExgxM7N9Rh-3awlfgov7o7tIDlOl9In0d0ORlymxZiNJam36JwQvbeUMj0DBvplpknl1v8lokSUf0bCcOUmO4bwWVJCFjU5nnB49ssr9pGjP5b_zagOzWe5wgXQmdSl6cmG63kmfm7LqrGcdfvwpm4ThDfGlo9tbhMmNDBzmsDIaww1Wy4n702azRToSTRnkXpBamEKDAGSM7Fds1pO4gmZ8_M2idRb7E8RGtCVod9IGorJ4PGGWutj7FPGiZxw"></div>
+<div class="max-w-md">
+<h1 class="font-h1 text-h1 mb-md leading-tight text-white font-['Inter']">Elevating Global Health Through Clinical Verification.</h1>
+<p class="font-body-md text-body-md text-primary-fixed-dim opacity-90">Join the most secure marketplace for lab-certified health products. Our verification-first approach ensures every vendor and product meets rigorous scientific standards.</p>
+</div>
+</div>
+<div class="relative z-10 flex gap-lg mb-xl">
+<div class="flex-1 flex flex-col p-md bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
+<span class="material-symbols-outlined text-white mb-sm" data-icon="verified_user">verified_user</span>
+<div class="font-h6-bold text-h6-bold text-white">Lab Certified</div>
+<div class="font-caption text-caption text-white/70">Third-party verification for every listing.</div>
+</div>
+<div class="flex-1 flex flex-col p-md bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
+<span class="material-symbols-outlined text-white mb-sm" data-icon="biotech">biotech</span>
+<div class="font-h6-bold text-h6-bold text-white">Full Transparency</div>
+<div class="font-caption text-caption text-white/70">Access detailed chemical analysis reports.</div>
+</div>
+</div>
+<!-- Abstract Image Overlay -->
+<div class="absolute inset-0 z-0 flex">
+<img class="w-full h-full object-cover opacity-20 mix-blend-overlay" data-alt="A clean and sterile clinical laboratory setting with advanced high-tech scientific equipment and organized glassware on polished surfaces. The lighting is bright and professional, creating a sense of clinical authority and pharmaceutical-grade safety. The overall atmosphere is modern, trustworthy, and precise, perfectly reflecting a high-end medical verification environment with a palette of deep greens and clinical whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfs9BHomBW9F1BI5wqS0B2PMl5xFN9Uw9iw0jwX0L1tvann_BJEgqV3zWE-EE0GuyNXyKom-bImKk5yfMpPJazqjYoiXXo7Mzmz69BZwzghhdtzNmPSc29OF9LV09EzNYKcxr719TdkQpYAFLKeZfV1ZYvw62xDZ8uXj8tdowJh7UT-zEkCxhHIpAH1F_ZN8dMr4vbSdhtSYpbSQJGPermbLW4s0HGwBfkncY-guMF-Zk78aCoEXx2xCnGoohMsccPKRvxlbkue7o">
+</div>
+</div>
+<!-- Signup Form Panel -->
+<div class="flex flex-col items-center justify-center p-margin md:p-xxl bg-white w-full lg:w-1/2">
+<div class="w-full max-w-md flex flex-col">
+<div class="mb-xl text-center flex flex-col items-center">
+<img alt="truzov logo" class="h-9 mb-xs" src="https://lh3.googleusercontent.com/aida/ADBb0ujqK896URH8EasExgxM7N9Rh-3awlfgov7o7tIDlOl9In0d0ORlymxZiNJam36JwQvbeUMj0DBvplpknl1v8lokSUf0bCcOUmO4bwWVJCFjU5nnB49ssr9pGjP5b_zagOzWe5wgXQmdSl6cmG63kmfm7LqrGcdfvwpm4ThDfGlo9tbhMmNDBzmsDIaww1Wy4n702azRToSTRnkXpBamEKDAGSM7Fds1pO4gmZ8_M2idRb7E8RGtCVod9IGorJ4PGGWutj7FPGiZxw">
+</div>
+<header class="mb-xl text-center lg:text-left flex flex-col">
+<h2 class="font-h2 text-h2 mb-xs text-[#1F7A1F] font-['Inter']">Welcome back</h2>
+<p class="font-body-md text-body-md text-secondary">Sign in to access your verified dashboard</p>
+</header>
+<form class="flex flex-col space-y-md">
+<!-- Email/Phone -->
+<div class="flex flex-col space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Email or Phone Number</label>
+<input class="w-full border border-neutral-mid-gray rounded-lg px-md py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md" placeholder="e.g. name@example.com" type="text">
+</div>
+<!-- Password Fields -->
+<div class="flex flex-col space-y-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Password</label>
+<a class="text-caption font-caption text-accent-link font-semibold hover:underline" href="#">Forgot password?</a>
+</div>
+<input class="w-full border border-neutral-mid-gray rounded-lg px-md py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md" placeholder="••••••••" type="password">
+</div>
+<!-- Toggle Section -->
+<div class="flex items-center gap-md py-xs">
+<label class="flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value="">
+<div class="relative w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+<span class="ml-3 font-h6-bold text-h6-bold text-secondary">Keep me signed in for 30 days</span>
+</label>
+</div>
+<div class="pt-sm flex">
+<button class="w-full text-white font-h5-bold py-md rounded-lg transition-all shadow-sm active:scale-[0.98] duration-150 flex items-center justify-center gap-sm bg-[#1F7A1F] hover:bg-[#155a15] font-['Inter']" type="submit">
+<span class="">Sign In</span>
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</button>
+</div>
+</form>
+<div class="relative flex my-xl items-center justify-center">
+<div class="absolute inset-0 flex items-center w-full"><div class="w-full border-t border-neutral-light-gray"></div></div>
+<div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-md text-secondary font-label-sm">Or continue with</span></div>
+</div>
+<!-- Social Signup -->
+<div class="flex gap-md">
+<button class="flex-1 flex items-center justify-center gap-sm px-md py-3 border border-neutral-mid-gray rounded-lg hover:bg-neutral-light-gray transition-colors">
+<img alt="Google" class="w-5 h-5 grayscale opacity-70" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6oFpwmbDA7sVqWLj9u9XumHMTDaDPZmpJ6bkwrhj3wh3kleAoxOHhJjJ5efP5hqPo0vtYv9uwCtv5FS6H4NWEMwSTTWwcIzFE0uwcdF60zhWi-aFoKWzzDQDxuw8f3NVatNdS-IqNkF_l1fst_tn9cFhNX762P4weg7A6uNqLSuESR_4yWqc_TYP4xiEI4f2n_18W2pmLtl7dIJUv-PV_qL5ZFTP5LrpxxIt2HXw0HeMpK5x6CGQzLrm-yF3Y5JL2sAgSiUnBivM">
+<span class="font-label-sm text-on-surface-variant">Google</span>
+</button><button class="flex-1 flex items-center justify-center gap-sm px-md py-3 border border-neutral-mid-gray rounded-lg hover:bg-neutral-light-gray transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">password</span>
+<span class="font-label-sm text-on-surface-variant">Login with OTP</span>
+</button>
+</div>
+<p class="mt-xl text-center font-caption text-caption text-secondary">New to truzov? <a class="text-accent-link font-h6-bold hover:underline" href="#">Create an account</a></p>
+<div class="flex items-center justify-center gap-sm opacity-60 mt-xl">
+<span class="material-symbols-outlined text-[16px] text-success">lock</span>
+<span class="text-caption font-caption text-secondary">AES-256 Bit Encrypted Verification Environment</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Simple Legal Footer -->
+<footer class="bg-white border-t border-neutral-light-gray py-md px-gutter w-full">
+<div class="max-w-[1440px] w-full mx-auto flex flex-col md:flex-row justify-between items-center gap-md">
+<div class="font-caption text-caption text-secondary"><span class="" style="color: rgb(64, 74, 60); text-align: center; background-color: rgb(240, 245, 233);">© 2026 truzov Verification Health. All Lab Reports ISO/IEC 17025 Certified.</span></div>
+<div class="flex gap-lg font-caption text-caption text-secondary">
+<a class="hover:underline" href="#">Privacy Policy</a>
+<a class="hover:underline" href="#">Terms of Service</a>
+<a class="hover:underline" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+
+
+
+
+
+
+</body></html>

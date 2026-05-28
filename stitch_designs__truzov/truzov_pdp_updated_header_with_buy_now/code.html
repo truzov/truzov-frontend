@@ -1,0 +1,504 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-surface": "#181d16",
+                "surface": "#f6fbef",
+                "on-secondary-fixed": "#1f1b13",
+                "on-error-container": "#93000a",
+                "on-secondary": "#ffffff",
+                "surface-tint": "#0d6e13",
+                "on-tertiary": "#ffffff",
+                "on-tertiary-fixed": "#3e0020",
+                "error": "#C82333",
+                "surface-dim": "#d6dcd0",
+                "secondary-fixed-dim": "#cec5b8",
+                "error-container": "#ffdad6",
+                "surface-container-low": "#f0f5e9",
+                "primary-container": "#1f7a1f",
+                "outline": "#707a6b",
+                "on-primary": "#ffffff",
+                "on-primary-fixed-variant": "#005308",
+                "on-secondary-fixed-variant": "#4c463c",
+                "inverse-primary": "#81db74",
+                "primary-fixed": "#9cf88d",
+                "on-tertiary-fixed-variant": "#841a4f",
+                "warning": "#E0A800",
+                "secondary-container": "#ebe1d3",
+                "tertiary-container": "#b24073",
+                "inverse-surface": "#2c322a",
+                "tertiary": "#93275a",
+                "surface-container-highest": "#dfe4d8",
+                "surface-container-high": "#e5eade",
+                "primary": "#00600a",
+                "neutral-white": "#FFFFFF",
+                "secondary-fixed": "#ebe1d3",
+                "success": "#218838",
+                "on-surface-variant": "#404a3c",
+                "inverse-on-surface": "#edf3e6",
+                "surface-variant": "#dfe4d8",
+                "secondary": "#645e53",
+                "tertiary-fixed": "#ffd9e4",
+                "on-primary-container": "#adff9d",
+                "tertiary-fixed-dim": "#ffb0cc",
+                "neutral-dark-gray": "#333333",
+                "on-secondary-container": "#6a6459",
+                "on-primary-fixed": "#002201",
+                "surface-bright": "#f6fbef",
+                "neutral-light-gray": "#F0F0F0",
+                "surface-container": "#eaf0e4",
+                "outline-variant": "#bfcab8",
+                "on-background": "#181d16",
+                "neutral-mid-gray": "#CCCCCC",
+                "on-error": "#ffffff",
+                "surface-container-lowest": "#ffffff",
+                "accent-link": "#477DCA",
+                "background": "#f6fbef",
+                "primary-fixed-dim": "#81db74",
+                "on-tertiary-container": "#ffe5eb"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "md": "16px",
+                "base": "4px",
+                "gutter": "24px",
+                "xl": "32px",
+                "margin": "20px",
+                "xxl": "64px",
+                "xs": "4px",
+                "lg": "24px",
+                "sm": "8px"
+            },
+            "fontFamily": {
+                "body-md": ["Inter"],
+                "caption": ["Inter"],
+                "label-sm": ["Inter"],
+                "h2": ["Inter"],
+                "h5-bold": ["Inter"],
+                "h6-bold": ["Inter"],
+                "h3": ["Inter"],
+                "h1": ["Inter"],
+                "h4": ["Inter"]
+            },
+            "fontSize": {
+                "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "h5-bold": ["16px", {"lineHeight": "1.5", "fontWeight": "700"}],
+                "h6-bold": ["14px", {"lineHeight": "1.5", "fontWeight": "700"}],
+                "h3": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                "h4": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .lab-report-blur {
+            backdrop-filter: blur(8px);
+        }
+        .small-caps {
+            font-variant: small-caps;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="w-full flex flex-col font-inter z-50 sticky top-0 bg-white">
+<!-- Tier 1: Top Trust Bar -->
+<div class="bg-[#00600a] w-full text-white py-2">
+<div class="max-w-[1440px] mx-auto px-6 flex flex-row justify-center items-center gap-8">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">science</span>
+<span class="text-[13px] font-medium">Lab Tested</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="text-[13px] font-medium">Authentic Products</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">groups</span>
+<span class="text-[13px] font-medium">Trusted Vendors</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">security</span>
+<span class="text-[13px] font-medium">Transparency You Can Trust</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">favorite</span>
+<span class="text-[13px] font-medium">India's Verified Health Marketplace</span>
+</div>
+</div>
+</div>
+<!-- Tier 2: Main Search Row -->
+<div class="max-w-[1440px] w-full mx-auto px-6 py-5 flex flex-row items-center justify-between gap-10">
+<!-- Logo -->
+<a class="shrink-0" href="#">
+<img alt="truzov logo" class="h-9" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1Qwv1Usmb-9O8l_lRUlOwpBVPIZP_KUsXKj_YEmcZjaru0wnlmHF7xdSZHt9gPN1Lr4ViMg-5dAP8T5NEaf4cgr14wk290i2hMdCOqC-WyLaanr0kIDgVtlGDTTy0sBal1SFdEx4G710qtZqe5H4RzkkfNjN1EZyVmtPLp8qGSGjqi0vz8ZYf39-iUALRtuLnMCt3DxB8yN8-4fBdsM2mVaChU3QwHM5oQGQ-4sEvTFaAFcU-hLtXNeYDqFXvEgmk9FTLUAauFug">
+</a>
+<!-- Search Bar -->
+<div class="flex-grow max-w-[800px] flex flex-row items-center bg-[#f6fbef] border border-[#bfcab8] rounded-lg overflow-hidden">
+<div class="flex items-center px-4 border-r border-[#bfcab8] cursor-pointer hover:bg-gray-100 transition-colors py-3">
+<span class="text-sm font-medium text-[#404a3c]">All Categories</span>
+<span class="material-symbols-outlined text-gray-500 ml-2">expand_more</span>
+</div>
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-sm px-4 placeholder-[#707a6b]" placeholder="Search verified products, brands, categories..." type="text">
+<button class="bg-[#00600a] text-white px-6 py-3 flex items-center justify-center">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 bg-[#f0f5e9] border border-[#00600a]/20 px-5 py-2.5 rounded-full">
+<span class="material-symbols-outlined text-[#00600a] text-[20px] fill-1">check_circle</span>
+<span class="text-sm font-bold text-[#00600a]">truzov Verified</span>
+</div>
+<button class="text-[#181d16] hover:text-[#00600a] transition-colors">
+<span class="material-symbols-outlined text-[30px]">person</span>
+</button>
+<button class="flex items-center gap-2 text-[#181d16] hover:text-[#00600a] transition-colors relative">
+<span class="material-symbols-outlined text-[30px]">shopping_cart</span>
+<span class="text-sm font-medium">Cart</span>
+<span class="absolute -top-1 -right-3 bg-[#00600a] text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">2</span>
+</button>
+</div>
+</div>
+<!-- Tier 3: Navigation Bar -->
+<div class="border-t border-[#bfcab8] border-b border-gray-100 bg-white">
+<div class="max-w-[1440px] mx-auto px-6 py-3 flex flex-row items-center justify-between">
+<nav class="flex flex-row items-center gap-8">
+<a class="flex items-center gap-1 text-sm font-semibold text-[#181d16] hover:text-[#00600a]" href="#">
+          Shop <span class="material-symbols-outlined text-[18px]">expand_more</span>
+</a>
+<a class="text-sm font-semibold text-[#181d16] hover:text-[#00600a]" href="#">Brands</a>
+<a class="text-sm font-semibold text-[#181d16] hover:text-[#00600a]" href="#">Why Verified?</a>
+<a class="text-sm font-semibold text-[#181d16] hover:text-[#00600a]" href="#">Lab Reports</a>
+<a class="text-sm font-semibold text-[#181d16] hover:text-[#00600a]" href="#">About Us</a>
+<a class="flex items-center gap-1 text-sm font-semibold text-[#181d16] hover:text-[#00600a]" href="#">
+          Support <span class="material-symbols-outlined text-[18px]">expand_more</span>
+</a>
+</nav>
+<button class="bg-[#00600a] text-white px-8 py-3 rounded-lg text-sm font-bold hover:bg-opacity-90 transition-all">
+        Explore Verified Products
+      </button>
+</div>
+</div>
+</header>
+<main class="max-w-[1440px] w-full mx-auto px-margin py-xl lg:py-xxl flex flex-col flex-grow">
+<div class="flex flex-col md:flex-row gap-gutter items-start w-full">
+<!-- Left: Image Gallery -->
+<div class="flex-[5] w-full flex flex-col gap-sm">
+<div class="bg-white rounded-xl border border-neutral-mid-gray overflow-hidden aspect-square flex flex-col items-center justify-center w-full">
+<img class="w-full h-full object-cover" data-alt="studio shot of a glass jar of golden honey on a clean white laboratory table with soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAILG6OF_lYqD4pL0Z6G1yn5dMx8G3Pf6uJaEi4psmXxgSfkv3ExQGqb0aO2M9FdQwCBiLW4ZmVnpRreYJryOztQi1mGg2U3eKi3G_DGe7lldZ1VwtAkyKKafRKWsDl6lsDXvszJkxj3ZauusS_5kOvEtPcRCy44eX9lJ179GGkj3ajbNm73We5dBPzIpvyl4fNoiuJb5yErfGCLGkt2Uh5Y1Am_l0SoLqNsB3YqED_HbT8Sy6gmisB8VXGcDCt3vRLKE2h5DSbTBk">
+</div>
+<div class="flex flex-row gap-sm w-full">
+<div class="flex-1 border-2 border-primary-container rounded-lg overflow-hidden cursor-pointer aspect-square flex flex-col">
+<img class="w-full h-full object-cover" data-alt="close up of honey dripping from a wooden dipper into a jar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaav023x5kGvC7HsbGpPCsnWqLqaWHxPcwq_HiUjALuLc5qBCX0D-CJPUFwo05DHF7XPOFPLUppl9buaMgPfjLbc878lNfO-NUnBMpxjN3TGRWdfJOna2kXG-07mO5pyL_9vY7y2TK6hc5WSMVL96AmM7HOY7JFDTFOXelDGyxADYKl_bgFDnIYAD_WO2R3HHXVdzjpU787bh5AN8KNc5SVBlIfH9WkIXcrAXoXrlGJdJaMmCKG2uA5Wcuoe9ioj2plgDg83ioj4k">
+</div>
+<div class="flex-1 border border-neutral-mid-gray rounded-lg overflow-hidden cursor-pointer aspect-square flex flex-col">
+<img class="w-full h-full object-cover" data-alt="beekeeping frame with fresh golden honeycombs in soft sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJnWvn6tNQOkESR7LM3Tg-CyA7BuG7rnhXulqHxfeyvF22tkZnux_9ofuu7fNFidbAJpvvpDWG8vA9PKi8j29MrW_7ZXOszB2w4gr8gxbf1L41GqETjIb-_8wnu5gsXtsf0qYW6anzcDzLA6VxMEpbMwmk-6WTvaNIyj3c7cvS5uVumqYG2uvmw2DfyaW5j3r-Rx2hEeWeBiiayfeu-KD4RlNIJKLgycm00eop0oOOtkowwgnq0BePWIdGhzBl_Jt09GSYtyNLwQ8">
+</div>
+<div class="flex-1 border border-neutral-mid-gray rounded-lg overflow-hidden cursor-pointer aspect-square flex flex-col">
+<img class="w-full h-full object-cover" data-alt="pure honey poured in a clear laboratory flask for testing" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFyiGQZ98TxvC2wbCOGsDLBatAIxLg4g1NRGS1UKoc3Qt82whSLWSa6hMf7w3LjIgTdT-J7dDcoSCvRRAJ83rTmQRATUGfuSB7AvuV3xSyA56Syl7gQei4NcHHpKw661J6yJ-MVB9RCT6p67nVunsdXulJm_ewu0GnjGF2rr7scCOjt2j7Y0-yIN2OpPH5ZPw6ZCwX_ZKBHj0tUO6QGj0ukbhHVEY6OXKHZLG6fS29b-qCs-ZKfpn-xh9_XIOGnS9i2SWYvSDMOu0">
+</div>
+<div class="flex-1 relative border border-neutral-mid-gray rounded-lg overflow-hidden cursor-pointer aspect-square flex flex-col">
+<img class="w-full h-full object-cover" data-alt="honey label and packaging detail macro" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3mmeQjakh16X9WG9bnV9JD57veOSCqMEo6Qj7pIEGAXKIaczFXtUyrAg9elPKpqFkGIqbWUbjrHst7v-bGBRsnu9mvbX4cqgm3sQv0wSBc9ffAHKxteIfuY_apYp9UuhzMAMVhykAlwD9lkIUfP3ksIrtGfu7J8w8S5MXUPZLZHFGxd5XDIMoaywRcccO01vN5aDQoHY2DhTUC9RkhiP_3W8AxU3bTsbhJmkF03kICoPjsiBLyNn_YGaxdPSuuQGVqXyQwA5wXYI">
+<div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white font-h6-bold">+3</div>
+</div>
+</div>
+</div>
+<!-- Center: Info Center -->
+<div class="flex-[4] w-full flex flex-col gap-md">
+<nav class="flex flex-row text-caption text-on-surface-variant gap-2 items-center">
+<a class="" href="#">Marketplace</a>
+<span class="material-symbols-outlined text-[12px]" data-icon="chevron_right">chevron_right</span>
+<a class="" href="#">Health &amp; Superfoods</a>
+<span class="material-symbols-outlined text-[12px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-primary font-medium">Pure Honey</span>
+</nav>
+<div class="flex flex-col gap-2">
+<h1 class="font-h1 text-h1 text-on-surface leading-tight">Pure Honey (500g)</h1>
+<div class="flex flex-row items-center gap-2">
+<div class="flex flex-row text-warning">
+<span class="material-symbols-outlined" data-icon="star" data-weight="fill">star</span>
+<span class="material-symbols-outlined" data-icon="star" data-weight="fill">star</span>
+<span class="material-symbols-outlined" data-icon="star" data-weight="fill">star</span>
+<span class="material-symbols-outlined" data-icon="star" data-weight="fill">star</span>
+<span class="material-symbols-outlined" data-icon="star_half">star_half</span>
+</div>
+<span class="font-label-sm text-on-surface-variant">(1,248 Verified Reviews)</span>
+</div>
+</div>
+<div class="flex flex-row items-baseline gap-2">
+<span class="font-h1 text-h1 text-on-surface">₹499</span>
+<span class="font-body-md text-on-surface-variant line-through">₹749</span>
+<span class="bg-error-container text-on-error-container font-label-sm px-2 py-0.5 rounded">33% OFF</span>
+</div>
+<!-- Lab Verified Banner - Refined for Trust -->
+<div class="bg-primary/5 border border-primary/30 p-md rounded-xl flex flex-row items-start gap-md">
+<div class="bg-primary text-on-primary p-2 rounded-lg shrink-0 flex flex-col items-center justify-center">
+<span class="material-symbols-outlined" data-icon="verified" data-weight="fill">verified</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="font-h6-bold text-primary flex flex-row items-center gap-1">
+                            Lab Verified Authentic
+                            <span class="material-symbols-outlined text-[16px]" data-icon="info">info</span>
+</p>
+<p class="text-caption text-on-surface-variant">Independently tested for 99.8% purity, 100% pesticide-free. Traceable to the Himalayan foothills.</p>
+</div>
+</div>
+<!-- Tabs -->
+<div class="mt-md border-b border-outline-variant flex flex-row gap-xl overflow-x-auto scrollbar-hide">
+<button class="pb-base font-h6-bold text-primary border-b-2 border-primary whitespace-nowrap flex flex-row items-center">Product Details</button>
+<button class="pb-base font-h6-bold text-on-surface-variant hover:text-on-surface whitespace-nowrap flex flex-row items-center">Lab Report</button>
+<button class="pb-base font-h6-bold text-on-surface-variant hover:text-on-surface whitespace-nowrap flex flex-row items-center">Reviews</button>
+</div>
+<div class="flex flex-col gap-md py-md">
+<div class="flex flex-row gap-md w-full">
+<div class="flex-1 p-md bg-surface-container-low rounded-lg border border-outline-variant flex flex-col gap-1">
+<p class="font-label-sm text-on-surface-variant uppercase tracking-wider">Ingredients</p>
+<p class="font-h6-bold">100% Raw Honey</p>
+</div>
+<div class="flex-1 p-md bg-surface-container-low rounded-lg border border-outline-variant flex flex-col gap-1">
+<p class="font-label-sm text-on-surface-variant uppercase tracking-wider">Certifications</p>
+<p class="font-h6-bold">FSSAI, ISO 22000</p>
+</div>
+</div>
+<!-- Lab Report Summary - Enhanced Clarity -->
+<div class="p-md bg-white border border-outline-variant rounded-xl shadow-sm flex flex-col">
+<div class="flex flex-row justify-between items-center mb-sm w-full">
+<h3 class="font-h6-bold flex flex-row items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="biotech">biotech</span>
+                                Verification Summary
+                            </h3>
+<span class="font-label-sm text-success flex flex-row items-center gap-1 bg-success/10 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                                Passed
+                            </span>
+</div>
+<div class="flex flex-col space-y-1 w-full">
+<div class="flex flex-row justify-between text-body-md py-1.5 border-b border-surface-container last:border-0 w-full">
+<span class="text-on-surface-variant">Heavy Metals</span>
+<span class="font-h6-bold text-primary">ND (Not Detected)</span>
+</div>
+<div class="flex flex-row justify-between text-body-md py-1.5 border-b border-surface-container last:border-0 w-full">
+<span class="text-on-surface-variant">Pesticide Residue</span>
+<span class="font-h6-bold text-primary">ND (Not Detected)</span>
+</div>
+<div class="flex flex-row justify-between text-body-md py-1.5 border-b border-surface-container last:border-0 w-full">
+<span class="text-on-surface-variant">Antibiotics</span>
+<span class="font-h6-bold text-primary">Absent</span>
+</div>
+</div>
+<button class="mt-md w-full bg-surface-container-highest hover:bg-surface-container-high transition-colors p-3 rounded-lg flex flex-row items-center justify-center gap-3 font-h6-bold">
+<div class="bg-on-surface-variant text-white p-1 rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="description">description</span>
+</div>
+                            Download Full Lab Report (PDF)
+                        </button>
+</div>
+</div>
+</div>
+<!-- Right: Sticky Purchase Box -->
+<div class="flex-[3] w-full md:sticky md:top-24 flex flex-col gap-lg">
+<div class="bg-white border border-outline-variant p-lg rounded-xl shadow-md flex flex-col gap-md">
+<div class="flex flex-col gap-base">
+<p class="font-h4 text-on-surface text-xl">₹499.00</p>
+<p class="text-success font-label-sm flex flex-row items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+                            In stock. Ready to ship.
+                        </p>
+</div>
+<div class="flex flex-col gap-sm">
+<label class="font-label-sm text-on-surface-variant">Quantity</label>
+<div class="flex flex-row items-center border border-neutral-mid-gray rounded-lg w-fit overflow-hidden">
+<button class="px-3 py-2 bg-neutral-light-gray hover:bg-neutral-mid-gray flex flex-col items-center justify-center">-</button>
+<input class="w-12 text-center border-none focus:ring-0 font-h6-bold" type="text" value="1">
+<button class="px-3 py-2 bg-neutral-light-gray hover:bg-neutral-mid-gray flex flex-col items-center justify-center">+</button>
+</div>
+</div>
+<div class="flex flex-col gap-sm mt-md">
+<button class="w-full bg-primary hover:opacity-90 text-on-primary font-h5-bold py-3 rounded-full flex flex-row items-center justify-center gap-2 transition-all shadow-sm">
+<span class="material-symbols-outlined" data-icon="add_shopping_cart">add_shopping_cart</span>
+                            Add to Cart
+                        </button><button class="w-full bg-surface-container border border-primary text-primary font-h5-bold py-3 rounded-full flex flex-row items-center justify-center gap-2 transition-all hover:bg-surface-container-high shadow-sm mt-3">
+<span class="material-symbols-outlined">bolt</span>
+    Buy Now
+</button><div class="flex flex-row items-center justify-center gap-4 mt-4 w-full"><button class="flex-1 flex flex-row items-center justify-center gap-2 text-primary hover:bg-primary/5 transition-colors py-2 font-h6-bold border border-primary/20 rounded-lg"><span class="material-symbols-outlined text-[20px]">favorite</span>Add to Wishlist</button><button class="flex-1 flex flex-row items-center justify-center gap-2 text-primary hover:bg-primary/5 transition-colors py-2 font-h6-bold border border-primary/20 rounded-lg"><span class="material-symbols-outlined text-[20px]">share</span>Share</button></div>
+</div>
+<div class="mt-md pt-md border-t border-surface-container flex flex-col gap-4">
+<div class="flex flex-row items-start gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="local_shipping">local_shipping</span>
+<div class="flex flex-col">
+<span class="font-h6-bold text-on-surface">Delivery by Thu, Oct 24</span>
+<span class="text-caption text-on-surface-variant">Free delivery on orders over ₹999</span>
+</div>
+</div>
+<div class="flex flex-row items-start gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+<div class="flex flex-col">
+<span class="font-h6-bold text-on-surface">Authenticity Guaranteed</span>
+<span class="text-caption text-on-surface-variant">Full refund if lab test fails verification</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-md bg-surface-container rounded-lg border border-outline-variant flex flex-col">
+<p class="font-h6-bold text-on-surface flex flex-row items-center gap-2">
+<span class="material-symbols-outlined text-accent-link" data-icon="storefront">storefront</span>
+                        Sold by Himalayan Labs
+                    </p>
+<p class="text-caption text-on-surface-variant mt-1">4.9/5 Rating • 2k+ Sales</p>
+</div>
+</div>
+</div>
+<!-- Similar Products -->
+<section class="mt-xxl flex flex-col w-full">
+<div class="flex flex-row justify-between items-end mb-xl border-b border-outline-variant pb-base w-full">
+<div class="flex flex-col">
+<h2 class="font-h2 text-h2">Similar Verified Products</h2>
+<p class="text-on-surface-variant">Other lab-tested health staples from verified vendors.</p>
+</div>
+<a class="text-accent-link font-h6-bold hover:underline" href="#">View All</a>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-gutter w-full">
+<!-- Product Card 1 -->
+<div class="group bg-white rounded-xl border border-neutral-mid-gray overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
+<div class="aspect-square bg-neutral-light-gray relative flex flex-col w-full">
+<img class="w-full h-full object-cover flex-grow" data-alt="organic cinnamon sticks tied with string on a wooden surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPpr7zWByGrc1uTsmqTiL_hpa214s_EVNdoeaKfz-KqIzaqfMp5jgNP-FQi4yj7vTihGTH3xmtJ1KzKnPWZdZ6-XoaaLm6eTN7Q09GmDb9maRM33gLd-wY7sTSfADxkZEsONIvAQXuPtXu_ytLRsku8UtHxxnOwv0dXv3kXWb9D7nDPlt6SvMURSdnoUuEI5vdh8InrubCv1G1rea5lcdpEzRzTQJeF2GBYXw87bqpCtU5Fm94TWqzbVkwRCAS8mnH09Qx3Bl87NQ">
+<div class="absolute top-2 left-2 bg-primary text-on-primary font-label-sm px-2 py-0.5 rounded flex flex-row items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="verified" data-weight="fill">verified</span>
+                            Verified
+                        </div>
+</div>
+<div class="p-md flex flex-col">
+<h4 class="font-h6-bold truncate">Organic Cinnamon (100g)</h4>
+<div class="flex flex-row items-center gap-1 my-1">
+<span class="material-symbols-outlined text-warning text-[14px]" data-icon="star" data-weight="fill">star</span>
+<span class="font-label-sm text-on-surface-variant">4.8 (210)</span>
+</div>
+<p class="font-h5-bold">₹249</p>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="group bg-white rounded-xl border border-neutral-mid-gray overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
+<div class="aspect-square bg-neutral-light-gray relative flex flex-col w-full">
+<img class="w-full h-full object-cover flex-grow" data-alt="high quality saffron threads in a decorative wooden bowl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbFVnWEtvScnTOOBAHYulLs9srDnoN4LzeIsfme-XJPGXrXSMl_yXNKxmgLbD_RJVZxN6vfBeAkjfN4gazy786IefMhK0H2vACzfFx6v0WXQbyvx-myg7jxdbJwFsH1eRi9VCXNk6zkNwPQHFk-HlfI45ZIBgzPrOHCl0h_qQZMxjrR7lFxVlqXPVxx-n4uLnoQgKkiCWGmC-131v-I45wDjeC-Cr3TKi39JqqDikKnze5R8WRLTKE6zq_hY4FswFRmWHsH8jP7iQ">
+<div class="absolute top-2 left-2 bg-primary text-on-primary font-label-sm px-2 py-0.5 rounded flex flex-row items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="verified" data-weight="fill">verified</span>
+                            Verified
+                        </div>
+</div>
+<div class="p-md flex flex-col">
+<h4 class="font-h6-bold truncate">Premium Saffron (1g)</h4>
+<div class="flex flex-row items-center gap-1 my-1">
+<span class="material-symbols-outlined text-warning text-[14px]" data-icon="star" data-weight="fill">star</span>
+<span class="font-label-sm text-on-surface-variant">4.9 (540)</span>
+</div>
+<p class="font-h5-bold">₹399</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface border-t border-outline-variant py-12 px-6 flex flex-col mt-auto w-full font-inter">
+<div class="max-w-[1440px] w-full mx-auto px-margin">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-xl mb-xl">
+<!-- Column 1: Brand Section -->
+<div class="flex flex-col gap-md">
+<img alt="truzov logo" class="h-9 w-fit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjfK7qWZV1XKPdEr6QRIN-0RAulT5bvxNvDJpvJVtbTrPlOyI5OEB2RQ2pyY1eLP-lNfPIq8oxswCDRaBUSPJWfqswsqTmGin-W48FIBU7rBB8Pkj8ZbxJ0NhaPpT7AiUyht-MmkL3qUDrwhgoK86JJZ7twxty4LTYbdhsCpEj4tESt_cwMLE5u-ycrQOjVNrRs337122ticy3pwOABMlE4a2UKbxqTYaa9M9ra3PWF_9UyNcaozSpnpm5d64UizKYOz3X9w2BzRc">
+<p class="text-body-md text-on-surface-variant max-w-xs">
+          The world's first verification-led health marketplace. We use science to bridge the gap between marketing claims and nutritional truth.
+        </p>
+<div class="flex flex-row gap-md text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">public</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">link</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">share</span>
+</div>
+</div>
+<!-- Column 2: SHOP VERIFIED -->
+<div class="flex flex-col gap-sm">
+<h5 class="font-h6-bold text-on-surface uppercase tracking-wider small-caps mb-2">SHOP VERIFIED</h5>
+<div class="flex flex-col gap-base">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">New Lab Arrivals</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Verified Bestsellers</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Wholesale Inquiries</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Gift Certificates</a>
+</div>
+</div>
+<!-- Column 3: TRANSPARENCY -->
+<div class="flex flex-col gap-sm">
+<h5 class="font-h6-bold text-on-surface uppercase tracking-wider small-caps mb-2">TRANSPARENCY</h5>
+<div class="flex flex-col gap-base">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Lab Partners</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Audit Methodology</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Protocol</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+</div>
+<!-- Column 4: SUPPORT -->
+<div class="flex flex-col gap-sm">
+<h5 class="font-h6-bold text-on-surface uppercase tracking-wider small-caps mb-2">SUPPORT</h5>
+<div class="flex flex-col gap-base">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Quality Support</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Vendor Onboarding</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Shipping &amp; Logistics</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Health Knowledge Base</a>
+</div>
+</div>
+</div>
+<!-- Bottom Bar -->
+<div class="border-t border-outline-variant pt-xl flex flex-col items-center">
+<p class="text-caption text-on-surface-variant text-center">
+        © 2026 truzov Verification Health. All Lab Reports ISO/IEC 17025 Certified.
+      </p>
+</div>
+</div>
+</footer>
+<!-- Mobile Bottom NavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex flex-row justify-around items-center px-4 py-2 md:hidden bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center justify-center text-green-800 dark:text-green-400 bg-green-50 dark:bg-green-900/30 rounded-xl p-2 scale-95 duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Shop</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 p-2" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Verify</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 p-2" href="#">
+<span class="material-symbols-outlined" data-icon="biotech">biotech</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 p-2" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Account</span>
+</a>
+</nav>
+
+
+
+
+
+
+</body></html>

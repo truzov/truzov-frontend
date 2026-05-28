@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>truzov Homepage</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#93275a",
+                    "surface-dim": "#d6dcd0",
+                    "error": "#C82333",
+                    "inverse-primary": "#81db74",
+                    "outline": "#707a6b",
+                    "surface-container": "#eaf0e4",
+                    "background": "#f6fbef",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#4c463c",
+                    "inverse-on-surface": "#edf3e6",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed": "#3e0020",
+                    "success": "#218838",
+                    "primary-fixed": "#9cf88d",
+                    "on-primary-fixed": "#002201",
+                    "tertiary-fixed-dim": "#ffb0cc",
+                    "tertiary-container": "#b24073",
+                    "surface": "#f6fbef",
+                    "on-tertiary-fixed-variant": "#841a4f",
+                    "surface-variant": "#dfe4d8",
+                    "surface-tint": "#0d6e13",
+                    "secondary-container": "#ebe1d3",
+                    "primary": "#00600a",
+                    "on-primary": "#ffffff",
+                    "surface-container-high": "#e5eade",
+                    "outline-variant": "#bfcab8",
+                    "surface-bright": "#f6fbef",
+                    "secondary": "#645e53",
+                    "secondary-fixed-dim": "#cec5b8",
+                    "on-primary-container": "#adff9d",
+                    "on-error": "#ffffff",
+                    "on-background": "#181d16",
+                    "on-secondary-container": "#6a6459",
+                    "tertiary-fixed": "#ffd9e4",
+                    "neutral-mid-gray": "#CCCCCC",
+                    "secondary-fixed": "#ebe1d3",
+                    "on-surface-variant": "#404a3c",
+                    "accent-link": "#477DCA",
+                    "on-secondary-fixed": "#1f1b13",
+                    "primary-container": "#1f7a1f",
+                    "neutral-dark-gray": "#333333",
+                    "inverse-surface": "#2c322a",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#f0f5e9",
+                    "on-primary-fixed-variant": "#005308",
+                    "warning": "#E0A800",
+                    "surface-container-highest": "#dfe4d8",
+                    "neutral-light-gray": "#F0F0F0",
+                    "on-tertiary-container": "#ffe5eb",
+                    "on-error-container": "#93000a",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#81db74",
+                    "on-surface": "#181d16",
+                    "neutral-white": "#FFFFFF"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "sm": "8px",
+                    "margin": "20px",
+                    "gutter": "24px",
+                    "xxl": "64px",
+                    "base": "4px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "h1": ["Inter"],
+                    "caption": ["Inter"],
+                    "h6-bold": ["Inter"],
+                    "h3": ["Inter"],
+                    "h2": ["Inter"],
+                    "h5-bold": ["Inter"],
+                    "h4": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                    "h1": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                    "caption": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                    "h6-bold": ["14px", { "lineHeight": "1.5", "fontWeight": "700" }],
+                    "h3": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                    "h2": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "h5-bold": ["16px", { "lineHeight": "1.5", "fontWeight": "700" }],
+                    "h4": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Hide scrollbar for horizontal scroll areas */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-background font-body-md antialiased pb-20 md:pb-0">
+<!-- Top Navigation (Mobile Version) -->
+<header class="sticky top-0 z-50 bg-white border-b border-surface-variant flex flex-col md:hidden w-full shadow-sm">
+<!-- Trust Strip -->
+<div class="bg-primary-container text-on-primary text-[10px] py-1 px-4 flex justify-between items-center font-medium overflow-x-auto whitespace-nowrap no-scrollbar space-x-4">
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">science</span> Lab Tested</div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">check_circle</span> Authentic Products</div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">verified_user</span> Trusted Vendors</div>
+</div>
+<!-- Logo & Actions -->
+<div class="flex justify-between items-center px-3 py-2">
+<div class="text-xl font-black tracking-tighter text-primary-container">truzov</div>
+<div class="flex items-center gap-3 text-primary-container">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<div class="relative">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="absolute -top-1 -right-1 bg-primary text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">2</span>
+</div>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="px-3 pb-3 pt-1">
+<div class="relative flex items-center w-full shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-lg" data-icon="search">search</span>
+</div>
+<input class="block w-full pl-10 pr-20 py-2.5 border-2 border-primary/20 rounded-xl leading-5 bg-surface-container-lowest placeholder-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium transition duration-150 ease-in-out font-body-md shadow-inner" placeholder="Search verified products..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-1 flex items-center gap-0.5">
+<button class="p-1.5 text-secondary hover:text-primary rounded-full hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-lg">mic</span></button>
+<button class="p-1.5 text-secondary hover:text-primary rounded-full hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-lg">qr_code_scanner</span></button>
+</div>
+</div>
+</div>
+</header>
+<!-- Top Navigation (Web Version - Hidden on Mobile) -->
+<header class="hidden md:flex flex-col w-full sticky top-0 z-50 bg-white border-b border-surface-variant shadow-sm">
+<div class="bg-primary-container text-on-primary text-xs py-1.5 px-6 flex justify-center items-center gap-8 font-medium">
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">science</span> Lab Tested</div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">check_circle</span> Authentic Products</div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">verified_user</span> Trusted Vendors</div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">security</span> Transparency You Can Trust</div>
+</div>
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-8">
+<div class="text-2xl font-black tracking-tighter text-primary-container">truzov</div>
+<div class="relative hidden lg:block w-96">
+<input class="block w-full pl-4 pr-10 py-2 border border-outline-variant rounded-md leading-5 bg-surface-container-lowest placeholder-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm font-body-md" placeholder="Search verified products..." type="text"/>
+<button class="absolute inset-y-0 right-0 px-3 flex items-center bg-primary-container text-white rounded-r-md hover:bg-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="search">search</span>
+</button>
+</div>
+</div>
+<nav class="flex items-center gap-6 font-inter text-sm font-medium tracking-tight">
+<a class="text-primary-container font-bold border-b-2 border-primary-container pb-1" href="#">Marketplace</a>
+<a class="text-secondary hover:text-primary-container transition-colors" href="#">Verify Product</a>
+<a class="text-secondary hover:text-primary-container transition-colors" href="#">Labs</a>
+<a class="text-secondary hover:text-primary-container transition-colors" href="#">Wholesale</a>
+</nav>
+<div class="flex items-center gap-6">
+<button class="flex items-center gap-1.5 text-xs font-bold text-primary-container bg-surface-container px-3 py-1.5 rounded-full border border-primary-container/20">
+<span class="material-symbols-outlined text-sm text-primary-container fill">verified</span> truzov Verified
+                </button>
+<div class="flex items-center gap-4 text-primary-container">
+<button class="flex items-center gap-1 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="text-sm font-medium hidden lg:block">Sign In</span>
+</button>
+<button class="flex items-center gap-1 hover:opacity-80 transition-opacity">
+<div class="relative">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">2</span>
+</div>
+<span class="text-sm font-medium hidden lg:block">Cart</span>
+</button>
+</div>
+</div>
+</div>
+</header>
+<main class="w-full">
+<!-- Today's Deals Section (Replaced Hero) -->
+<section class="bg-surface px-3 py-4 md:py-8 border-b border-surface-variant md:hidden">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-h5-bold text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-error fill text-lg">local_fire_department</span> Best Lab Deals</h2>
+<span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Ends 04:23:10</span>
+</div>
+<div class="flex gap-3 overflow-x-auto no-scrollbar snap-x pb-1">
+<!-- Deal 1 -->
+<div class="min-w-[260px] bg-white rounded-xl p-2.5 flex gap-3 snap-start border border-error/20 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-error text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg z-10">50% OFF</div>
+<div class="w-20 h-20 bg-neutral-light-gray rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+<img alt="High-Potency Manuka MGO 850+" class="w-full h-full object-cover mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ52DLgmdfOsrFbbJPXH5Tyt3tVxFOkXqoloWAoxb1C1sc2QO9rgyMPUlTTTYwRLX4gIMbT4-MzNeJPPyUwwJX5sibKZMVhQbScDo0s2lYAq3Iu5Vlw9RLrSu5A2IESDzwNw3vODEWnz473Ja9nBTcP4DGWN9JA03zj66pFnZ8Pz3TG3-ddGHJQYV4fzn0221y_TueuosoNponjDMbq6DTtSCu25ULJXUyZOeAsurtqD5I8osL2fyPvVct52lhYvJFlY2e_ZhXAwo"/>
+</div>
+<div class="flex flex-col justify-center flex-grow">
+<h3 class="font-bold text-xs text-on-surface line-clamp-2 mb-1 leading-tight">High-Potency Manuka MGO 850+</h3>
+<div class="flex items-baseline gap-1.5 mb-1.5">
+<span class="font-bold text-sm text-on-surface">₹3,499</span>
+<span class="text-[10px] text-secondary line-through">₹6,999</span>
+</div>
+<button class="bg-error text-white text-[10px] font-bold py-1 px-3 rounded w-fit">Claim Deal</button>
+</div>
+</div>
+<!-- Deal 2 -->
+<div class="min-w-[260px] bg-white rounded-xl p-2.5 flex gap-3 snap-start border border-primary/20 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg z-10">BOGO FREE</div>
+<div class="w-20 h-20 bg-neutral-light-gray rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+<img alt="Artisan Heritage Olive Oil" class="w-full h-full object-cover mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwUxGwPx-XVI_MyEMl-IgLdPEbLxUNlVE4S2YwAljil8oHAxaDkLxblMTWtdOmwz59GATWBl0uYF38XoT9j-5QpRBA60cePEhsNtelVB-nkkp987XpwRuNIvlvunFKAdsAWIWmYVje0ifYcgGpkzgBPzb4nrDeNMEjA0_ZJVhGJZ8LQrJnSJrPg5om2IEgI6Bl96VMXSvoN53ja5wOM5QuUXYQhrxwI4mlxyGjYxENazd5P8fVSFRWT87eZOoXKSCXj4i5g3vUQi4"/>
+</div>
+<div class="flex flex-col justify-center flex-grow">
+<h3 class="font-bold text-xs text-on-surface line-clamp-2 mb-1 leading-tight">Artisan Heritage Olive Oil</h3>
+<div class="flex items-baseline gap-1.5 mb-1.5">
+<span class="font-bold text-sm text-on-surface">₹1,999</span>
+</div>
+<button class="bg-primary text-white text-[10px] font-bold py-1 px-3 rounded w-fit">Claim Deal</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Category Section (Dense 2x4 Grid) -->
+<section class="py-4 bg-white px-3 md:px-8 border-b border-surface-variant">
+<div class="max-w-[1440px] mx-auto">
+<div class="grid grid-cols-4 gap-x-2 gap-y-4 md:grid-cols-8 pb-1">
+<!-- Category Item 1 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative">
+<img alt="Raw Honey" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADz7mq4T5phZ4G4zV86GEgWsNsjoDG0tv5qix1p0WGrWDPfTLmO-468fCNHd8FE9hoRnAIRa_LniJGI3wnagBw9oATkDw3JIQx16HPy2XT7m-mTvEFxMpktfz717uLUOMl1xUoo2NAKTRD8hNWJEzefXK67WR9X9XIKVzGn7cRQEmXXqRnXXXZf1TYgID5u0Xe_LJscda08gzlMqY53N9iYAPyHyFEARJb3UQEgz2rhPW6pGxG1FZO9iCcEWbTU63Mm6xgWcJitRo"/>
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Honey</span>
+</a>
+<!-- Category Item 2 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative">
+<img alt="Ghee &amp; Oils" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBa1pdRZi3nBuEiL0aJq7c4GvFqUpP1McOanyJTDYg7YE159L3cMcyJwjbaw2bmwOG6L2L-ia3SPof-Q22eG8TNwK3J09MeI4abIUuyhJlXnuuWWedwa9bsWAse6wCv7g8L69OoXuG46OsIUcnl0NCX6ahOTXoNuYT0_aAZITEPXkYxt90LcnGKHFhSwOPXt3TSlp1Lrgz1XuAT7pLzALw2njZZhJ6aP-r-qnz22QLhjAr93s8eAKCSvWglQEu_V5OWJXBCUaZAlPg"/>
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Ghee &amp; Oils</span>
+</a>
+<!-- Category Item 3 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative flex items-center justify-center bg-orange-50">
+<img alt="Spices" class="w-[80%] h-[80%] object-cover rounded-full mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBATBmEvTb3sx44CJN0j9UwRvpaD9fQAmRMY-SsqY-2V98w0SEZVRDspY_RU22Yyux9aXdm1e31EZucD4YLhLHp7108KqExCTsL1KlxR9TXNiwRqQPdrtvBFpmpfnN5hgTvnvqXIMErUFqb_vUvcYViL3cXC3S0fS6PM0U6wgXq__3pfkcEK6It9JQbIRNJuqyMCcO-GGMo90zE47e0lvHmfDNIIVk6vXHRYuJNIob1IjgeeVGpabYHYpv3aswFDj4BWooeTUYMP8I"/> <!-- Placeholder reuse -->
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Spices</span>
+</a>
+<!-- Category Item 4 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative">
+<img alt="Dry Fruits" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzFkEA72LDqMXCOJE8U4P3EOUIYcnfgYswhCbRGPBzSy5-gVAVdHZW0IfRKlNG0ecBd925RbMAxqO_jINhCleuZsWlhCcrTd6Vk33tJUE3mYfwUY3Qxck5idJzv4UGrm4zmSGFZFgG9KUqLOQCnmy4TlNyStsMz0yuSGmpzaQgO51ct9ut32BNc4_3OvLRpbJ21gz3hn83XSiGXYhWa-zF7OVDTFATyPAFdA1_pi7rYZukoo1nnqOBSC6ABYoEUVhxDdHMCb8cPK8"/> <!-- Placeholder reuse -->
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Dry Fruits</span>
+</a>
+<!-- Category Item 5 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative">
+<img alt="Supplements" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBATBmEvTb3sx44CJN0j9UwRvpaD9fQAmRMY-SsqY-2V98w0SEZVRDspY_RU22Yyux9aXdm1e31EZucD4YLhLHp7108KqExCTsL1KlxR9TXNiwRqQPdrtvBFpmpfnN5hgTvnvqXIMErUFqb_vUvcYViL3cXC3S0fS6PM0U6wgXq__3pfkcEK6It9JQbIRNJuqyMCcO-GGMo90zE47e0lvHmfDNIIVk6vXHRYuJNIob1IjgeeVGpabYHYpv3aswFDj4BWooeTUYMP8I"/>
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Vitamins</span>
+</a>
+<!-- Category Item 6 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative">
+<img alt="Grass-fed Dairy" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBs3uf72oBeEl-uJXqQZ2OjG1wNbdCJJXpv9xrjpI7PblIRUCffGART3hdy0zqV9Oyr9zc088Yw6T-EMtGqqQ1UjOxf5DFUFE7bqzHOuwTkqqABdvWBaKmPK-jOUsmrSglcpz2IV9tkQEBSb14oLRkAtpT1CZDhKU-TY73no7cqrJm14djfg76zXQoEuxIyhyXkHAbaJ5FEQlACim3rIeRrbfs45i0j6KSNjh0BQ80XuYoc5Pnsr8AWKhDutDYqnZA0EPtqeW911yc"/>
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Dairy</span>
+</a>
+<!-- Category Item 7 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative flex items-center justify-center bg-yellow-50">
+<img alt="Grains" class="w-[80%] h-[80%] object-cover rounded-full mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBi3LGdpymYKy0WhAb76q5XvuOZyk9FK7zww8Eu3G2t5Da6R7VFnYWk2VCCKayRycQrNPCnvecLwbRQnfEe4eH-0tR_70S1Pyn7cJtHWlGm8auUIVtwHwca2GANQWL2XpNlrXRzGEIo9spauti-okZCbdLPiMrhyc-M0vOiroOsgyXf3iFDksS9_zEE75_8kKotA5G-sfGEDtIgQMWS6kVN_OuJgfsQxQzY-5pg4IdosQAiQL8DxhIY-2p70VNCLRVYwCc0su9gn5o"/> <!-- Placeholder reuse -->
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Grains</span>
+</a>
+<!-- Category Item 8 -->
+<a class="flex flex-col items-center gap-1.5 group" href="#">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm border border-surface-variant bg-surface-container-lowest p-1 relative">
+<img alt="Fresh Produce" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzFkEA72LDqMXCOJE8U4P3EOUIYcnfgYswhCbRGPBzSy5-gVAVdHZW0IfRKlNG0ecBd925RbMAxqO_jINhCleuZsWlhCcrTd6Vk33tJUE3mYfwUY3Qxck5idJzv4UGrm4zmSGFZFgG9KUqLOQCnmy4TlNyStsMz0yuSGmpzaQgO51ct9ut32BNc4_3OvLRpbJ21gz3hn83XSiGXYhWa-zF7OVDTFATyPAFdA1_pi7rYZukoo1nnqOBSC6ABYoEUVhxDdHMCb8cPK8"/>
+</div>
+<span class="text-[10px] md:text-xs font-semibold text-center text-on-surface group-hover:text-primary leading-tight">Fresh</span>
+</a>
+</div>
+</div>
+</section>
+<!-- Best-Sellers Section (Quick Buy Slider) -->
+<section class="py-6 bg-surface-container-low px-3 md:px-8 lg:px-20">
+<div class="max-w-[1440px] mx-auto">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-h5-bold text-on-surface">Verified Best-Sellers</h2>
+<a class="text-primary font-bold text-xs hover:underline flex items-center gap-0.5" href="#">View All <span class="material-symbols-outlined text-[14px]">arrow_forward</span></a>
+</div>
+<div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x md:grid md:grid-cols-3 lg:grid-cols-4">
+<!-- Product Card 1 -->
+<div class="min-w-[160px] md:min-w-0 bg-white rounded-xl overflow-hidden shadow-sm border border-surface-variant flex flex-col snap-start">
+<div class="relative aspect-square bg-neutral-light-gray p-3 flex items-center justify-center">
+<img alt="High-Potency Manuka MGO 850+" class="object-cover w-full h-full mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ52DLgmdfOsrFbbJPXH5Tyt3tVxFOkXqoloWAoxb1C1sc2QO9rgyMPUlTTTYwRLX4gIMbT4-MzNeJPPyUwwJX5sibKZMVhQbScDo0s2lYAq3Iu5Vlw9RLrSu5A2IESDzwNw3vODEWnz473Ja9nBTcP4DGWN9JA03zj66pFnZ8Pz3TG3-ddGHJQYV4fzn0221y_TueuosoNponjDMbq6DTtSCu25ULJXUyZOeAsurtqD5I8osL2fyPvVct52lhYvJFlY2e_ZhXAwo"/>
+<div class="absolute top-1.5 left-1.5 bg-success text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[8px] fill">verified</span> Verified
+                            </div>
+</div>
+<div class="p-2.5 flex flex-col flex-grow">
+<h3 class="font-bold text-xs text-on-surface mb-1 line-clamp-2 leading-tight h-8">High-Potency Manuka MGO 850+</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="text-[10px] font-bold text-on-surface">4.8</span>
+<span class="material-symbols-outlined fill text-warning text-[10px]">star</span>
+<span class="text-[10px] text-secondary">(1.2k)</span>
+</div>
+<div class="flex items-baseline gap-1.5 mb-2">
+<span class="font-bold text-sm text-on-surface">₹6,999</span>
+</div>
+<button aria-label="Add to cart" class="w-full bg-primary text-white font-bold text-xs py-2 rounded-lg mt-auto flex items-center justify-center gap-1 hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[14px]">add_shopping_cart</span> Add
+</button>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="min-w-[160px] md:min-w-0 bg-white rounded-xl overflow-hidden shadow-sm border border-surface-variant flex flex-col snap-start">
+<div class="relative aspect-square bg-neutral-light-gray p-3 flex items-center justify-center">
+<img alt="Detox Green Juice Bundle" class="object-cover w-full h-full mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIM2lFPFdgg4sZXljNbJ0L9SZCbxiIuWXrK8jHKyGlTl5TtRrRGjt8iYvw973xYdm5vqW0IoPB3TbOi2u-2T6n85COvaWiaMqQFmzp4OjhODZGa6iCY4ymvW8l8QUOhu3gpslJkfnUBdXe2Yu-RNQ2gFvM5DGapRj2KzrThxniOlWZ33eGj9uxo4Hz_1gRxXYnbPg54vJoVFm1rDAev4LxLI9o5QGidKzI8T3KPSekdX3ogbXBg8EAIMrvbB90Sd-klF16zZnMYIQ"/>
+<div class="absolute top-1.5 left-1.5 bg-success text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[8px] fill">verified</span> Verified
+                            </div>
+</div>
+<div class="p-2.5 flex flex-col flex-grow">
+<h3 class="font-bold text-xs text-on-surface mb-1 line-clamp-2 leading-tight h-8">Detox Green Juice Bundle</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="text-[10px] font-bold text-on-surface">4.5</span>
+<span class="material-symbols-outlined fill text-warning text-[10px]">star</span>
+<span class="text-[10px] text-secondary">(582)</span>
+</div>
+<div class="flex items-baseline gap-1.5 mb-2">
+<span class="font-bold text-sm text-on-surface">₹2,699</span>
+</div>
+<button aria-label="Add to cart" class="w-full bg-primary text-white font-bold text-xs py-2 rounded-lg mt-auto flex items-center justify-center gap-1 hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[14px]">add_shopping_cart</span> Add
+</button>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="min-w-[160px] md:min-w-0 bg-white rounded-xl overflow-hidden shadow-sm border border-surface-variant flex flex-col snap-start">
+<div class="relative aspect-square bg-neutral-light-gray p-3 flex items-center justify-center">
+<img alt="Artisan Heritage Olive Oil" class="object-cover w-full h-full mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwUxGwPx-XVI_MyEMl-IgLdPEbLxUNlVE4S2YwAljil8oHAxaDkLxblMTWtdOmwz59GATWBl0uYF38XoT9j-5QpRBA60cePEhsNtelVB-nkkp987XpwRuNIvlvunFKAdsAWIWmYVje0ifYcgGpkzgBPzb4nrDeNMEjA0_ZJVhGJZ8LQrJnSJrPg5om2IEgI6Bl96VMXSvoN53ja5wOM5QuUXYQhrxwI4mlxyGjYxENazd5P8fVSFRWT87eZOoXKSCXj4i5g3vUQi4"/>
+<div class="absolute top-1.5 left-1.5 bg-success text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[8px] fill">verified</span> Verified
+                            </div>
+</div>
+<div class="p-2.5 flex flex-col flex-grow">
+<h3 class="font-bold text-xs text-on-surface mb-1 line-clamp-2 leading-tight h-8">Artisan Heritage Olive Oil</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="text-[10px] font-bold text-on-surface">4.9</span>
+<span class="material-symbols-outlined fill text-warning text-[10px]">star</span>
+<span class="text-[10px] text-secondary">(2.1k)</span>
+</div>
+<div class="flex items-baseline gap-1.5 mb-2">
+<span class="font-bold text-sm text-on-surface">₹1,999</span>
+</div>
+<button aria-label="Add to cart" class="w-full bg-primary text-white font-bold text-xs py-2 rounded-lg mt-auto flex items-center justify-center gap-1 hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[14px]">add_shopping_cart</span> Add
+</button>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="min-w-[160px] md:min-w-0 bg-white rounded-xl overflow-hidden shadow-sm border border-surface-variant flex flex-col snap-start">
+<div class="relative aspect-square bg-neutral-light-gray p-3 flex items-center justify-center">
+<img alt="Pasture Raised Eggs" class="object-cover w-full h-full mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBi3LGdpymYKy0WhAb76q5XvuOZyk9FK7zww8Eu3G2t5Da6R7VFnYWk2VCCKayRycQrNPCnvecLwbRQnfEe4eH-0tR_70S1Pyn7cJtHWlGm8auUIVtwHwca2GANQWL2XpNlrXRzGEIo9spauti-okZCbdLPiMrhyc-M0vOiroOsgyXf3iFDksS9_zEE75_8kKotA5G-sfGEDtIgQMWS6kVN_OuJgfsQxQzY-5pg4IdosQAiQL8DxhIY-2p70VNCLRVYwCc0su9gn5o"/>
+<div class="absolute top-1.5 left-1.5 bg-success text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[8px] fill">verified</span> Verified
+                            </div>
+</div>
+<div class="p-2.5 flex flex-col flex-grow">
+<h3 class="font-bold text-xs text-on-surface mb-1 line-clamp-2 leading-tight h-8">Heritage Farm Pastured Eggs</h3>
+<div class="flex items-center gap-1 mb-2">
+<span class="text-[10px] font-bold text-on-surface">4.7</span>
+<span class="material-symbols-outlined fill text-warning text-[10px]">star</span>
+<span class="text-[10px] text-secondary">(4.2k)</span>
+</div>
+<div class="flex items-baseline gap-1.5 mb-2">
+<span class="font-bold text-sm text-on-surface">₹449</span>
+</div>
+<button aria-label="Add to cart" class="w-full bg-primary text-white font-bold text-xs py-2 rounded-lg mt-auto flex items-center justify-center gap-1 hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[14px]">add_shopping_cart</span> Add
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Why truzov & See the Proof (Mobile Stacked, Desktop Grid) -->
+<section class="py-6 bg-surface px-3 md:px-8 lg:px-20 border-t border-surface-variant">
+<div class="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+<!-- Why truzov (Process) -->
+<div class="lg:col-span-2 bg-white rounded-xl p-4 md:p-6 shadow-sm border border-surface-variant">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-sm font-bold text-on-surface">Why truzov?</h2>
+</div>
+<div class="flex overflow-x-auto md:grid md:grid-cols-4 gap-2 md:gap-4 no-scrollbar snap-x pb-1">
+<!-- Step 1 -->
+<div class="flex-shrink-0 w-[120px] md:w-auto snap-start bg-surface-container-low/50 p-2.5 rounded-lg border border-surface-variant/30">
+<div class="w-6 h-6 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary-container mb-1.5">
+<span class="material-symbols-outlined text-[14px]">eco</span>
+</div>
+<h4 class="text-[11px] font-bold text-on-surface mb-0.5">1. Sourced</h4>
+<p class="text-[9px] leading-tight text-secondary">Carefully sourced from trusted farmers</p>
+</div>
+<!-- Step 2 -->
+<div class="flex-shrink-0 w-[120px] md:w-auto snap-start bg-surface-container-low/50 p-2.5 rounded-lg border border-surface-variant/30">
+<div class="w-6 h-6 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary-container mb-1.5">
+<span class="material-symbols-outlined text-[14px]">science</span>
+</div>
+<h4 class="text-[11px] font-bold text-on-surface mb-0.5">2. Lab Tested</h4>
+<p class="text-[9px] leading-tight text-secondary">Every batch tested in NABL labs</p>
+</div>
+<!-- Step 3 -->
+<div class="flex-shrink-0 w-[120px] md:w-auto snap-start bg-surface-container-low/50 p-2.5 rounded-lg border border-surface-variant/30">
+<div class="w-6 h-6 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary-container mb-1.5">
+<span class="material-symbols-outlined text-[14px]">verified_user</span>
+</div>
+<h4 class="text-[11px] font-bold text-on-surface mb-0.5">3. Verified</h4>
+<p class="text-[9px] leading-tight text-secondary">We verify results for purity</p>
+</div>
+<!-- Step 4 -->
+<div class="flex-shrink-0 w-[120px] md:w-auto snap-start bg-surface-container-low/50 p-2.5 rounded-lg border border-surface-variant/30">
+<div class="w-6 h-6 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary-container mb-1.5">
+<span class="material-symbols-outlined text-[14px]">local_shipping</span>
+</div>
+<h4 class="text-[11px] font-bold text-on-surface mb-0.5">4. Delivered</h4>
+<p class="text-[9px] leading-tight text-secondary">Delivered with complete transparency</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-between items-center px-1.5 py-1.5 pb-5 md:hidden bg-white border-t border-surface-variant shadow-[0_-8px_16px_rgba(0,0,0,0.08)] z-50">
+<!-- Active Tab: Shop -->
+<a class="flex flex-col items-center justify-center text-primary-container bg-primary-container/10 rounded-xl py-1 px-3 flex-1 h-12" href="#">
+<span class="material-symbols-outlined text-[22px] mb-0.5 fill">storefront</span>
+<span class="text-[10px] font-bold tracking-wide">Shop</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:text-primary-container transition-colors py-1 px-3 flex-1 h-12" href="#">
+<span class="material-symbols-outlined text-[22px] mb-0.5">search</span>
+<span class="text-[10px] font-bold tracking-wide">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:text-primary-container transition-colors py-1 px-3 flex-1 h-12" href="#">
+<span class="material-symbols-outlined text-[22px] mb-0.5">verified_user</span>
+<span class="text-[10px] font-bold tracking-wide">Verify</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:text-primary-container transition-colors py-1 px-3 flex-1 h-12 relative" href="#">
+<span class="material-symbols-outlined text-[22px] mb-0.5">shopping_cart</span>
+<span class="absolute top-0.5 right-1/4 bg-error text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border-2 border-white">2</span>
+<span class="text-[10px] font-bold tracking-wide">Cart</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:text-primary-container transition-colors py-1 px-3 flex-1 h-12" href="#">
+<span class="material-symbols-outlined text-[22px] mb-0.5">person</span>
+<span class="text-[10px] font-bold tracking-wide">Account</span>
+</a>
+</nav>
+</body></html>

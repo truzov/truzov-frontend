@@ -1,0 +1,413 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Pure Honey - TRUZOV</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#002201",
+                      "warning": "#E0A800",
+                      "tertiary-container": "#b24073",
+                      "inverse-surface": "#2c322a",
+                      "secondary-container": "#ebe1d3",
+                      "surface-container-high": "#e5eade",
+                      "on-tertiary-fixed": "#3e0020",
+                      "surface-bright": "#f6fbef",
+                      "surface-container": "#eaf0e4",
+                      "primary-fixed-dim": "#81db74",
+                      "secondary": "#645e53",
+                      "primary": "#00600a",
+                      "outline-variant": "#bfcab8",
+                      "on-background": "#181d16",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed-dim": "#ffb0cc",
+                      "secondary-fixed-dim": "#cec5b8",
+                      "neutral-white": "#FFFFFF",
+                      "inverse-on-surface": "#edf3e6",
+                      "tertiary-fixed": "#ffd9e4",
+                      "outline": "#707a6b",
+                      "on-surface": "#181d16",
+                      "tertiary": "#93275a",
+                      "on-error-container": "#93000a",
+                      "on-secondary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "primary-container": "#1f7a1f",
+                      "on-surface-variant": "#404a3c",
+                      "on-secondary-fixed-variant": "#4c463c",
+                      "surface-tint": "#0d6e13",
+                      "surface-dim": "#d6dcd0",
+                      "success": "#218838",
+                      "surface": "#f6fbef",
+                      "on-primary-container": "#adff9d",
+                      "neutral-mid-gray": "#CCCCCC",
+                      "secondary-fixed": "#ebe1d3",
+                      "accent-link": "#477DCA",
+                      "surface-container-low": "#f0f5e9",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary-fixed": "#1f1b13",
+                      "neutral-light-gray": "#F0F0F0",
+                      "surface-variant": "#dfe4d8",
+                      "on-tertiary-container": "#ffe5eb",
+                      "on-tertiary-fixed-variant": "#841a4f",
+                      "neutral-dark-gray": "#333333",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#6a6459",
+                      "error": "#C82333",
+                      "background": "#f6fbef",
+                      "surface-container-highest": "#dfe4d8",
+                      "primary-fixed": "#9cf88d",
+                      "on-primary-fixed-variant": "#005308",
+                      "inverse-primary": "#81db74"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin": "20px",
+                      "xs": "4px",
+                      "md": "16px",
+                      "xxl": "64px",
+                      "gutter": "24px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "sm": "8px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "h4": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "h6-bold": [
+                              "Inter"
+                      ],
+                      "h3": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Inter"
+                      ],
+                      "h2": [
+                              "Inter"
+                      ],
+                      "caption": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "h5-bold": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "h4": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h6-bold": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h3": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h2": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h5-bold": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background pb-32"><div class="w-full h-1 bg-primary"></div>
+<!-- Mobile Header (Contextual - Sub-page with Back button, suppressing TopNav and BottomNav) -->
+<header class="sticky top-0 z-50 bg-neutral-white border-b border-neutral-light-gray px-4 py-3 flex justify-between items-center shadow-sm"><div class="flex items-center gap-2 w-full">
+<button class="text-on-background flex items-center justify-center p-2 rounded-full hover:bg-neutral-light-gray transition-colors shrink-0">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<img alt="TRUZOV Logo" class="h-6 shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5xZqv8D4SqfAd1sNhqorFpqdArRVswt5dd2BLGzig4sSsbd7N2tK1BTPGi9fDMo7wdks97HSpSe_TB5JJvFP3_T8pFFx_CYUfj9lQUL5yViDUMeRdypWL6V2NOuQr3CxLha8pVM7MPHYzmRcquVM-5sSaJGDP1mDTRJvSQQq746wb4sA356mFenFo9z_eaFt_iFBQp0RUXVzkOpmqikJZbKgcmqX9I7Uv2VSExpTMXPlFOjM4SxuiN8vkFwvP-I0NNBF3-0Oildg">
+<div class="flex-1 mx-2">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2 text-secondary text-[20px]">search</span>
+<input class="w-full pl-8 pr-3 py-1.5 bg-neutral-light-gray/50 border-none rounded-full text-caption focus:ring-1 focus:ring-primary-container" placeholder="Search..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="text-on-background p-2 rounded-full hover:bg-neutral-light-gray transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+<button class="text-on-background p-2 rounded-full hover:bg-neutral-light-gray transition-colors relative">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shopping_cart</span>
+<span class="absolute top-1 right-1 bg-primary-container text-on-primary font-caption text-[10px] w-4 h-4 rounded-full flex items-center justify-center">2</span>
+</button>
+</div>
+</div></header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-md mx-auto bg-neutral-white shadow-[0px_4px_12px_rgba(0,0,0,0.05)] pb-xl relative">
+<!-- Breadcrumbs -->
+<nav class="px-md py-sm bg-neutral-light-gray/50 flex items-center gap-xs font-caption text-caption text-secondary">
+<span class="">Home</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="">Marketplace</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="font-medium text-on-surface">Honey</span>
+</nav>
+<!-- Product Hero Image -->
+<div class="relative w-full aspect-square bg-surface-container-lowest">
+<img alt="Pure Honey" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/ADBb0uibgxCAOLDuTOHW7FKvdjanP5Q5R282uqlvXFxKuJcMxNFKdT2LO5JPxUWJiPS9up7KLW5tHM7DtHc95zROK69bqho7VCbdsv73M40jmyX690SCKXZTmUBKKUmDXOI0EIeDH5kWApZdxeqTCfs5yxLABRUrT_LYn_WDK3Ksj5sQG659wwIz23Tr-XJ5OMuezDNQpqhSWYiTQJs02LD95OxQ7VcsQ2QeX8_ixPDymKvjdwtbal2yiU-XE4k">
+<!-- Pagination Indicator -->
+<div class="absolute bottom-md left-1/2 -translate-x-1/2 flex gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary-container"></div>
+<div class="w-2 h-2 rounded-full bg-neutral-mid-gray"></div>
+<div class="w-2 h-2 rounded-full bg-neutral-mid-gray"></div>
+</div>
+<!-- Floating Actions -->
+<div class="absolute top-md right-md flex flex-col gap-sm">
+<button class="w-10 h-10 rounded-full bg-neutral-white shadow-sm flex items-center justify-center text-on-surface hover:text-tertiary text-primary" title="Add to Wishlist">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">favorite</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-neutral-white shadow-sm flex items-center justify-center text-on-surface hover:text-accent-link">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">share</span>
+</button>
+</div>
+</div>
+<!-- Product Info Area -->
+<div class="p-md flex flex-col gap-sm border-b border-neutral-light-gray">
+<!-- Trust Badge -->
+<div class="flex items-center gap-xs bg-surface-bright border border-inverse-primary rounded p-xs w-max">
+<span class="material-symbols-outlined text-primary-container text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-label-sm text-primary-container">Lab Verified Authentic</span>
+</div>
+<!-- Title & Ratings -->
+<h1 class="font-h2 text-h2 text-on-surface mt-xs">Pure Honey (500g)</h1>
+<div class="flex items-center gap-xs mt-[-4px]">
+<div class="flex text-warning">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<span class="font-caption text-caption text-secondary">(1,248 reviews)</span>
+</div>
+<!-- Price -->
+<div class="flex items-end gap-sm mt-sm">
+<span class="font-h1 text-h1 text-on-surface">₹499</span>
+<span class="font-body-md text-body-md text-secondary line-through mb-[4px]">₹749</span>
+<span class="font-h6-bold text-h6-bold text-tertiary mb-[4px]">33% OFF</span>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-neutral-light-gray sticky top-[60px] bg-neutral-white z-40">
+<button class="flex-1 py-sm font-label-sm text-label-sm text-secondary text-center hover:bg-neutral-light-gray/50 transition-colors">Product Details</button>
+<button class="flex-1 py-sm font-label-sm text-label-sm text-primary-container border-b-2 border-primary-container text-center bg-surface-container-low">Lab Report</button>
+<button class="flex-1 py-sm font-label-sm text-label-sm text-secondary text-center hover:bg-neutral-light-gray/50 transition-colors">Reviews</button>
+</div>
+<!-- Tab Content: Lab Report (Active) -->
+<div class="p-md bg-surface-container-lowest">
+<h2 class="font-h4 text-h4 text-on-surface mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 0;">biotech</span>
+                Verification Summary
+            </h2>
+<div class="border border-neutral-mid-gray rounded-lg overflow-hidden bg-neutral-white">
+<table class="w-full text-left border-collapse">
+<thead class="bg-neutral-light-gray font-label-sm text-label-sm text-on-surface uppercase border-b border-neutral-mid-gray">
+<tr>
+<th class="py-sm px-sm font-semibold">Parameter</th>
+<th class="py-sm px-sm font-semibold">Result</th>
+</tr>
+</thead>
+<tbody class="font-caption text-caption text-on-surface">
+<tr class="border-b border-neutral-light-gray hover:bg-secondary-container/30 transition-colors">
+<td class="py-sm px-sm text-secondary">Heavy Metals</td>
+<td class="py-sm px-sm font-medium text-success flex items-center gap-1">ND <span class="material-symbols-outlined text-[14px]">check_circle</span></td>
+</tr>
+<tr class="border-b border-neutral-light-gray hover:bg-secondary-container/30 transition-colors">
+<td class="py-sm px-sm text-secondary">Pesticide Residue</td>
+<td class="py-sm px-sm font-medium text-success flex items-center gap-1">ND <span class="material-symbols-outlined text-[14px]">check_circle</span></td>
+</tr>
+<tr class="hover:bg-secondary-container/30 transition-colors">
+<td class="py-sm px-sm text-secondary">Antibiotics</td>
+<td class="py-sm px-sm font-medium text-success flex items-center gap-1">Absent <span class="material-symbols-outlined text-[14px]">check_circle</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<button class="mt-md w-full py-sm px-md flex items-center justify-center gap-sm border border-primary-container text-primary-container rounded font-h6-bold text-h6-bold hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">description</span>
+                Download Full Lab Report (PDF)
+            </button>
+</div>
+<!-- Ingredients & Certifications Grid -->
+<div class="px-md py-lg grid grid-cols-2 gap-md bg-neutral-light-gray/30 border-t border-b border-neutral-light-gray">
+<div class="bg-neutral-white p-sm border border-neutral-mid-gray rounded shadow-sm">
+<h3 class="font-label-sm text-label-sm text-secondary uppercase tracking-widest mb-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">egg</span> Ingredients
+                </h3>
+<p class="font-body-md text-body-md text-on-surface">100% Raw Honey</p>
+</div>
+<div class="bg-neutral-white p-sm border border-neutral-mid-gray rounded shadow-sm">
+<h3 class="font-label-sm text-label-sm text-secondary uppercase tracking-widest mb-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">military_tech</span> Certifications
+                </h3>
+<div class="flex flex-col gap-1 font-caption text-caption text-on-surface">
+<span class="flex items-center gap-xs"><span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>FSSAI</span>
+<span class="flex items-center gap-xs"><span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>ISO 22000</span>
+</div>
+</div>
+</div>
+<!-- Similar Verified Products -->
+<div class="py-lg bg-neutral-white">
+<div class="px-md mb-md flex justify-between items-end">
+<h2 class="font-h3 text-h3 text-on-surface">Similar Verified Products</h2>
+<a class="font-label-sm text-label-sm text-accent-link hover:underline" href="#">View All</a>
+</div>
+<div class="flex overflow-x-auto hide-scrollbar gap-md px-md pb-sm">
+<!-- Product Card 1 -->
+<div class="flex-none w-40 flex flex-col gap-xs group">
+<div class="relative w-full aspect-square bg-neutral-light-gray rounded border border-neutral-mid-gray overflow-hidden">
+<div class="w-full h-full bg-gradient-to-br from-secondary-container to-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-secondary opacity-50">shopping_bag</span>
+</div>
+<div class="absolute top-1 left-1 bg-surface-bright rounded p-[2px] shadow-sm border border-inverse-primary">
+<span class="material-symbols-outlined text-primary-container text-[12px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div>
+<h4 class="font-h6-bold text-h6-bold text-on-surface truncate">Ceylon Cinnamon</h4>
+<div class="flex items-center justify-between mt-[2px]">
+<span class="font-body-md text-body-md font-medium text-on-surface">₹299</span>
+<div class="flex items-center text-warning text-[10px]">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">star</span> 4.8
+                            </div>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="flex-none w-40 flex flex-col gap-xs group">
+<div class="relative w-full aspect-square bg-neutral-light-gray rounded border border-neutral-mid-gray overflow-hidden">
+<div class="w-full h-full bg-gradient-to-br from-tertiary-container/30 to-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-secondary opacity-50">shopping_bag</span>
+</div>
+<div class="absolute top-1 left-1 bg-surface-bright rounded p-[2px] shadow-sm border border-inverse-primary">
+<span class="material-symbols-outlined text-primary-container text-[12px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div>
+<h4 class="font-h6-bold text-h6-bold text-on-surface truncate">Premium Saffron</h4>
+<div class="flex items-center justify-between mt-[2px]">
+<span class="font-body-md text-body-md font-medium text-on-surface">₹899</span>
+<div class="flex items-center text-warning text-[10px]">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">star</span> 4.9
+                            </div>
+</div>
+</div>
+</div>
+<!-- Spacer for scroll padding -->
+<div class="flex-none w-2"></div>
+</div>
+</div>
+</main>
+<!-- Sticky Action Bar (Fixed Bottom) -->
+<div class="fixed bottom-0 left-0 w-full bg-neutral-white border-t border-neutral-light-gray p-sm flex items-center justify-center shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50">
+<div class="w-full max-w-md flex items-center gap-sm">
+<!-- Quantity Selector -->
+<div class="flex items-center justify-between border border-neutral-mid-gray rounded bg-neutral-white w-24 h-12">
+<button class="w-8 h-full flex items-center justify-center text-secondary hover:bg-neutral-light-gray transition-colors">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<span class="font-h6-bold text-h6-bold text-on-surface">1</span>
+<button class="w-8 h-full flex items-center justify-center text-secondary hover:bg-neutral-light-gray transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-1 gap-sm h-12">
+<button class="flex-1 border border-primary-container text-primary-container font-h6-bold text-h6-bold rounded flex items-center justify-center gap-xs hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 0;">add_shopping_cart</span>Add to Cart</button><button class="flex-1 bg-surface-container-low text-primary-container border border-primary-container font-h6-bold text-h6-bold rounded flex items-center justify-center gap-xs hover:bg-neutral-light-gray transition-colors">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 0;">bolt</span>Buy Now</button>
+</div>
+</div>
+</div>
+
+
+
+
+</body></html>

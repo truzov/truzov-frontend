@@ -1,0 +1,260 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>truzov - Order Confirmation</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#645e53",
+                        "on-tertiary-fixed": "#3e0020",
+                        "tertiary-container": "#b24073",
+                        "background": "#f6fbef",
+                        "surface-bright": "#f6fbef",
+                        "neutral-mid-gray": "#CCCCCC",
+                        "surface-dim": "#d6dcd0",
+                        "on-surface": "#181d16",
+                        "tertiary": "#93275a",
+                        "primary": "#00600a",
+                        "inverse-surface": "#2c322a",
+                        "surface-container-high": "#e5eade",
+                        "tertiary-fixed": "#ffd9e4",
+                        "on-secondary-container": "#6a6459",
+                        "on-tertiary-container": "#ffe5eb",
+                        "neutral-white": "#FFFFFF",
+                        "on-primary-container": "#adff9d",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#81db74",
+                        "warning": "#E0A800",
+                        "primary-fixed": "#9cf88d",
+                        "tertiary-fixed-dim": "#ffb0cc",
+                        "primary-container": "#1f7a1f",
+                        "surface": "#f6fbef",
+                        "on-primary-fixed": "#002201",
+                        "outline": "#707a6b",
+                        "surface-container-highest": "#dfe4d8",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#ebe1d3",
+                        "outline-variant": "#bfcab8",
+                        "on-tertiary-fixed-variant": "#841a4f",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#4c463c",
+                        "on-surface-variant": "#404a3c",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f0f5e9",
+                        "surface-variant": "#dfe4d8",
+                        "surface-container": "#eaf0e4",
+                        "neutral-dark-gray": "#333333",
+                        "accent-link": "#477DCA",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#cec5b8",
+                        "error": "#C82333",
+                        "inverse-primary": "#81db74",
+                        "secondary-container": "#ebe1d3",
+                        "neutral-light-gray": "#F0F0F0",
+                        "on-background": "#181d16",
+                        "success": "#218838",
+                        "on-secondary-fixed": "#1f1b13",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#005308",
+                        "inverse-on-surface": "#edf3e6",
+                        "surface-tint": "#0d6e13"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "margin": "20px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "xxl": "64px",
+                        "md": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "h6-bold": ["Inter"],
+                        "h5-bold": ["Inter"],
+                        "caption": ["Inter"],
+                        "h4": ["Inter"],
+                        "body-md": ["Inter"],
+                        "h2": ["Inter"],
+                        "h3": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "h1": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h6-bold": ["14px", { "lineHeight": "1.5", "fontWeight": "700" }],
+                        "h5-bold": ["16px", { "lineHeight": "1.5", "fontWeight": "700" }],
+                        "caption": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "h4": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "h2": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "h3": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "h1": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md text-body-md antialiased min-h-screen flex flex-col">
+<!-- Main Canvas -->
+<main class="flex-grow max-w-[1440px] w-full mx-auto px-margin py-xxl flex flex-col items-center">
+<!-- Success Header -->
+<div class="flex flex-col items-center text-center max-w-2xl w-full mb-xl gap-sm">
+<div class="w-xxl h-xxl bg-surface-container rounded-full flex items-center justify-center mb-sm">
+<span class="material-symbols-outlined icon-fill text-primary" data-icon="check_circle" style="font-size: 32px;">check_circle</span>
+</div>
+<h1 class="font-h1 text-h1 text-on-surface">Order Confirmed</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">
+                Thank you for choosing <span class="font-bold lowercase tracking-tight"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuClnqjV13DWgz0Mf2kHv0V72mLZUlSw7KMT2W99aeeA2_Axxk3A63Gi2tGb_gdco5KiTLye_eXtzpIkBilm-Y6qXogB7LjjqVyb3a09QLsxojCLptY0dPE0YWEmBt96krwj4os6x-LzyxSRSUS8ab-jr0zB31TX_w2dRfLRvwlSaAx-tHnAYSpvkkW9unalLm0jYBtAZym_yTYc07ngPe1lwDufn9ZZQVIV9_NqSXoDk90Mw6Mgk1cyUX6kK4N6Qceuo26WMql5hAE" alt="truzov logo" class="inline-block h-[1.2em] w-auto align-middle"></span>. Your verified health products are being prepared for secure shipment. A confirmation email with lab certificates has been sent.
+            </p>
+<div class="flex items-center gap-sm bg-surface-container-high px-md py-sm rounded-lg border border-outline-variant">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Order Number</span>
+<span class="font-h5-bold text-h5-bold text-on-surface">#TRZ-8472910</span>
+</div>
+</div>
+<!-- Order Details Bento Grid -->
+<div class="w-full max-w-5xl flex flex-col md:flex-row gap-lg">
+<!-- Left Column: Order Items -->
+<section class="flex-1 flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-lg">
+<div class="flex justify-between items-end mb-lg pb-md border-b border-surface-variant">
+<h2 class="font-h3 text-h3 text-on-surface">Items Summary</h2>
+<span class="font-caption text-caption text-on-surface-variant">2 Items</span>
+</div>
+<div class="flex flex-col gap-md">
+<!-- Item 1 -->
+<article class="flex gap-md py-md border-b border-surface-container last:border-0">
+<img alt="Premium Ashwagandha Root Extract" class="w-24 h-24 bg-surface-container rounded-lg object-cover border border-outline-variant mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaNBxwWK3LQD2U-Z7bsWt20Fjh7DIN2PxAAvsK3El8-RK24MfDYiwJbCzI1wBfEdqJqGhqsfaAf09Veh92PjMb2WOIWBP5xousqouVHLijB8GZQ_zD8cnrYevgiSxrIHVJDbQi-bbgwSXdPsfGZhZoB58dfw_kFdXzFHDJlru7iOQ1JHgbSj1BlJT_NZqX5tgYtR0fAnFqcBCwy2UMKzDq1IPU4G-PSjqJz_Db-kCD3pJhGebHIa1qm3RvnWiXecCz2RHdWEAYxpw">
+<div class="flex-1 flex flex-col gap-xs">
+<div class="flex justify-between items-start gap-sm">
+<h3 class="font-h5-bold text-h5-bold text-on-surface">Premium Ashwagandha Root Extract</h3>
+<span class="font-h4 text-h4 text-on-surface whitespace-nowrap">₹1,250.00</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant">60 Capsules • 500mg • KSM-66</p>
+<div class="flex items-center justify-between mt-auto pt-xs">
+<div class="flex items-center gap-xs bg-surface-container-low px-sm py-xs rounded text-primary border border-primary-fixed-dim">
+<span class="material-symbols-outlined icon-fill text-[14px]" data-icon="verified">verified</span>
+<span class="font-label-sm text-label-sm">Lab Verified</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant">Qty: 1</span>
+</div>
+</div>
+</article>
+<!-- Item 2 -->
+<article class="flex gap-md py-md border-b border-surface-container last:border-0">
+<img alt="Complete Blood Panel Home Kit" class="w-24 h-24 bg-surface-container rounded-lg object-cover border border-outline-variant mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDd-3vpVivh2vLbPe4oiR2SSEU-F9WCqAKmVoTbOamKAI0sY2t-mV_MvqLlqMrNWIakUWYwZQbewFgaI0DSE6hjhyArvT7ZXLaLohw93UT5TF9-hLd47PD4xEbqQc3XXGdBSbxfEBgFY_GMmepgnIsHL8z6bHClnVxoE2vxSOzf6cskja0nhvbnwNPAX-A97tcMtWZ2PuZCNOq4L-aXEEhpgXkjJ2SfjM6eU_zaQe_949i1qvz5twcUgaQt2NlU4dEqSVd9KT-2M5s">
+<div class="flex-1 flex flex-col gap-xs">
+<div class="flex justify-between items-start gap-sm">
+<h3 class="font-h5-bold text-h5-bold text-on-surface">Complete Blood Panel Home Kit</h3>
+<span class="font-h4 text-h4 text-on-surface whitespace-nowrap">₹2,800.00</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant">Comprehensive 42-marker analysis</p>
+<div class="flex items-center justify-between mt-auto pt-xs">
+<div class="flex items-center gap-xs bg-surface-container-low px-sm py-xs rounded text-primary border border-primary-fixed-dim">
+<span class="material-symbols-outlined icon-fill text-[14px]" data-icon="verified">verified</span>
+<span class="font-label-sm text-label-sm">NABL Accredited</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant">Qty: 1</span>
+</div>
+</div>
+</article>
+</div>
+</section>
+<!-- Right Column: Summary & Actions -->
+<aside class="w-full md:w-[320px] lg:w-[360px] flex flex-col gap-lg shrink-0">
+<!-- Payment Summary -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-lg flex flex-col">
+<h2 class="font-h3 text-h3 text-on-surface mb-md">Payment Summary</h2>
+<div class="flex flex-col gap-sm font-body-md text-body-md text-on-surface-variant mb-md pb-md border-b border-surface-variant">
+<div class="flex justify-between">
+<span class="">Subtotal</span>
+<span class="text-on-surface">₹4,050.00</span>
+</div>
+<div class="flex justify-between">
+<span class="">Shipping</span>
+<span class="text-on-surface">₹0.00</span>
+</div>
+<div class="flex justify-between">
+<span class="">Taxes (Included)</span>
+<span class="text-on-surface">₹200.00</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-h4 text-h4 text-on-surface">Total Paid</span>
+<span class="font-h2 text-h2 text-primary">₹4,250.00</span>
+</div>
+</div>
+<!-- Shipping Address -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-lg flex flex-col">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="local_shipping">local_shipping</span>
+<h2 class="font-h5-bold text-h5-bold text-on-surface">Shipping Address</h2>
+</div>
+<address class="font-body-md text-body-md text-on-surface-variant not-italic flex flex-col gap-xs">
+<span class="font-semibold text-on-surface">Dr. Rahul Sharma</span>
+<span class="">Clinic Block B, 4th Floor</span>
+<span class="">Apollo Health City Campus</span>
+<span class="">Jubilee Hills, Hyderabad</span>
+<span class="">Telangana, 500033</span>
+<span class="mt-xs">Phone: +91 98765 43210</span>
+</address>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-sm mt-sm">
+<button class="w-full bg-primary text-on-primary font-h6-bold text-h6-bold py-[12px] px-md rounded-lg hover:bg-on-primary-fixed-variant transition-colors flex justify-center items-center gap-sm">
+<span class="">Continue Shopping</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full bg-transparent text-primary font-h6-bold text-h6-bold py-[12px] px-md rounded-lg border border-primary hover:bg-surface-container transition-colors flex justify-center items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+<span class="">Download Invoice</span>
+</button>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer Component -->
+<footer class="bg-surface border-t border-outline-variant w-full pt-xxl pb-xl px-margin font-body-md">
+
+<!-- Bottom Bar -->
+<div class="max-w-7xl mx-auto mt-xxl pt-xl border-t border-outline-variant">
+<p class="text-center text-on-surface-variant text-caption">
+            © 2026 truzov Verification Health. All Lab Reports ISO/IEC 17025 Certified.
+        </p>
+</div>
+</footer>
+
+
+
+
+
+
+</body></html>

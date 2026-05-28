@@ -1,0 +1,353 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>TRUZOV - Address Selection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed-variant": "#841a4f",
+                      "accent-link": "#477DCA",
+                      "on-tertiary-fixed": "#3e0020",
+                      "inverse-on-surface": "#edf3e6",
+                      "neutral-dark-gray": "#333333",
+                      "inverse-surface": "#2c322a",
+                      "neutral-white": "#FFFFFF",
+                      "error": "#C82333",
+                      "primary": "#00600a",
+                      "on-secondary-container": "#6a6459",
+                      "on-primary-fixed-variant": "#005308",
+                      "outline-variant": "#bfcab8",
+                      "surface-bright": "#f6fbef",
+                      "tertiary-fixed": "#ffd9e4",
+                      "on-error-container": "#93000a",
+                      "surface-variant": "#dfe4d8",
+                      "surface-dim": "#d6dcd0",
+                      "primary-fixed": "#9cf88d",
+                      "surface-tint": "#0d6e13",
+                      "primary-fixed-dim": "#81db74",
+                      "on-tertiary-container": "#ffe5eb",
+                      "surface-container-low": "#f0f5e9",
+                      "surface-container-high": "#e5eade",
+                      "tertiary-fixed-dim": "#ffb0cc",
+                      "on-secondary": "#ffffff",
+                      "neutral-light-gray": "#F0F0F0",
+                      "on-error": "#ffffff",
+                      "surface-container-highest": "#dfe4d8",
+                      "secondary-container": "#ebe1d3",
+                      "on-surface-variant": "#404a3c",
+                      "surface-container": "#eaf0e4",
+                      "tertiary-container": "#b24073",
+                      "on-secondary-fixed": "#1f1b13",
+                      "secondary": "#645e53",
+                      "surface-container-lowest": "#ffffff",
+                      "warning": "#E0A800",
+                      "secondary-fixed": "#ebe1d3",
+                      "success": "#218838",
+                      "on-tertiary": "#ffffff",
+                      "primary-container": "#1f7a1f",
+                      "on-primary-fixed": "#002201",
+                      "secondary-fixed-dim": "#cec5b8",
+                      "neutral-mid-gray": "#CCCCCC",
+                      "error-container": "#ffdad6",
+                      "on-surface": "#181d16",
+                      "surface": "#f6fbef",
+                      "outline": "#707a6b",
+                      "on-primary-container": "#adff9d",
+                      "background": "#f6fbef",
+                      "tertiary": "#93275a",
+                      "inverse-primary": "#81db74",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed-variant": "#4c463c",
+                      "on-background": "#181d16"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "xs": "4px",
+                      "base": "4px",
+                      "xxl": "64px",
+                      "gutter": "24px",
+                      "margin": "20px"
+              },
+              "fontFamily": {
+                      "caption": [
+                              "Inter"
+                      ],
+                      "h3": [
+                              "Inter"
+                      ],
+                      "h4": [
+                              "Inter"
+                      ],
+                      "h2": [
+                              "Inter"
+                      ],
+                      "h6-bold": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "h5-bold": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h3": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h4": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h2": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h6-bold": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h5-bold": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h1": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-neutral-light-gray text-on-surface font-body-md min-h-screen pb-32">
+<!-- Top App Bar Group -->
+<header class="bg-neutral-white shadow-sm sticky top-0 z-50">
+<!-- Trust Utility Bar -->
+<div class="bg-surface-container py-sm px-margin flex items-center justify-between">
+<div class="flex items-center gap-sm text-primary-container font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+                Lab Tested Products
+            </div>
+<div class="flex items-center gap-sm text-primary-container font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                Secure Shipping
+            </div>
+</div>
+<!-- Main Brand Header -->
+<div class="flex justify-between items-center px-6 py-3 w-full border-b border-slate-200">
+<div class="flex items-center gap-md">
+<button aria-label="Go back" class="text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="text-2xl font-black tracking-tighter text-green-800">TRUZOV</div>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-slate-600">account_circle</span>
+<span class="material-symbols-outlined text-slate-600">shopping_cart</span>
+</div>
+</div>
+<!-- Checkout Stepper -->
+<div class="py-md px-margin border-b border-neutral-mid-gray">
+<div class="flex items-center justify-between max-w-[300px] mx-auto relative">
+<!-- Line background -->
+<div class="absolute top-1/2 left-0 w-full h-[2px] bg-neutral-mid-gray -z-10 -translate-y-1/2"></div>
+<!-- Active Line -->
+<div class="absolute top-1/2 left-0 w-1/2 h-[2px] bg-primary-container -z-10 -translate-y-1/2"></div>
+<!-- Step 1: Bag -->
+<div class="flex flex-col items-center gap-xs bg-neutral-white px-xs">
+<div class="w-6 h-6 rounded-full bg-primary-container text-neutral-white flex items-center justify-center font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary-container">BAG</span>
+</div>
+<!-- Step 2: Address (Active) -->
+<div class="flex flex-col items-center gap-xs bg-neutral-white px-xs">
+<div class="w-6 h-6 rounded-full border-2 border-primary-container text-primary-container flex items-center justify-center font-label-sm text-label-sm bg-neutral-white">
+                        2
+                    </div>
+<span class="font-label-sm text-label-sm text-primary-container font-bold">ADDRESS</span>
+</div>
+<!-- Step 3: Payment -->
+<div class="flex flex-col items-center gap-xs bg-neutral-white px-xs">
+<div class="w-6 h-6 rounded-full border-2 border-neutral-mid-gray text-neutral-mid-gray flex items-center justify-center font-label-sm text-label-sm bg-neutral-white">
+                        3
+                    </div>
+<span class="font-label-sm text-label-sm text-neutral-mid-gray">PAYMENT</span>
+</div>
+</div>
+</div>
+</header>
+<main class="px-margin py-lg space-y-lg">
+<!-- Deliver To Header & Add Action -->
+<div class="flex justify-between items-center">
+<h2 class="font-h4 text-h4 text-neutral-dark-gray">Deliver to</h2>
+<button class="flex items-center gap-xs text-primary-container font-h6-bold text-h6-bold border border-primary-container rounded px-md py-sm hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                ADD NEW ADDRESS
+            </button>
+</div>
+<!-- Saved Addresses List -->
+<div class="space-y-md">
+<!-- Default Address (Selected) -->
+<label class="block relative bg-neutral-white border border-primary-container rounded-lg p-md shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+<!-- Selection Radio -->
+<div class="absolute top-md left-md">
+<input checked="" class="w-5 h-5 text-primary-container border-neutral-mid-gray focus:ring-primary-container cursor-pointer mt-1" name="address_selection" type="radio">
+</div>
+<div class="ml-xl">
+<div class="flex items-center justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<span class="font-h5-bold text-h5-bold text-neutral-dark-gray">Darrell Steward</span>
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider">Home</span>
+<span class="bg-primary-container text-neutral-white font-label-sm text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider">Default</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md leading-relaxed">
+                        Flat 402, Pinnacle Heights, MG Road,<br>
+                        Near Metro Station, Indiranagar,<br>
+                        Bengaluru, Karnataka - 560038
+                    </p>
+<p class="font-body-md text-body-md text-neutral-dark-gray mb-md">
+<span class="text-on-surface-variant">Mobile:</span> <span class="font-semibold">+91 98765 43210</span>
+</p>
+<div class="flex items-center gap-lg border-t border-neutral-light-gray pt-md mt-sm">
+<button class="text-accent-link font-h6-bold text-h6-bold uppercase hover:underline">Edit</button>
+<div class="w-px h-4 bg-neutral-mid-gray"></div>
+<button class="text-error font-h6-bold text-h6-bold uppercase hover:underline">Remove</button>
+</div>
+</div>
+</label>
+<h3 class="font-h5-bold text-h5-bold text-neutral-dark-gray pt-md">Other Addresses</h3>
+<!-- Other Address (Unselected) -->
+<label class="block relative bg-neutral-white border border-neutral-mid-gray rounded-lg p-md shadow-sm cursor-pointer hover:border-outline-variant transition-colors">
+<!-- Selection Radio -->
+<div class="absolute top-md left-md">
+<input class="w-5 h-5 text-primary-container border-neutral-mid-gray focus:ring-primary-container cursor-pointer mt-1" name="address_selection" type="radio">
+</div>
+<div class="ml-xl">
+<div class="flex items-center justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<span class="font-h5-bold text-h5-bold text-neutral-dark-gray">Darrell Steward</span>
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider">Work</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md leading-relaxed">
+                        Tech Park Tower B, 8th Floor,<br>
+                        Outer Ring Road, Marathahalli,<br>
+                        Bengaluru, Karnataka - 560037
+                    </p>
+<p class="font-body-md text-body-md text-neutral-dark-gray mb-md">
+<span class="text-on-surface-variant">Mobile:</span> <span class="font-semibold">+91 98765 43210</span>
+</p>
+<div class="flex items-center gap-lg border-t border-neutral-light-gray pt-md mt-sm">
+<button class="text-accent-link font-h6-bold text-h6-bold uppercase hover:underline">Edit</button>
+<div class="w-px h-4 bg-neutral-mid-gray"></div>
+<button class="text-error font-h6-bold text-h6-bold uppercase hover:underline">Remove</button>
+</div>
+</div>
+</label>
+</div>
+</main>
+<!-- Sticky Bottom Section (Price Details & CTA) -->
+<div class="fixed bottom-[60px] left-0 w-full bg-neutral-white border-t border-neutral-mid-gray shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 p-margin pb-lg">
+<div class="mb-lg space-y-sm">
+<h3 class="font-h6-bold text-h6-bold text-neutral-dark-gray mb-md">Price Details</h3>
+<div class="flex justify-between font-body-md text-body-md text-on-surface-variant">
+<span>Total MRP</span>
+<span>₹ 3,499.00</span>
+</div>
+<div class="flex justify-between font-body-md text-body-md text-success">
+<span>Discount</span>
+<span>- ₹ 500.00</span>
+</div>
+<div class="flex justify-between font-body-md text-body-md text-on-surface-variant">
+<span>Shipping</span>
+<span class="text-success uppercase font-semibold">Free</span>
+</div>
+<div class="border-t border-neutral-light-gray my-md"></div>
+<div class="flex justify-between items-center">
+<span class="font-h4 text-h4 text-neutral-dark-gray">Total Amount</span>
+<span class="font-h4 text-h4 text-neutral-dark-gray">₹ 2,999.00</span>
+</div>
+</div>
+<button class="w-full bg-primary-container text-neutral-white font-h5-bold text-h5-bold py-md rounded-lg shadow-sm hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-sm">
+            CONTINUE TO PAYMENT
+            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</body></html>
