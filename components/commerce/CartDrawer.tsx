@@ -13,7 +13,7 @@ export function CartDrawer() {
   const open = useUiStore((state) => state.cartOpen);
   const closeCart = useUiStore((state) => state.closeCart);
   const items = useCartStore((state) => state.items);
-  const itemCount = useCartStore((state) => state.itemCount());
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <Drawer open={open} title={`Your Cart (${itemCount})`} onClose={closeCart}>
@@ -34,7 +34,11 @@ export function CartDrawer() {
               ))}
             </div>
             <OrderSummary />
-            <Link className="text-center text-sm font-semibold text-brand-primary" href="/products" onClick={closeCart}>
+            <Link
+              className="text-center text-sm font-semibold text-brand-primary"
+              href="/products"
+              onClick={closeCart}
+            >
               Continue Shopping
             </Link>
           </>

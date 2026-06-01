@@ -24,7 +24,7 @@ export function ProductCard({
 }) {
   const addItem = useCartStore((state) => state.addItem);
   const toggleWishlist = useWishlistStore((state) => state.toggle);
-  const wished = useWishlistStore((state) => state.has(product.id));
+  const wished = useWishlistStore((state) => state.ids.includes(product.id));
   const addToast = useUiStore((state) => state.addToast);
 
   const addToCart = () => {

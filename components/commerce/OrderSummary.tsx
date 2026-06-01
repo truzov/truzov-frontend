@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useCartStore } from '@/store/cart.store';
-import { formatCurrency } from '@/lib/utils/money';
+import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 
 export function OrderSummary({ checkoutHref = '/checkout/address' }: { checkoutHref?: string }) {
+  const items = useCartStore((state) => state.items);
   const coupon = useCartStore((state) => state.coupon);
   const applyCoupon = useCartStore((state) => state.applyCoupon);
-  const totals = useCartStore((state) => state.totals());
-  const itemCount = useCartStore((state) => state.itemCount());
+  const totals = calculateCartTotals(items, coupon);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <aside className="rounded-lg border border-surface-border bg-surface-base p-5 shadow-xs">
@@ -49,7 +50,12 @@ export function OrderSummary({ checkoutHref = '/checkout/address' }: { checkoutH
           void applyCoupon(code || 'TRUZOV10');
         }}
       >
-        <Input aria-label="Promo code" className="h-10" name="coupon" placeholder={coupon ?? 'TRUZOV10'} />
+        <Input
+          aria-label="Promo code"
+          className="h-10"
+          name="coupon"
+          placeholder={coupon ?? 'TRUZOV10'}
+        />
         <Button size="md" type="submit" variant="outline">
           Apply
         </Button>

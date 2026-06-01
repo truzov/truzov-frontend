@@ -38,7 +38,7 @@ import {
   reviews,
 } from '@/lib/data/fixtures';
 import { filterProducts, type ProductFilterState } from '@/lib/utils/filters';
-import { formatCurrency } from '@/lib/utils/money';
+import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 import { verificationLabels } from '@/lib/utils/verification';
 import { useCartStore } from '@/store/cart.store';
 import { useUiStore } from '@/store/ui.store';
@@ -97,7 +97,9 @@ export function HomeScreen() {
       <section className="bg-brand-primary text-text-inverse">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 lg:grid-cols-[1fr_0.9fr] lg:py-20">
           <div>
-            <Badge className="bg-brand-secondary text-text-inverse">Clinically audited inventory</Badge>
+            <Badge className="bg-brand-secondary text-text-inverse">
+              Clinically audited inventory
+            </Badge>
             <h1 className="mt-6 max-w-xl font-heading text-5xl">{hero.headline}</h1>
             <p className="mt-5 max-w-lg text-md text-brand-light">{hero.subtext}</p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -131,7 +133,12 @@ export function HomeScreen() {
               href={`/category/${category.slug}`}
             >
               <div className="relative mx-auto aspect-square w-24 overflow-hidden rounded-md bg-surface-raised">
-                <Image alt={category.name} className="object-cover transition group-hover:scale-105" fill src={category.image} />
+                <Image
+                  alt={category.name}
+                  className="object-cover transition group-hover:scale-105"
+                  fill
+                  src={category.image}
+                />
               </div>
               <p className="mt-3 text-sm font-semibold">{category.name}</p>
             </Link>
@@ -144,7 +151,10 @@ export function HomeScreen() {
             eyebrow="Verified best-sellers"
             title="Top performing products"
             action={
-              <Link className="hidden text-sm font-semibold text-brand-primary sm:flex" href="/products">
+              <Link
+                className="hidden text-sm font-semibold text-brand-primary sm:flex"
+                href="/products"
+              >
                 View All Marketplace <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
               </Link>
             }
@@ -194,7 +204,10 @@ export function HomeScreen() {
           <SectionHeading eyebrow="Verified purchase reviews" title="Customers trust the reports" />
           <div className="grid gap-4 md:grid-cols-3">
             {reviews.concat(reviews.slice(0, 1)).map((review, index) => (
-              <article key={`${review.id}-${index}`} className="rounded-md border border-surface-border bg-surface-base p-5">
+              <article
+                key={`${review.id}-${index}`}
+                className="rounded-md border border-surface-border bg-surface-base p-5"
+              >
                 <Rating rating={review.rating} />
                 <h3 className="mt-3 font-semibold">{review.title}</h3>
                 <p className="mt-2 line-clamp-3 text-sm text-text-secondary">{review.body}</p>
@@ -226,7 +239,11 @@ function FilterPanel({ filters }: { filters: ProductFilterState }) {
             {categories.map((category) => (
               <Link
                 key={category.slug}
-                className={filters.category === category.slug ? 'font-semibold text-brand-primary' : 'text-text-secondary'}
+                className={
+                  filters.category === category.slug
+                    ? 'font-semibold text-brand-primary'
+                    : 'text-text-secondary'
+                }
                 href={`/products?category=${category.slug}`}
               >
                 {category.name}
@@ -236,7 +253,10 @@ function FilterPanel({ filters }: { filters: ProductFilterState }) {
         </div>
         <div>
           <h3 className="font-semibold">Trust</h3>
-          <Link className="mt-3 flex items-center justify-between rounded-md bg-brand-light p-3 font-semibold text-brand-primary" href="/products?labVerified=true">
+          <Link
+            className="mt-3 flex items-center justify-between rounded-md bg-brand-light p-3 font-semibold text-brand-primary"
+            href="/products?labVerified=true"
+          >
             Lab Verified Only
             <ShieldCheck aria-hidden="true" className="h-4 w-4" />
           </Link>
@@ -263,7 +283,9 @@ export function ProductListingScreen({
   filters: ProductFilterState;
 }) {
   const visibleProducts = useMemo(() => filterProducts(products, filters), [filters]);
-  const activeFilters = Object.entries(filters).filter(([, value]) => value !== undefined && value !== '' && value !== false);
+  const activeFilters = Object.entries(filters).filter(
+    ([, value]) => value !== undefined && value !== '' && value !== false
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -273,7 +295,9 @@ export function ProductListingScreen({
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-heading text-4xl">{title}</h1>
-          <p className="mt-1 text-text-secondary">Showing {visibleProducts.length} laboratory-certified products</p>
+          <p className="mt-1 text-text-secondary">
+            Showing {visibleProducts.length} laboratory-certified products
+          </p>
         </div>
         <Link
           className="inline-flex h-10 items-center rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary lg:hidden"
@@ -324,19 +348,32 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
 
   const addToCart = () => {
     addItem(product, quantity);
-    addToast({ type: 'success', title: 'Added to cart', message: product.name, actionLabel: 'View cart', actionHref: '/cart' });
+    addToast({
+      type: 'success',
+      title: 'Added to cart',
+      message: product.name,
+      actionLabel: 'View cart',
+      actionHref: '/cart',
+    });
   };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6 text-sm text-text-secondary">
-        <Link href="/">Home</Link> <span>&gt;</span> <Link href={`/category/${product.category}`}>{product.category}</Link> <span>&gt;</span>{' '}
+        <Link href="/">Home</Link> <span>&gt;</span>{' '}
+        <Link href={`/category/${product.category}`}>{product.category}</Link> <span>&gt;</span>{' '}
         <span>{product.name}</span>
       </div>
       <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
         <div>
           <div className="relative aspect-square overflow-hidden rounded-lg border border-surface-border bg-surface-raised">
-            <Image alt={selectedImage.alt} className="object-cover" fill priority src={selectedImage.url} />
+            <Image
+              alt={selectedImage.alt}
+              className="object-cover"
+              fill
+              priority
+              src={selectedImage.url}
+            />
           </div>
           <div className="mt-3 flex gap-3">
             {product.images.map((image) => (
@@ -351,7 +388,10 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
           </div>
         </div>
         <section>
-          <Link className="text-sm font-semibold uppercase text-text-muted" href={`/products?brand=${product.brand}`}>
+          <Link
+            className="text-sm font-semibold uppercase text-text-muted"
+            href={`/products?brand=${product.brand}`}
+          >
             {product.brand}
           </Link>
           <h1 className="mt-2 font-heading text-4xl">{product.name}</h1>
@@ -369,17 +409,24 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
             </a>
           </div>
           <div className="mt-5 flex flex-wrap items-end gap-3">
-            <span className="text-3xl font-semibold text-brand-primary">{formatCurrency(product.price)}</span>
-            <span className="text-lg text-text-muted line-through">{formatCurrency(product.mrp)}</span>
+            <span className="text-3xl font-semibold text-brand-primary">
+              {formatCurrency(product.price)}
+            </span>
+            <span className="text-lg text-text-muted line-through">
+              {formatCurrency(product.mrp)}
+            </span>
             <Badge variant="sale">{product.discount}% off</Badge>
           </div>
           <div className="mt-5 rounded-lg border border-brand-primary bg-brand-light p-4">
             <div className="flex items-center gap-2 font-semibold text-brand-primary">
               <ShieldCheck aria-hidden="true" className="h-5 w-5" />
-              {product.isLabVerified ? 'Lab Verified Authentic' : verificationLabels[product.verificationStatus]}
+              {product.isLabVerified
+                ? 'Lab Verified Authentic'
+                : verificationLabels[product.verificationStatus]}
             </div>
             <p className="mt-2 text-sm text-text-secondary">
-              Batch #{product.batchId}. {report?.summary ?? 'Lab report will be available after testing.'}
+              Batch #{product.batchId}.{' '}
+              {report?.summary ?? 'Lab report will be available after testing.'}
             </p>
           </div>
           <div className="mt-6 flex items-center gap-4">
@@ -387,15 +434,34 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               Quantity
             </label>
             <div className="flex items-center rounded-md border border-surface-border">
-              <Button size="icon" variant="ghost" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              >
                 -
               </Button>
-              <input id="qty" className="h-10 w-10 text-center outline-none" readOnly value={quantity} />
-              <Button size="icon" variant="ghost" onClick={() => setQuantity(Math.min(product.stockCount || 1, quantity + 1))}>
+              <input
+                id="qty"
+                className="h-10 w-10 text-center outline-none"
+                readOnly
+                value={quantity}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setQuantity(Math.min(product.stockCount || 1, quantity + 1))}
+              >
                 +
               </Button>
             </div>
-            <span className={product.inStock ? 'text-sm font-semibold text-text-success' : 'text-sm font-semibold text-text-danger'}>
+            <span
+              className={
+                product.inStock
+                  ? 'text-sm font-semibold text-text-success'
+                  : 'text-sm font-semibold text-text-danger'
+              }
+            >
               {product.inStock ? `${product.stockCount} in stock` : 'Currently unavailable'}
             </span>
           </div>
@@ -408,7 +474,12 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                 Buy Now
               </Button>
             </Link>
-            <Button aria-label="Add to wishlist" size="icon" variant="ghost" onClick={() => toggleWishlist(product.id)}>
+            <Button
+              aria-label="Add to wishlist"
+              size="icon"
+              variant="ghost"
+              onClick={() => toggleWishlist(product.id)}
+            >
               <Heart aria-hidden="true" className="h-5 w-5" />
             </Button>
           </div>
@@ -435,9 +506,23 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
           ))}
         </div>
         <div className="p-6">
-          {tab === 'description' ? <p className="max-w-3xl text-text-secondary">{product.description}</p> : null}
-          {tab === 'ingredients' ? <ul className="list-inside list-disc text-text-secondary">{product.ingredients?.map((item) => <li key={item}>{item}</li>)}</ul> : null}
-          {tab === 'benefits' ? <ul className="grid gap-2 text-text-secondary">{product.benefits.map((item) => <li key={item}>- {item}</li>)}</ul> : null}
+          {tab === 'description' ? (
+            <p className="max-w-3xl text-text-secondary">{product.description}</p>
+          ) : null}
+          {tab === 'ingredients' ? (
+            <ul className="list-inside list-disc text-text-secondary">
+              {product.ingredients?.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
+          {tab === 'benefits' ? (
+            <ul className="grid gap-2 text-text-secondary">
+              {product.benefits.map((item) => (
+                <li key={item}>- {item}</li>
+              ))}
+            </ul>
+          ) : null}
           {tab === 'lab report' ? (
             <div className="grid gap-4 md:grid-cols-3">
               {product.labMetrics.length ? (
@@ -513,7 +598,10 @@ export function CheckoutAddressScreen() {
         <h1 className="mt-8 font-heading text-3xl">Select delivery address</h1>
         <div className="mt-5 grid gap-3">
           {addresses.map((address) => (
-            <label key={address.id} className="flex gap-3 rounded-md border border-surface-border p-4">
+            <label
+              key={address.id}
+              className="flex gap-3 rounded-md border border-surface-border p-4"
+            >
               <input defaultChecked={address.isDefault} name="address" type="radio" />
               <span>
                 <strong>{address.fullName}</strong>
@@ -529,7 +617,11 @@ export function CheckoutAddressScreen() {
           <Input label="Phone" placeholder="9876543210" />
           <Input label="Pincode" placeholder="560001" />
           <Input label="City" placeholder="Bengaluru" />
-          <Input className="md:col-span-2" label="Address line 1" placeholder="Flat / house / street" />
+          <Input
+            className="md:col-span-2"
+            label="Address line 1"
+            placeholder="Flat / house / street"
+          />
         </div>
         <Link className="mt-6 inline-block" href="/checkout/payment">
           <Button size="lg">Continue to Payment</Button>
@@ -542,7 +634,9 @@ export function CheckoutAddressScreen() {
 
 export function CheckoutPaymentScreen() {
   const [method, setMethod] = useState('UPI');
-  const totals = useCartStore((state) => state.totals());
+  const items = useCartStore((state) => state.items);
+  const coupon = useCartStore((state) => state.coupon);
+  const totals = calculateCartTotals(items, coupon);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
@@ -563,7 +657,9 @@ export function CheckoutPaymentScreen() {
           </div>
           <div className="rounded-md bg-surface-raised p-5">
             <h2 className="font-semibold">{method}</h2>
-            {method === 'UPI' ? <Input className="mt-4" label="UPI ID" placeholder="name@upi" /> : null}
+            {method === 'UPI' ? (
+              <Input className="mt-4" label="UPI ID" placeholder="name@upi" />
+            ) : null}
             {method === 'Cards' ? (
               <div className="mt-4 grid gap-4">
                 <Input label="Card number" placeholder="4111 1111 1111 1111" />
@@ -573,9 +669,17 @@ export function CheckoutPaymentScreen() {
                 </div>
               </div>
             ) : null}
-            {method === 'Net Banking' ? <Input className="mt-4" label="Bank" placeholder="Select bank" /> : null}
-            {method === 'Cash on Delivery' ? <p className="mt-4 text-sm text-text-secondary">Cash on Delivery available for this address.</p> : null}
-            <p className="mt-5 text-sm text-text-secondary">Payments secured by Razorpay. Mock payment for prototype.</p>
+            {method === 'Net Banking' ? (
+              <Input className="mt-4" label="Bank" placeholder="Select bank" />
+            ) : null}
+            {method === 'Cash on Delivery' ? (
+              <p className="mt-4 text-sm text-text-secondary">
+                Cash on Delivery available for this address.
+              </p>
+            ) : null}
+            <p className="mt-5 text-sm text-text-secondary">
+              Payments secured by Razorpay. Mock payment for prototype.
+            </p>
             <Link className="mt-5 inline-block" href="/checkout/confirm">
               <Button size="lg">Pay {formatCurrency(totals.total)}</Button>
             </Link>
@@ -593,12 +697,20 @@ export function CheckoutConfirmScreen() {
       <Stepper active={2} steps={['Address', 'Payment', 'Confirmation']} />
       <CheckCircle2 aria-hidden="true" className="mx-auto mt-10 h-16 w-16 text-text-success" />
       <h1 className="mt-5 font-heading text-4xl">Your order is confirmed!</h1>
-      <p className="mt-3 text-text-secondary">Order ID <span className="font-mono">TRZ-2026-1042</span> has been placed successfully.</p>
+      <p className="mt-3 text-text-secondary">
+        Order ID <span className="font-mono">TRZ-2026-1042</span> has been placed successfully.
+      </p>
       <div className="mt-8 flex justify-center gap-3">
-        <Link className="inline-flex h-10 items-center rounded-md bg-brand-primary px-4 text-sm font-semibold text-text-inverse" href="/account/orders/TRZ-2026-1042">
+        <Link
+          className="inline-flex h-10 items-center rounded-md bg-brand-primary px-4 text-sm font-semibold text-text-inverse"
+          href="/account/orders/TRZ-2026-1042"
+        >
           Track Order
         </Link>
-        <Link className="inline-flex h-10 items-center rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary" href="/">
+        <Link
+          className="inline-flex h-10 items-center rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary"
+          href="/"
+        >
           Continue Shopping
         </Link>
       </div>
@@ -631,21 +743,36 @@ export function AccountScreen() {
             </div>
           </div>
           <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-md bg-surface-raised p-3"><strong>{orders.length}</strong><span className="block text-xs text-text-muted">Orders</span></div>
-            <div className="rounded-md bg-surface-raised p-3"><strong>4</strong><span className="block text-xs text-text-muted">Wishlist</span></div>
-            <div className="rounded-md bg-surface-raised p-3"><strong>{addresses.length}</strong><span className="block text-xs text-text-muted">Addresses</span></div>
+            <div className="rounded-md bg-surface-raised p-3">
+              <strong>{orders.length}</strong>
+              <span className="block text-xs text-text-muted">Orders</span>
+            </div>
+            <div className="rounded-md bg-surface-raised p-3">
+              <strong>4</strong>
+              <span className="block text-xs text-text-muted">Wishlist</span>
+            </div>
+            <div className="rounded-md bg-surface-raised p-3">
+              <strong>{addresses.length}</strong>
+              <span className="block text-xs text-text-muted">Addresses</span>
+            </div>
           </div>
         </section>
         <section>
           <SectionHeading title="Recent orders" />
           <div className="grid gap-3">
             {orders.map((order) => (
-              <Link key={order.id} className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs" href={`/account/orders/${order.id}`}>
+              <Link
+                key={order.id}
+                className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs"
+                href={`/account/orders/${order.id}`}
+              >
                 <div className="flex justify-between gap-3">
                   <strong>{order.id}</strong>
                   <Badge variant="info">{order.status}</Badge>
                 </div>
-                <p className="mt-1 text-sm text-text-secondary">{order.items.length} item(s) - {formatCurrency(order.total)}</p>
+                <p className="mt-1 text-sm text-text-secondary">
+                  {order.items.length} item(s) - {formatCurrency(order.total)}
+                </p>
               </Link>
             ))}
           </div>
@@ -661,17 +788,29 @@ export function OrdersScreen() {
       <h1 className="font-heading text-4xl">Your Orders</h1>
       <div className="mt-6 grid gap-4">
         {orders.map((order) => (
-          <article key={order.id} className="rounded-lg border border-surface-border bg-surface-base p-5">
+          <article
+            key={order.id}
+            className="rounded-lg border border-surface-border bg-surface-base p-5"
+          >
             <div className="flex flex-wrap justify-between gap-3">
               <div>
                 <h2 className="font-semibold">{order.id}</h2>
-                <p className="text-sm text-text-secondary">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+                <p className="text-sm text-text-secondary">
+                  {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                </p>
               </div>
               <Badge variant="info">{order.status}</Badge>
             </div>
             <div className="mt-4 flex items-center justify-between gap-4">
-              <p className="text-sm text-text-secondary">{order.items.map((item) => item.product.name).join(', ')}</p>
-              <Link className="font-semibold text-brand-primary" href={`/account/orders/${order.id}`}>View Order</Link>
+              <p className="text-sm text-text-secondary">
+                {order.items.map((item) => item.product.name).join(', ')}
+              </p>
+              <Link
+                className="font-semibold text-brand-primary"
+                href={`/account/orders/${order.id}`}
+              >
+                View Order
+              </Link>
             </div>
           </article>
         ))}
@@ -689,14 +828,16 @@ export function OrderDetailScreen({ id }: { id: string }) {
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="grid gap-4">
           {order.items.map((item) => (
-            <CartItemRow key={item.product.id} item={item} />
+            <CartItemRow key={`${item.product.id}-${item.variantId ?? 'base'}`} item={item} />
           ))}
           <div className="rounded-lg border border-surface-border bg-surface-base p-5">
             <h2 className="font-semibold">Timeline</h2>
             <div className="mt-4 grid gap-3 text-sm text-text-secondary">
               {['Confirmed', 'Processing', 'Shipped', 'Delivered'].map((step, index) => (
                 <div key={step} className="flex items-center gap-3">
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-light text-brand-primary">{index + 1}</span>
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-light text-brand-primary">
+                    {index + 1}
+                  </span>
                   {step}
                 </div>
               ))}
@@ -707,9 +848,13 @@ export function OrderDetailScreen({ id }: { id: string }) {
           <Badge variant="info">{order.status}</Badge>
           <p className="mt-4 text-sm text-text-secondary">Delivering to</p>
           <p className="font-semibold">{order.address.fullName}</p>
-          <p className="text-sm text-text-secondary">{order.address.addressLine1}, {order.address.city}</p>
+          <p className="text-sm text-text-secondary">
+            {order.address.addressLine1}, {order.address.city}
+          </p>
           <p className="mt-4 text-2xl font-semibold">{formatCurrency(order.total)}</p>
-          <Button className="mt-5 w-full" variant="outline">Download Invoice</Button>
+          <Button className="mt-5 w-full" variant="outline">
+            Download Invoice
+          </Button>
         </aside>
       </div>
     </div>
@@ -722,11 +867,20 @@ export function AddressesScreen() {
       <h1 className="font-heading text-4xl">Saved Addresses</h1>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         {addresses.map((address) => (
-          <article key={address.id} className="rounded-lg border border-surface-border bg-surface-base p-5">
+          <article
+            key={address.id}
+            className="rounded-lg border border-surface-border bg-surface-base p-5"
+          >
             <MapPin aria-hidden="true" className="h-5 w-5 text-brand-primary" />
             <h2 className="mt-3 font-semibold">{address.fullName}</h2>
-            <p className="mt-1 text-sm text-text-secondary">{address.addressLine1}, {address.city}, {address.state} - {address.pincode}</p>
-            {address.isDefault ? <Badge className="mt-4" variant="success">Default</Badge> : null}
+            <p className="mt-1 text-sm text-text-secondary">
+              {address.addressLine1}, {address.city}, {address.state} - {address.pincode}
+            </p>
+            {address.isDefault ? (
+              <Badge className="mt-4" variant="success">
+                Default
+              </Badge>
+            ) : null}
           </article>
         ))}
       </div>
@@ -741,7 +895,13 @@ export function WishlistScreen() {
   if (!wishlistProducts.length) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12">
-        <EmptyState action="Browse Products" href="/products" icon={Heart} message="Save products you love and compare lab reports later." title="Save items you love" />
+        <EmptyState
+          action="Browse Products"
+          href="/products"
+          icon={Heart}
+          message="Save products you love and compare lab reports later."
+          title="Save items you love"
+        />
       </div>
     );
   }
@@ -759,7 +919,8 @@ export function TrustHowItWorksScreen() {
     <div className="mx-auto max-w-7xl px-4 py-12">
       <h1 className="max-w-3xl font-heading text-5xl">Verification before checkout confidence.</h1>
       <p className="mt-4 max-w-2xl text-text-secondary">
-        Truzov combines Amazon-like shopping speed with a transparent verification workflow for health, organic, and wellness products.
+        Truzov combines Amazon-like shopping speed with a transparent verification workflow for
+        health, organic, and wellness products.
       </p>
       <div className="mt-10 grid gap-5 md:grid-cols-4">
         {[
@@ -768,7 +929,10 @@ export function TrustHowItWorksScreen() {
           [ShieldCheck, 'Reports are reviewed against product claims'],
           [Truck, 'Approved batches go live with report excerpts'],
         ].map(([Icon, text], index) => (
-          <article key={text as string} className="rounded-lg border border-surface-border bg-surface-base p-5">
+          <article
+            key={text as string}
+            className="rounded-lg border border-surface-border bg-surface-base p-5"
+          >
             <Icon aria-hidden="true" className="h-8 w-8 text-brand-primary" />
             <h2 className="mt-4 font-heading text-2xl">Step {index + 1}</h2>
             <p className="mt-2 text-sm text-text-secondary">{text as string}</p>
@@ -783,23 +947,35 @@ export function LabReportsScreen() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
       <h1 className="font-heading text-5xl">Lab Reports</h1>
-      <p className="mt-3 text-text-secondary">Customer-facing excerpts from every available batch report.</p>
+      <p className="mt-3 text-text-secondary">
+        Customer-facing excerpts from every available batch report.
+      </p>
       <div className="mt-8 grid gap-4 md:grid-cols-2">
         {labReports.map((report) => {
           const product = products.find((item) => item.id === report.productId) as Product;
 
           return (
-            <article key={report.id} className="rounded-lg border border-surface-border bg-surface-base p-5">
+            <article
+              key={report.id}
+              className="rounded-lg border border-surface-border bg-surface-base p-5"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="font-heading text-2xl">{product.name}</h2>
-                  <p className="text-sm text-text-secondary">Batch #{report.batchId} - {report.labName}</p>
+                  <p className="text-sm text-text-secondary">
+                    Batch #{report.batchId} - {report.labName}
+                  </p>
                 </div>
-                <Badge variant={report.status === 'pass' ? 'success' : 'info'}>{report.status}</Badge>
+                <Badge variant={report.status === 'pass' ? 'success' : 'info'}>
+                  {report.status}
+                </Badge>
               </div>
               <div className="mt-5 grid gap-3">
                 {report.metrics.map((metric) => (
-                  <div key={metric.label} className="flex justify-between rounded-md bg-surface-raised p-3 text-sm">
+                  <div
+                    key={metric.label}
+                    className="flex justify-between rounded-md bg-surface-raised p-3 text-sm"
+                  >
                     <span>{metric.label}</span>
                     <strong>{metric.value}</strong>
                   </div>

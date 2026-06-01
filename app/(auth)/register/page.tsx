@@ -1,7 +1,10 @@
-import { AuthScreen } from '@/components/screens/AuthScreens';
+import { AuthLayout } from '@/components/auth/AuthLayout';
+import { SignupForm } from '@/components/auth/SignupForm';
 
-export const dynamic = 'force-dynamic';
-
-export default function Page() {
-  return <AuthScreen mode="register" />;
+export default function SignupPage() {
+  return (
+    <AuthLayout title="Create Account" subtitle="Start your journey with verified health solutions.">
+      <SignupForm />
+    </AuthLayout>
+  );
 }

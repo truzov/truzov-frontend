@@ -3,7 +3,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem, Product } from '@/types';
-import { calculateCartTotals } from '@/lib/utils/money';
 
 interface CartStore {
   items: CartItem[];
@@ -13,8 +12,6 @@ interface CartStore {
   updateQty: (productId: string, qty: number) => void;
   applyCoupon: (code: string) => Promise<void>;
   clearCart: () => void;
-  itemCount: () => number;
-  totals: () => ReturnType<typeof calculateCartTotals>;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -33,9 +30,9 @@ export const useCartStore = create<CartStore>()(
               items: state.items.map((item) =>
                 item.product.id === product.id && item.variantId === variantId
                   ? {
-                      ...item,
-                      quantity: Math.min(product.stockCount || 99, item.quantity + qty),
-                    }
+                    ...item,
+                    quantity: Math.min(product.stockCount || 99, item.quantity + qty),
+                  }
                   : item
               ),
             };
@@ -68,8 +65,6 @@ export const useCartStore = create<CartStore>()(
         set({ coupon: code.trim().toUpperCase() });
       },
       clearCart: () => set({ items: [], coupon: undefined }),
-      itemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
-      totals: () => calculateCartTotals(get().items, get().coupon),
     }),
     { name: 'truzov-cart' }
   )

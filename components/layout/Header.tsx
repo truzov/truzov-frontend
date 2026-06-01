@@ -1,11 +1,12 @@
 'use client';
 
-import { Heart, Search, ShoppingCart, UserRound } from 'lucide-react';
+import { Heart, Search, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CartDrawer } from '@/components/commerce/CartDrawer';
+import { AccountMenu } from '@/components/auth/AccountMenu';
 import { useCartStore } from '@/store/cart.store';
 import { useUiStore } from '@/store/ui.store';
 import { Logo } from './Logo';
@@ -13,8 +14,14 @@ import { Logo } from './Logo';
 export function Header() {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
   const openCart = useUiStore((state) => state.openCart);
-  const itemCount = useCartStore((state) => state.itemCount());
+  const items = useCartStore((state) => state.items);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <>
@@ -29,9 +36,15 @@ export function Header() {
         <div className="mx-auto grid max-w-7xl gap-3 px-4 py-3 lg:grid-cols-[140px_1fr_auto] lg:items-center">
           <div className="flex items-center justify-between">
             <Logo />
-            <Button aria-label="Open cart" className="relative lg:hidden" size="icon" variant="ghost" onClick={openCart}>
+            <Button
+              aria-label="Open cart"
+              className="relative lg:hidden"
+              size="icon"
+              variant="ghost"
+              onClick={openCart}
+            >
               <ShoppingCart aria-hidden="true" className="h-5 w-5" />
-              {itemCount > 0 ? (
+              {isMounted && itemCount > 0 ? (
                 <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-brand-accent px-1 text-xs text-text-inverse">
                   {itemCount}
                 </span>
@@ -65,18 +78,16 @@ export function Header() {
             <Button className="relative" variant="ghost" onClick={openCart}>
               <ShoppingCart aria-hidden="true" className="h-4 w-4" />
               Cart
-              {itemCount > 0 ? (
-                <span aria-live="polite" className="rounded-full bg-brand-accent px-1.5 text-xs text-text-inverse">
+              {isMounted && itemCount > 0 ? (
+                <span
+                  aria-live="polite"
+                  className="rounded-full bg-brand-accent px-1.5 text-xs text-text-inverse"
+                >
                   {itemCount}
                 </span>
               ) : null}
             </Button>
-            <Link href="/account">
-              <Button variant="ghost">
-                <UserRound aria-hidden="true" className="h-4 w-4" />
-                Account
-              </Button>
-            </Link>
+            <AccountMenu />
           </nav>
         </div>
         <nav className="hidden border-t border-surface-border lg:block">
@@ -85,7 +96,10 @@ export function Header() {
             <Link href="/category/honey">Honey</Link>
             <Link href="/trust/how-it-works">Why Verified?</Link>
             <Link href="/trust/lab-reports">Lab Reports</Link>
-            <Link className="ml-auto rounded-sm bg-brand-primary px-4 py-2 text-text-inverse" href="/products?labVerified=true">
+            <Link
+              className="ml-auto rounded-sm bg-brand-primary px-4 py-2 text-text-inverse"
+              href="/products?labVerified=true"
+            >
               Explore Verified Products
             </Link>
           </div>
