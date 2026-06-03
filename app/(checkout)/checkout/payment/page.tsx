@@ -1,5 +1,5 @@
-import { CheckoutPaymentScreen } from '@/components/screens/CustomerScreens';
+import { PaymentScreen } from '@/components/checkout/CheckoutScreens';
 
 export default function Page() {
-  return <CheckoutPaymentScreen />;
+  return <PaymentScreen />;
 }

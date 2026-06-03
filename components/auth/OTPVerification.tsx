@@ -10,6 +10,7 @@ export function OTPVerification() {
   const { verifyOTP, isLoading, error, pendingEmail } = useAuthStore();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const redirectParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null;
 
   // Auto-focus first input on mount
   useEffect(() => {
@@ -47,9 +48,10 @@ export function OTPVerification() {
 
     try {
       await verifyOTP(code);
-      // Redirect to home after successful verification
+      const redirect = redirectParam || '/';
+      // Redirect to the intended page after successful verification
       setTimeout(() => {
-        router.push('/');
+        router.push(redirect);
       }, 500);
     } catch {
       // Error is handled by the store
@@ -123,7 +125,7 @@ export function OTPVerification() {
         <button className="font-body-md text-body-md text-primary hover:text-primary-container transition-colors bg-transparent border-none cursor-pointer" type="button">
           Didn&apos;t receive the code? Resend OTP
         </button>
-        <Link className="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-xs" href="/login">
+        <Link className="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-xs" href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}>
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Back to Login
         </Link>

@@ -1,18 +1,17 @@
-import Link from 'next/link';
+import { CheckoutProgress, SecureCheckoutMark } from '@/components/checkout/CheckoutProgress';
 import { Logo } from './Logo';
 
 export function CheckoutLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-surface-raised">
       <header className="border-b border-surface-border bg-surface-base">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-4">
           <Logo />
-          <Link className="text-sm font-semibold text-brand-primary" href="/cart">
-            Back to cart
-          </Link>
+          <CheckoutProgress />
+          <SecureCheckoutMark />
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
     </div>
   );
 }

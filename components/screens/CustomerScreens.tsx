@@ -2,17 +2,27 @@
 
 import {
   ArrowRight,
+  BadgeCheck,
   CheckCircle2,
+  ChevronRight,
   ClipboardCheck,
   CreditCard,
+  FileText,
   Heart,
+  Info,
   Leaf,
   MapPin,
+  Microscope,
   PackageCheck,
   Search,
+  Share2,
   ShieldCheck,
   ShoppingBag,
+  ShoppingCart,
+  Star,
+  Store,
   Truck,
+  Zap,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -39,7 +49,6 @@ import {
 } from '@/lib/data/fixtures';
 import { filterProducts, type ProductFilterState } from '@/lib/utils/filters';
 import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
-import { verificationLabels } from '@/lib/utils/verification';
 import { useCartStore } from '@/store/cart.store';
 import { useUiStore } from '@/store/ui.store';
 import { useWishlistStore } from '@/store/wishlist.store';
@@ -337,14 +346,51 @@ export function ProductListingScreen({
 
 export function ProductDetailScreen({ slug }: { slug: string }) {
   const product = findProduct(slug) ?? products[0];
-  const [selectedImage, setSelectedImage] = useState(product.images[0]);
+  const displayName = product.id === 'prd-001' ? 'Pure Honey (500g)' : product.name;
+  const compareAtPrice = product.id === 'prd-001' ? 749 : product.mrp;
+  const discount = Math.round((1 - product.price / compareAtPrice) * 100);
+  const gallery = [
+    product.images[0],
+    ...product.images.slice(1),
+    {
+      id: 'honeycomb',
+      url: 'https://images.unsplash.com/photo-1587049352851-8d4e89133924?auto=format&fit=crop&w=900&q=80',
+      alt: 'Honeycomb frame with raw honey',
+    },
+    {
+      id: 'lab-flask',
+      url: 'https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?auto=format&fit=crop&w=900&q=80',
+      alt: 'Honey sample prepared for verification',
+    },
+    {
+      id: 'packaging',
+      url: 'https://images.unsplash.com/photo-1584646774031-2dd8915e2dc3?auto=format&fit=crop&w=900&q=80',
+      alt: 'Honey jar packaging detail',
+    },
+  ].slice(0, 5);
+  const [selectedImage, setSelectedImage] = useState(gallery[0]);
   const [quantity, setQuantity] = useState(1);
-  const [tab, setTab] = useState('description');
+  const [tab, setTab] = useState('Product Details');
   const addItem = useCartStore((state) => state.addItem);
   const addToast = useUiStore((state) => state.addToast);
   const toggleWishlist = useWishlistStore((state) => state.toggle);
   const report = labReports.find((item) => item.id === product.labReportId);
-  const similar = products.filter((item) => item.id !== product.id).slice(0, 4);
+  const similar = [
+    {
+      name: 'Organic Cinnamon (100g)',
+      image:
+        'https://images.unsplash.com/photo-1622798337764-259682f03741?auto=format&fit=crop&w=600&q=80',
+      price: 249,
+      rating: '4.8 (210)',
+    },
+    {
+      name: 'Premium Saffron (1g)',
+      image:
+        'https://images.unsplash.com/photo-1600984218389-8f56de3f4f42?auto=format&fit=crop&w=600&q=80',
+      price: 399,
+      rating: '4.9 (540)',
+    },
+  ];
 
   const addToCart = () => {
     addItem(product, quantity);
@@ -358,202 +404,335 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6 text-sm text-text-secondary">
-        <Link href="/">Home</Link> <span>&gt;</span>{' '}
-        <Link href={`/category/${product.category}`}>{product.category}</Link> <span>&gt;</span>{' '}
-        <span>{product.name}</span>
-      </div>
-      <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
-        <div>
-          <div className="relative aspect-square overflow-hidden rounded-lg border border-surface-border bg-surface-raised">
-            <Image
-              alt={selectedImage.alt}
-              className="object-cover"
-              fill
-              priority
-              src={selectedImage.url}
-            />
-          </div>
-          <div className="mt-3 flex gap-3">
-            {product.images.map((image) => (
-              <button
-                key={image.id}
-                className="relative h-20 w-20 overflow-hidden rounded-md border border-surface-border"
-                onClick={() => setSelectedImage(image)}
-              >
-                <Image alt={image.alt} className="object-cover" fill src={image.url} />
-              </button>
-            ))}
-          </div>
-        </div>
-        <section>
-          <Link
-            className="text-sm font-semibold uppercase text-text-muted"
-            href={`/products?brand=${product.brand}`}
-          >
-            {product.brand}
-          </Link>
-          <h1 className="mt-2 font-heading text-4xl">{product.name}</h1>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {product.certifications.map((certification) => (
-              <Badge key={certification} variant="info">
-                {certification}
-              </Badge>
-            ))}
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Rating count={product.reviewCount} rating={product.rating} />
-            <a className="text-sm font-semibold text-brand-primary" href="#reviews">
-              Write a Review
-            </a>
-          </div>
-          <div className="mt-5 flex flex-wrap items-end gap-3">
-            <span className="text-3xl font-semibold text-brand-primary">
-              {formatCurrency(product.price)}
-            </span>
-            <span className="text-lg text-text-muted line-through">
-              {formatCurrency(product.mrp)}
-            </span>
-            <Badge variant="sale">{product.discount}% off</Badge>
-          </div>
-          <div className="mt-5 rounded-lg border border-brand-primary bg-brand-light p-4">
-            <div className="flex items-center gap-2 font-semibold text-brand-primary">
-              <ShieldCheck aria-hidden="true" className="h-5 w-5" />
-              {product.isLabVerified
-                ? 'Lab Verified Authentic'
-                : verificationLabels[product.verificationStatus]}
-            </div>
-            <p className="mt-2 text-sm text-text-secondary">
-              Batch #{product.batchId}.{' '}
-              {report?.summary ?? 'Lab report will be available after testing.'}
-            </p>
-          </div>
-          <div className="mt-6 flex items-center gap-4">
-            <label className="text-sm font-semibold text-text-secondary" htmlFor="qty">
-              Quantity
-            </label>
-            <div className="flex items-center rounded-md border border-surface-border">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              >
-                -
-              </Button>
-              <input
-                id="qty"
-                className="h-10 w-10 text-center outline-none"
-                readOnly
-                value={quantity}
+    <div className="bg-background font-body text-on-surface">
+      <div className="mx-auto max-w-[1440px] px-5 py-8 lg:px-6 lg:py-16">
+        <div className="grid gap-8 lg:grid-cols-[5fr_4fr_3fr] lg:items-start">
+          <section className="grid gap-2">
+            <div className="relative aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white">
+              <Image
+                alt={selectedImage.alt}
+                className="object-cover"
+                fill
+                priority
+                sizes="(min-width: 1024px) 40vw, 100vw"
+                src={selectedImage.url}
               />
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setQuantity(Math.min(product.stockCount || 1, quantity + 1))}
-              >
-                +
-              </Button>
             </div>
-            <span
-              className={
-                product.inStock
-                  ? 'text-sm font-semibold text-text-success'
-                  : 'text-sm font-semibold text-text-danger'
-              }
-            >
-              {product.inStock ? `${product.stockCount} in stock` : 'Currently unavailable'}
-            </span>
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-            <Button disabled={!product.inStock} size="lg" onClick={addToCart}>
-              Add to Cart
-            </Button>
-            <Link href="/checkout/address">
-              <Button className="w-full" disabled={!product.inStock} size="lg" variant="outline">
-                Buy Now
-              </Button>
-            </Link>
-            <Button
-              aria-label="Add to wishlist"
-              size="icon"
-              variant="ghost"
-              onClick={() => toggleWishlist(product.id)}
-            >
-              <Heart aria-hidden="true" className="h-5 w-5" />
-            </Button>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {['Free Shipping', 'Easy Returns', 'Secure Payment'].map((item) => (
-              <div key={item} className="rounded-md bg-surface-raised p-3 text-sm font-semibold">
-                <CheckCircle2 aria-hidden="true" className="mb-2 h-4 w-4 text-brand-primary" />
-                {item}
+            <div className="grid grid-cols-4 gap-2">
+              {gallery.slice(1, 5).map((image, index) => (
+                <button
+                  key={image.id}
+                  aria-label={`View product image ${index + 2}`}
+                  className={`relative aspect-square overflow-hidden rounded-lg border bg-white ${
+                    selectedImage.id === image.id ? 'border-2 border-primary' : 'border-outline-variant'
+                  }`}
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <Image alt={image.alt} className="object-cover" fill sizes="12vw" src={image.url} />
+                  {index === 3 ? (
+                    <span className="absolute inset-0 grid place-items-center bg-black/45 text-sm font-bold text-white">
+                      +3
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid gap-4">
+            <nav className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
+              <Link href="/products">Marketplace</Link>
+              <ChevronRight aria-hidden="true" className="h-3 w-3" />
+              <Link href={`/category/${product.category}`}>Health & Superfoods</Link>
+              <ChevronRight aria-hidden="true" className="h-3 w-3" />
+              <span className="font-medium text-primary">{displayName.replace(' (500g)', '')}</span>
+            </nav>
+
+            <div>
+              <h1 className="font-body text-[32px] font-bold leading-tight text-on-surface">
+                {displayName}
+              </h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Rating count={product.reviewCount} rating={product.rating} />
+                <span className="text-sm text-on-surface-variant">
+                  ({product.reviewCount.toLocaleString('en-IN')} Verified Reviews)
+                </span>
               </div>
+            </div>
+
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className="text-[32px] font-bold leading-none text-on-surface">
+                {formatCurrency(product.price)}
+              </span>
+              <span className="text-base text-on-surface-variant line-through">
+                {formatCurrency(compareAtPrice)}
+              </span>
+              <span className="rounded bg-error-container px-2 py-0.5 text-sm font-medium text-on-error-container">
+                {discount}% OFF
+              </span>
+            </div>
+
+            <div className="flex gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary text-on-primary">
+                <BadgeCheck aria-hidden="true" className="h-6 w-6" />
+              </span>
+              <div>
+                <p className="flex items-center gap-1 font-semibold text-primary">
+                  Lab Verified Authentic
+                  <Info aria-hidden="true" className="h-4 w-4" />
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">
+                  Independently tested for 99.8% purity, 100% pesticide-free. Traceable to the
+                  Himalayan foothills.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-2 flex gap-8 overflow-x-auto border-b border-outline-variant">
+              {['Product Details', 'Lab Report', 'Reviews'].map((item) => (
+                <button
+                  key={item}
+                  className={`whitespace-nowrap pb-2 text-base font-medium ${
+                    tab === item
+                      ? 'border-b-2 border-primary text-primary'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  onClick={() => setTab(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-4 py-2">
+              {tab === 'Product Details' ? (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+                      <p className="text-sm font-medium uppercase tracking-normal text-on-surface-variant">
+                        Ingredients
+                      </p>
+                      <p className="mt-2 font-medium">
+                        {product.ingredients?.[0] ?? '100% Raw Honey'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+                      <p className="text-sm font-medium uppercase tracking-normal text-on-surface-variant">
+                        Certifications
+                      </p>
+                      <p className="mt-2 font-medium">
+                        {product.id === 'prd-001' ? 'FSSAI, ISO 22000' : product.certifications.join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-outline-variant bg-white p-4 shadow-sm">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h2 className="flex items-center gap-2 font-body text-base font-semibold">
+                        <Microscope aria-hidden="true" className="h-5 w-5 text-primary" />
+                        Verification Summary
+                      </h2>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-status-successBg px-2 py-0.5 text-sm font-medium text-text-success">
+                        <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+                        Passed
+                      </span>
+                    </div>
+                    <div className="grid gap-1">
+                      {[
+                        ['Heavy Metals', 'ND (Not Detected)'],
+                        ['Pesticide Residue', 'ND (Not Detected)'],
+                        ['Antibiotics', 'Absent'],
+                      ].map(([label, value]) => (
+                        <div
+                          key={label}
+                          className="flex items-center justify-between border-b border-surface-container py-1.5 last:border-0"
+                        >
+                          <span className="text-on-surface-variant">{label}</span>
+                          <span className="font-medium text-primary">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="mt-4 flex w-full items-center justify-center gap-3 rounded-lg bg-surface-container-highest p-3 font-semibold transition hover:bg-surface-container-high">
+                      <span className="grid h-7 w-7 place-items-center rounded bg-on-surface-variant text-white">
+                        <FileText aria-hidden="true" className="h-4 w-4" />
+                      </span>
+                      Download Full Lab Report (PDF)
+                    </button>
+                  </div>
+                </>
+              ) : null}
+
+              {tab === 'Lab Report' ? (
+                <div className="rounded-xl border border-outline-variant bg-white p-4">
+                  <p className="text-sm text-on-surface-variant">
+                    Batch #{product.batchId}. {report?.summary ?? 'Lab report will be available after testing.'}
+                  </p>
+                  <div className="mt-4 grid gap-3">
+                    {product.labMetrics.map((metric) => (
+                      <div key={metric.label} className="flex justify-between rounded-lg bg-surface-container-low p-3">
+                        <span>{metric.label}</span>
+                        <strong className="text-primary">{metric.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {tab === 'Reviews' ? (
+                <div id="reviews" className="grid gap-3">
+                  {reviews.map((review) => (
+                    <article key={review.id} className="rounded-lg border border-outline-variant bg-white p-4">
+                      <Rating rating={review.rating} />
+                      <h3 className="mt-2 font-body text-base font-semibold">{review.title}</h3>
+                      <p className="mt-1 text-sm text-on-surface-variant">{review.body}</p>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          <aside className="grid gap-4 lg:sticky lg:top-36">
+            <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-md">
+              <p className="text-xl font-medium">{formatCurrency(product.price)}.00</p>
+              <p className="mt-2 flex items-center gap-1 text-sm font-medium text-text-success">
+                <span className="h-2 w-2 rounded-full bg-text-success" />
+                In stock. Ready to ship.
+              </p>
+
+              <div className="mt-5">
+                <label className="text-sm font-medium text-on-surface-variant" htmlFor="qty">
+                  Quantity
+                </label>
+                <div className="mt-2 flex w-fit overflow-hidden rounded-lg border border-outline-variant">
+                  <button
+                    className="h-10 w-10 bg-surface-container-highest text-lg transition hover:bg-surface-container-high"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    type="button"
+                  >
+                    -
+                  </button>
+                  <input
+                    id="qty"
+                    className="h-10 w-12 border-0 text-center font-medium outline-none"
+                    readOnly
+                    value={quantity}
+                  />
+                  <button
+                    className="h-10 w-10 bg-surface-container-highest text-lg transition hover:bg-surface-container-high"
+                    onClick={() => setQuantity(Math.min(product.stockCount || 1, quantity + 1))}
+                    type="button"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3">
+                <Button
+                  className="h-12 w-full rounded-full bg-primary text-base text-on-primary hover:bg-primary/90"
+                  disabled={!product.inStock}
+                  onClick={addToCart}
+                >
+                  <ShoppingCart aria-hidden="true" className="h-5 w-5" />
+                  Add to Cart
+                </Button>
+                <Link href="/checkout/address">
+                  <Button
+                    className="h-12 w-full rounded-full border-primary bg-surface-container text-base text-primary hover:bg-surface-container-high"
+                    disabled={!product.inStock}
+                    variant="outline"
+                  >
+                    <Zap aria-hidden="true" className="h-5 w-5" />
+                    Buy Now
+                  </Button>
+                </Link>
+                <div className="mt-2 grid grid-cols-2 gap-4">
+                  <Button
+                    className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
+                    variant="outline"
+                    onClick={() => toggleWishlist(product.id)}
+                  >
+                    <Heart aria-hidden="true" className="h-4 w-4" />
+                    <span className="leading-tight">Add to Wishlist</span>
+                  </Button>
+                  <Button
+                    className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
+                    variant="outline"
+                  >
+                    <Share2 aria-hidden="true" className="h-4 w-4" />
+                    Share
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 border-t border-surface-container pt-5">
+                <div className="flex gap-4">
+                  <Truck aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Delivery by Thu, Oct 24</p>
+                    <p className="text-xs text-on-surface-variant">Free delivery on orders over Rs 999</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Authenticity Guaranteed</p>
+                    <p className="text-xs text-on-surface-variant">
+                      Full refund if lab test fails verification
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-outline-variant bg-surface-container p-4">
+              <p className="flex items-center gap-2 font-medium">
+                <Store aria-hidden="true" className="h-5 w-5 text-accent-link" />
+                Sold by {product.sellerName}
+              </p>
+              <p className="mt-1 text-xs text-on-surface-variant">4.9/5 Rating &bull; 2k+ Sales</p>
+            </div>
+          </aside>
+        </div>
+
+        <section className="mt-16 lg:mt-24">
+          <div className="mb-8 flex items-end justify-between border-b border-outline-variant pb-2">
+            <div>
+              <h2 className="font-body text-2xl font-bold">Similar Verified Products</h2>
+              <p className="text-on-surface-variant">
+                Other lab-tested health staples from verified vendors.
+              </p>
+            </div>
+            <Link className="text-sm font-medium text-accent-link hover:underline" href="/products">
+              View All
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
+            {similar.map((item) => (
+              <article
+                key={item.name}
+                className="overflow-hidden rounded-xl border border-outline-variant bg-white transition hover:shadow-md"
+              >
+                <div className="relative aspect-square">
+                  <Image alt={item.name} className="object-cover" fill sizes="220px" src={item.image} />
+                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">
+                    <BadgeCheck aria-hidden="true" className="h-3 w-3" />
+                    Verified
+                  </span>
+                </div>
+                <div className="p-4">
+                  <h3 className="truncate font-body text-base font-medium">{item.name}</h3>
+                  <p className="mt-1 flex items-center gap-1 text-sm text-on-surface-variant">
+                    <Star aria-hidden="true" className="h-3.5 w-3.5 fill-brand-accent text-brand-accent" />
+                    {item.rating}
+                  </p>
+                  <p className="mt-2 font-semibold">{formatCurrency(item.price)}</p>
+                </div>
+              </article>
             ))}
           </div>
         </section>
       </div>
-      <section className="mt-10 rounded-lg border border-surface-border bg-surface-base">
-        <div className="flex overflow-x-auto border-b border-surface-border">
-          {['description', 'ingredients', 'benefits', 'lab report', 'reviews'].map((item) => (
-            <button
-              key={item}
-              className={`px-5 py-4 text-sm font-semibold capitalize ${tab === item ? 'text-brand-primary' : 'text-text-secondary'}`}
-              onClick={() => setTab(item)}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-        <div className="p-6">
-          {tab === 'description' ? (
-            <p className="max-w-3xl text-text-secondary">{product.description}</p>
-          ) : null}
-          {tab === 'ingredients' ? (
-            <ul className="list-inside list-disc text-text-secondary">
-              {product.ingredients?.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          ) : null}
-          {tab === 'benefits' ? (
-            <ul className="grid gap-2 text-text-secondary">
-              {product.benefits.map((item) => (
-                <li key={item}>- {item}</li>
-              ))}
-            </ul>
-          ) : null}
-          {tab === 'lab report' ? (
-            <div className="grid gap-4 md:grid-cols-3">
-              {product.labMetrics.length ? (
-                product.labMetrics.map((metric) => (
-                  <div key={metric.label} className="rounded-md border border-surface-border p-4">
-                    <p className="text-sm text-text-secondary">{metric.label}</p>
-                    <p className="mt-1 font-semibold">{metric.value}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-text-secondary">Lab report will be available after testing.</p>
-              )}
-            </div>
-          ) : null}
-          {tab === 'reviews' ? (
-            <div id="reviews" className="grid gap-4">
-              {reviews.map((review) => (
-                <article key={review.id} className="rounded-md border border-surface-border p-4">
-                  <Rating rating={review.rating} />
-                  <h3 className="mt-2 font-semibold">{review.title}</h3>
-                  <p className="mt-1 text-sm text-text-secondary">{review.body}</p>
-                </article>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </section>
-      <section className="mt-12">
-        <SectionHeading title="Similar Verified Products" />
-        <ProductGrid products={similar} />
-      </section>
     </div>
   );
 }

@@ -22,9 +22,11 @@ export function LoginForm() {
   const onSubmit = async (data: LoginInput) => {
     try {
       await sendOTP(data.email);
+      const redirect = new URLSearchParams(window.location.search).get('redirect');
+      const verifyHref = redirect ? `/verify-otp?redirect=${encodeURIComponent(redirect)}` : '/verify-otp';
       // Redirect to OTP verification after a short delay
       setTimeout(() => {
-        router.push('/verify-otp');
+        router.push(verifyHref);
       }, 500);
     } catch {
       // Error is handled by the store

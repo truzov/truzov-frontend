@@ -1,5 +1,5 @@
-import { CartScreen } from '@/components/screens/CustomerScreens';
+import { BagScreen } from '@/components/checkout/CheckoutScreens';
 
 export default function Page() {
-  return <CartScreen />;
+  return <BagScreen />;
 }

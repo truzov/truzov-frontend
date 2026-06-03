@@ -1,5 +1,5 @@
-import { CheckoutAddressScreen } from '@/components/screens/CustomerScreens';
+import { AddressScreen } from '@/components/checkout/CheckoutScreens';
 
 export default function Page() {
-  return <CheckoutAddressScreen />;
+  return <AddressScreen />;
 }

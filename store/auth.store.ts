@@ -24,10 +24,11 @@ interface AuthStore {
 }
 
 // Mock user for testing
-const createMockUser = (email: string): UserProfile => ({
+const createMockUser = (emailOrPhone: string, fullName?: string): UserProfile => ({
   id: `user_${Date.now()}`,
-  name: email.split('@')[0],
-  email,
+  name: fullName?.trim() || (emailOrPhone.includes('@') ? emailOrPhone.split('@')[0] : 'Darrell Steward'),
+  email: emailOrPhone.includes('@') ? emailOrPhone : 'darrell.s@example.com',
+  phone: emailOrPhone.includes('@') ? undefined : emailOrPhone,
   role: 'customer',
   createdAt: new Date().toISOString(),
 });
@@ -35,11 +36,15 @@ const createMockUser = (email: string): UserProfile => ({
 // Simple mock API calls (replace with real API later)
 const mockAPI = {
   signup: async (fullName: string, email: string, password: string) => {
+    void fullName;
+    void email;
+    void password;
     await new Promise((resolve) => setTimeout(resolve, 800));
     return { sessionId: `session_${Date.now()}`, message: 'OTP sent to email' };
   },
   
   sendOTP: async (email: string) => {
+    void email;
     await new Promise((resolve) => setTimeout(resolve, 600));
     return { sessionId: `session_${Date.now()}`, expiresIn: 600 };
   },
@@ -70,10 +75,12 @@ export const useAuthStore = create<AuthStore>()(
       signup: async (fullName, email, password) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await mockAPI.signup(fullName, email, password);
+          await mockAPI.signup(fullName, email, password);
           set({
-            otpSessionId: response.sessionId,
-            pendingEmail: email,
+            isLoggedIn: true,
+            user: createMockUser(email, fullName),
+            otpSessionId: null,
+            pendingEmail: null,
             isLoading: false,
           });
         } catch (err) {
