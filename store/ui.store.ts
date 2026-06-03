@@ -14,23 +14,17 @@ export interface ToastMessage {
 }
 
 interface UiStore {
-  cartOpen: boolean;
   searchOpen: boolean;
   activeModal?: string;
   toasts: ToastMessage[];
-  openCart: () => void;
-  closeCart: () => void;
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
 }
 
 export const useUiStore = create<UiStore>((set) => ({
-  cartOpen: false,
   searchOpen: false,
   activeModal: undefined,
   toasts: [],
-  openCart: () => set({ cartOpen: true }),
-  closeCart: () => set({ cartOpen: false }),
   addToast: (toast) =>
     set((state) => ({
       toasts: [

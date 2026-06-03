@@ -1,5 +1,5 @@
-import { CheckoutConfirmScreen } from '@/components/screens/CustomerScreens';
+import { ConfirmationScreen } from '@/components/checkout/CheckoutScreens';
 
 export default function Page() {
-  return <CheckoutConfirmScreen />;
+  return <ConfirmationScreen />;
 }
