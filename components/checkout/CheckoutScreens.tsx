@@ -2,7 +2,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, BadgePercent, Banknote, CreditCard, MapPin, Plus, QrCode, ShieldCheck, Smartphone, Wallet } from 'lucide-react';
+import {
+  AlertCircle,
+  BadgePercent,
+  Banknote,
+  CreditCard,
+  MapPin,
+  Plus,
+  QrCode,
+  ShieldCheck,
+  Smartphone,
+  Wallet,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
@@ -52,14 +63,15 @@ export function BagScreen() {
   return (
     <div className="bg-surface-raised">
       <div className="mx-auto max-w-7xl px-4 py-6 lg:py-8">
-        <CheckoutProgress active={0} />
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="grid gap-4">
             <section className="flex flex-col justify-between gap-3 rounded-md border border-surface-border bg-surface-base p-4 shadow-xs sm:flex-row sm:items-center">
               <div>
                 <p className="text-sm text-text-secondary">Deliver to</p>
                 <p className="font-bold">
-                  {isLoggedIn ? user?.name ?? fixtureAddresses[0].fullName : 'Sign in to select your delivery address'}
+                  {isLoggedIn
+                    ? (user?.name ?? fixtureAddresses[0].fullName)
+                    : 'Sign in to select your delivery address'}
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
                   {isLoggedIn
@@ -67,7 +79,14 @@ export function BagScreen() {
                     : 'Bag is public. Address selection starts after login.'}
                 </p>
               </div>
-              <Button variant="outline" onClick={() => router.push(isLoggedIn ? '/checkout/address' : '/login?redirect=/checkout/address')}>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(
+                    isLoggedIn ? '/checkout/address' : '/login?redirect=/checkout/address'
+                  )
+                }
+              >
                 {isLoggedIn ? 'Change Address' : 'Login to Continue'}
               </Button>
             </section>
@@ -77,15 +96,22 @@ export function BagScreen() {
                 <BadgePercent aria-hidden="true" className="mt-1 h-5 w-5 text-brand-primary" />
                 <div>
                   <h2 className="font-bold">Available Offers</h2>
-                  <p className="mt-2 text-sm text-text-secondary">10% off with TRUZOV10 on verified wellness essentials. Coupon can be applied in price details.</p>
+                  <p className="mt-2 text-sm text-text-secondary">
+                    10% off with TRUZOV10 on verified wellness essentials. Coupon can be applied in
+                    price details.
+                  </p>
                 </div>
               </div>
             </section>
 
             <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="font-heading text-2xl">{itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag</h1>
-                <p className="text-sm font-semibold text-text-secondary">Review quantities before address selection</p>
+                <h1 className="font-heading text-2xl">
+                  {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag
+                </h1>
+                <p className="text-sm font-semibold text-text-secondary">
+                  Review quantities before address selection
+                </p>
               </div>
             </section>
 
@@ -99,7 +125,9 @@ export function BagScreen() {
           <CheckoutPriceDetails
             ctaLabel="Continue"
             termsText="By continuing, you agree to Truzov's terms and verified marketplace policies."
-            onCta={() => router.push(isLoggedIn ? '/checkout/address' : '/login?redirect=/checkout/address')}
+            onCta={() =>
+              router.push(isLoggedIn ? '/checkout/address' : '/login?redirect=/checkout/address')
+            }
           />
         </div>
       </div>
@@ -119,7 +147,9 @@ export function AddressScreen() {
 
   useEffect(() => {
     if (!selectedAddressId && savedAddresses[0]) {
-      setSelectedAddress(savedAddresses.find((address) => address.isDefault)?.id ?? savedAddresses[0].id);
+      setSelectedAddress(
+        savedAddresses.find((address) => address.isDefault)?.id ?? savedAddresses[0].id
+      );
     }
   }, [savedAddresses, selectedAddressId, setSelectedAddress]);
 
@@ -143,7 +173,11 @@ export function AddressScreen() {
     const result = addressSchema.safeParse(candidate);
 
     if (!result.success) {
-      setErrors(Object.fromEntries(result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])));
+      setErrors(
+        Object.fromEntries(
+          result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
+        )
+      );
       return;
     }
 
@@ -174,31 +208,68 @@ export function AddressScreen() {
         </div>
 
         <section className="grid gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">Default Address</h2>
-          {savedAddresses.filter((address) => address.isDefault).map((address) => (
-            <AddressCard key={address.id} address={address} selected={selectedAddressId === address.id} onSelect={() => setSelectedAddress(address.id)} />
-          ))}
+          <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
+            Default Address
+          </h2>
+          {savedAddresses
+            .filter((address) => address.isDefault)
+            .map((address) => (
+              <AddressCard
+                key={address.id}
+                address={address}
+                selected={selectedAddressId === address.id}
+                onSelect={() => setSelectedAddress(address.id)}
+              />
+            ))}
         </section>
 
         {savedAddresses.some((address) => !address.isDefault) ? (
           <section className="grid gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">Other Addresses</h2>
-            {savedAddresses.filter((address) => !address.isDefault).map((address) => (
-              <AddressCard key={address.id} address={address} selected={selectedAddressId === address.id} onSelect={() => setSelectedAddress(address.id)} />
-            ))}
+            <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
+              Other Addresses
+            </h2>
+            {savedAddresses
+              .filter((address) => !address.isDefault)
+              .map((address) => (
+                <AddressCard
+                  key={address.id}
+                  address={address}
+                  selected={selectedAddressId === address.id}
+                  onSelect={() => setSelectedAddress(address.id)}
+                />
+              ))}
           </section>
         ) : null}
 
         {showForm ? (
-          <form className="grid gap-4 rounded-md border border-surface-border bg-surface-base p-5 shadow-xs md:grid-cols-2" onSubmit={addAddress}>
+          <form
+            className="grid gap-4 rounded-md border border-surface-border bg-surface-base p-5 shadow-xs md:grid-cols-2"
+            onSubmit={addAddress}
+          >
             <h2 className="font-heading text-2xl md:col-span-2">Add New Address</h2>
-            <Input error={errors.fullName} label="Full name" name="fullName" placeholder="Asha Verma" />
+            <Input
+              error={errors.fullName}
+              label="Full name"
+              name="fullName"
+              placeholder="Asha Verma"
+            />
             <Input error={errors.phone} label="Phone" name="phone" placeholder="9876543210" />
             <Input error={errors.pincode} label="Pincode" name="pincode" placeholder="560001" />
             <Input error={errors.city} label="City" name="city" placeholder="Bengaluru" />
             <Input error={errors.state} label="State" name="state" placeholder="Karnataka" />
-            <Input error={errors.addressLine1} label="Address line 1" name="addressLine1" placeholder="Flat / house / street" />
-            <Input className="md:col-span-2" error={errors.addressLine2} label="Address line 2" name="addressLine2" placeholder="Area / landmark" />
+            <Input
+              error={errors.addressLine1}
+              label="Address line 1"
+              name="addressLine1"
+              placeholder="Flat / house / street"
+            />
+            <Input
+              className="md:col-span-2"
+              error={errors.addressLine2}
+              label="Address line 2"
+              name="addressLine2"
+              placeholder="Area / landmark"
+            />
             <div className="flex gap-3 md:col-span-2">
               <Button type="submit">Save Address</Button>
               <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
@@ -243,7 +314,9 @@ export function PaymentScreen() {
       <div className="mx-auto max-w-3xl rounded-md border border-surface-border bg-surface-base p-6 text-center shadow-xs">
         <MapPin aria-hidden="true" className="mx-auto h-10 w-10 text-brand-primary" />
         <h1 className="mt-4 font-heading text-3xl">Select an address first</h1>
-        <p className="mt-2 text-text-secondary">Payment can begin after a delivery address is selected.</p>
+        <p className="mt-2 text-text-secondary">
+          Payment can begin after a delivery address is selected.
+        </p>
         <Button className="mt-5" onClick={() => router.push('/checkout/address')}>
           Go to Address
         </Button>
@@ -268,7 +341,9 @@ export function PaymentScreen() {
             <BadgePercent aria-hidden="true" className="mt-1 h-5 w-5 text-brand-primary" />
             <div>
               <h1 className="font-bold">Bank Offer</h1>
-              <p className="mt-2 text-sm text-text-secondary">7.5% assured cashback on verified wellness orders above Rs 100. Terms apply.</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                7.5% assured cashback on verified wellness orders above Rs 100. Terms apply.
+              </p>
             </div>
           </div>
         </section>
@@ -318,7 +393,9 @@ export function PaymentScreen() {
               <button
                 className="mt-3 text-sm font-semibold text-text-secondary hover:text-text-danger"
                 type="button"
-                onClick={() => setError('Payment failed. Please try again or use another payment method.')}
+                onClick={() =>
+                  setError('Payment failed. Please try again or use another payment method.')
+                }
               >
                 Simulate payment failure
               </button>
@@ -345,37 +422,74 @@ export function ConfirmationScreen() {
 
   return (
     <section className="mx-auto max-w-3xl rounded-md border border-surface-border bg-surface-base p-8 text-center shadow-xs">
-      <ShieldCheck aria-hidden="true" className="mx-auto h-16 w-16 fill-brand-primary text-brand-primary" />
+      <ShieldCheck
+        aria-hidden="true"
+        className="mx-auto h-16 w-16 fill-brand-primary text-brand-primary"
+      />
       <h1 className="mt-5 font-heading text-4xl">Your order is confirmed!</h1>
       <p className="mt-3 text-text-secondary">
         Order ID <span className="font-mono">TRZ-2026-1042</span> has been placed successfully.
       </p>
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <Button onClick={() => window.location.assign('/account/orders/TRZ-2026-1042')}>Track Order</Button>
-        <Button variant="outline" onClick={() => window.location.assign('/')}>Continue Shopping</Button>
+        <Button onClick={() => window.location.assign('/account/orders/TRZ-2026-1042')}>
+          Track Order
+        </Button>
+        <Button variant="outline" onClick={() => window.location.assign('/')}>
+          Continue Shopping
+        </Button>
       </div>
     </section>
   );
 }
 
-function AddressCard({ address, selected, onSelect }: { address: Address; selected: boolean; onSelect: () => void }) {
+function AddressCard({
+  address,
+  selected,
+  onSelect,
+}: {
+  address: Address;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
-    <label className={cn('flex cursor-pointer gap-4 rounded-md border bg-surface-base p-5 shadow-xs transition', selected ? 'border-brand-primary ring-2 ring-brand-light' : 'border-surface-border')}>
-      <input checked={selected} className="mt-1 h-5 w-5 accent-brand-primary" name="address" type="radio" onChange={onSelect} />
+    <label
+      className={cn(
+        'flex cursor-pointer gap-4 rounded-md border bg-surface-base p-5 shadow-xs transition',
+        selected ? 'border-brand-primary ring-2 ring-brand-light' : 'border-surface-border'
+      )}
+    >
+      <input
+        checked={selected}
+        className="mt-1 h-5 w-5 accent-brand-primary"
+        name="address"
+        type="radio"
+        onChange={onSelect}
+      />
       <span className="min-w-0">
         <span className="flex flex-wrap items-center gap-2">
           <strong>{address.fullName}</strong>
-          <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">Home</span>
+          <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
+            Home
+          </span>
         </span>
         <span className="mt-3 block text-sm leading-6 text-text-secondary">
           {address.addressLine1}
-          {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city}, {address.state} - {address.pincode}
+          {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city}, {address.state}{' '}
+          - {address.pincode}
         </span>
-        <span className="mt-2 block text-sm text-text-secondary">Mobile: <strong className="text-text-primary">{address.phone}</strong></span>
-        <span className="mt-3 block text-sm font-semibold text-text-success">Pay on Delivery available</span>
+        <span className="mt-2 block text-sm text-text-secondary">
+          Mobile: <strong className="text-text-primary">{address.phone}</strong>
+        </span>
+        <span className="mt-3 block text-sm font-semibold text-text-success">
+          Pay on Delivery available
+        </span>
         <span className="mt-4 flex gap-3">
-          <Button size="sm" type="button" variant="outline">Edit</Button>
-          <Button size="sm" type="button" variant="ghost">Remove</Button>
+          <Button size="sm" type="button" variant="outline">
+            Edit
+          </Button>
+          <Button size="sm" type="button" variant="ghost">
+            Remove
+          </Button>
         </span>
       </span>
     </label>
@@ -388,16 +502,24 @@ function DeliveryEstimateList() {
 
   return (
     <aside className="rounded-md border border-surface-border bg-surface-base p-5 shadow-xs">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">Delivery Estimates</h2>
+      <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
+        Delivery Estimates
+      </h2>
       <div className="mt-4 grid gap-3">
         {estimates.map((item, index) => (
-          <div key={item.product.id} className="flex items-center gap-3 border-b border-surface-border pb-3 last:border-0 last:pb-0">
+          <div
+            key={item.product.id}
+            className="flex items-center gap-3 border-b border-surface-border pb-3 last:border-0 last:pb-0"
+          >
             <div className="relative h-14 w-12 overflow-hidden rounded-sm bg-surface-raised">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="" className="h-full w-full object-cover" src={item.product.images[0].url} />
             </div>
             <p className="text-sm text-text-secondary">
-              Estimated delivery by <strong className="text-text-primary">{index === 0 ? '8 Jun 2026' : '9 Jun 2026'}</strong>
+              Estimated delivery by{' '}
+              <strong className="text-text-primary">
+                {index === 0 ? '8 Jun 2026' : '9 Jun 2026'}
+              </strong>
             </p>
           </div>
         ))}
@@ -420,7 +542,12 @@ function PaymentDetails({ method, total }: { method: string; total: number }) {
   }
 
   if (method === 'COD') {
-    return <p className="mt-5 rounded-md bg-surface-raised p-4 text-sm text-text-secondary">Cash on Delivery is available for the selected address. Keep {formatCurrency(total)} ready at delivery.</p>;
+    return (
+      <p className="mt-5 rounded-md bg-surface-raised p-4 text-sm text-text-secondary">
+        Cash on Delivery is available for the selected address. Keep {formatCurrency(total)} ready
+        at delivery.
+      </p>
+    );
   }
 
   if (method === 'Wallet') {
@@ -431,7 +558,12 @@ function PaymentDetails({ method, total }: { method: string; total: number }) {
     <div className="mt-5 grid gap-4">
       <div className="flex items-center justify-between rounded-md bg-surface-raised p-4">
         <label className="flex items-center gap-3 font-bold">
-          <input defaultChecked className="h-5 w-5 accent-brand-primary" name="upi-mode" type="radio" />
+          <input
+            defaultChecked
+            className="h-5 w-5 accent-brand-primary"
+            name="upi-mode"
+            type="radio"
+          />
           Scan & Pay
         </label>
         <QrCode aria-hidden="true" className="h-12 w-12 text-brand-primary" />
