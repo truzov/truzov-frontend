@@ -1,18 +1,21 @@
 'use client';
 
 import { useAuthStore } from '@/store/auth.store';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export function useProtectedRoute(redirectTo = '/login') {
   const router = useRouter();
+  const pathname = usePathname();
   const { isLoggedIn, isLoading } = useAuthStore();
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
-      router.push(redirectTo);
+      const nextUrl =
+        redirectTo === '/login' ? `${redirectTo}?redirect=${encodeURIComponent(pathname)}` : redirectTo;
+      router.push(nextUrl);
     }
-  }, [isLoggedIn, isLoading, router, redirectTo]);
+  }, [isLoggedIn, isLoading, pathname, router, redirectTo]);
 
   return { isLoggedIn, isLoading };
 }

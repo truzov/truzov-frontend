@@ -1,7 +1,19 @@
 import { z } from 'zod';
 
+export const loginIdentifierSchema = z
+  .string()
+  .trim()
+  .min(1, 'Enter your email or phone number')
+  .refine((value) => {
+    const normalizedPhone = value.replace(/\D/g, '');
+    const isEmail = z.string().email().safeParse(value).success;
+    const isPhone = normalizedPhone.length === 10;
+
+    return isEmail || isPhone;
+  }, 'Enter a valid email or 10 digit phone number');
+
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  identifier: loginIdentifierSchema,
 });
 
 export const signupSchema = z

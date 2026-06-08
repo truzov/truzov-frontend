@@ -57,7 +57,11 @@ export function Header() {
             <Logo />
             <div className="flex items-center gap-1 lg:hidden">
               <AccountMenu />
-              <Link aria-label="Open cart" className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-brand-primary hover:bg-brand-light" href="/cart">
+              <Link
+                aria-label="Open cart"
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-brand-primary hover:bg-brand-light"
+                href="/cart"
+              >
                 <ShoppingCart aria-hidden="true" className="h-5 w-5" />
                 {isMounted && itemCount > 0 ? (
                   <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-xs text-on-primary">
@@ -103,7 +107,10 @@ export function Header() {
             </span>
             <AccountMenu />
             <Link href="/wishlist">
-              <Button className="px-0 text-on-surface hover:bg-transparent hover:text-primary" variant="ghost">
+              <Button
+                className="px-0 text-on-surface hover:bg-transparent hover:text-primary"
+                variant="ghost"
+              >
                 <Heart aria-hidden="true" className="h-7 w-7" />
                 Wishlist
               </Button>
@@ -129,7 +136,6 @@ export function Header() {
           <div className="mx-auto flex max-w-[1440px] items-center gap-8 px-6 py-3 text-sm font-semibold text-on-surface">
             <Link className="flex items-center gap-1 hover:text-primary" href="/products">
               Shop
-              <ChevronDown aria-hidden="true" className="h-4 w-4" />
             </Link>
             <Link className="hover:text-primary" href="/products">
               Brands

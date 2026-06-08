@@ -1,6 +1,10 @@
-// Redirect signup to register for backward compatibility
-import { redirect } from 'next/navigation';
+import { AuthForm } from '@/components/auth/AuthForm';
+import { AuthLayout } from '@/components/auth/AuthLayout';
 
 export default function SignupPage() {
-  redirect('/auth/register');
+  return (
+    <AuthLayout title="Create Account" subtitle="Start your journey with verified health solutions.">
+      <AuthForm mode="signup" />
+    </AuthLayout>
+  );
 }

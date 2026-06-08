@@ -25,6 +25,7 @@ import { addresses as fixtureAddresses } from '@/lib/data/fixtures';
 import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
+import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useCartStore } from '@/store/cart.store';
 import { useCheckoutStore } from '@/store/checkout.store';
 import type { Address } from '@/types';
@@ -41,7 +42,17 @@ export function BagScreen() {
   const items = useCartStore((state) => state.items);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const user = useAuthStore((state) => state.user);
+  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const continueToAddress = () => {
+    if (isLoggedIn) {
+      router.push('/checkout/address');
+      return;
+    }
+
+    openAuthModal({ mode: 'login', redirectTo: '/checkout/address' });
+  };
 
   if (!items.length) {
     return (
@@ -81,11 +92,7 @@ export function BagScreen() {
               </div>
               <Button
                 variant="outline"
-                onClick={() =>
-                  router.push(
-                    isLoggedIn ? '/checkout/address' : '/login?redirect=/checkout/address'
-                  )
-                }
+                onClick={continueToAddress}
               >
                 {isLoggedIn ? 'Change Address' : 'Login to Continue'}
               </Button>
@@ -125,9 +132,7 @@ export function BagScreen() {
           <CheckoutPriceDetails
             ctaLabel="Continue"
             termsText="By continuing, you agree to Truzov's terms and verified marketplace policies."
-            onCta={() =>
-              router.push(isLoggedIn ? '/checkout/address' : '/login?redirect=/checkout/address')
-            }
+            onCta={continueToAddress}
           />
         </div>
       </div>
@@ -138,6 +143,8 @@ export function BagScreen() {
 export function AddressScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>(fixtureAddresses);
@@ -153,8 +160,18 @@ export function AddressScreen() {
     }
   }, [savedAddresses, selectedAddressId, setSelectedAddress]);
 
+  useEffect(() => {
+    if (items.length && !isLoggedIn) {
+      openAuthModal({ mode: 'login', redirectTo: '/checkout/address' });
+    }
+  }, [isLoggedIn, items.length, openAuthModal]);
+
   if (!items.length) {
     return <BlockedCheckoutEmptyState />;
+  }
+
+  if (!isLoggedIn) {
+    return <BlockedCheckoutAuthState />;
   }
 
   function addAddress(event: React.FormEvent<HTMLFormElement>) {
@@ -296,6 +313,8 @@ export function AddressScreen() {
 export function PaymentScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const coupon = useCartStore((state) => state.coupon);
   const clearCart = useCartStore((state) => state.clearCart);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
@@ -305,8 +324,18 @@ export function PaymentScreen() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (items.length && !isLoggedIn) {
+      openAuthModal({ mode: 'login', redirectTo: '/checkout/payment' });
+    }
+  }, [isLoggedIn, items.length, openAuthModal]);
+
   if (!items.length) {
     return <BlockedCheckoutEmptyState />;
+  }
+
+  if (!isLoggedIn) {
+    return <BlockedCheckoutAuthState />;
   }
 
   if (!selectedAddressId) {
@@ -582,6 +611,20 @@ function BlockedCheckoutEmptyState() {
         icon={AlertCircle}
         message="Your bag is empty, so checkout cannot continue yet."
         title="Add items to continue"
+      />
+    </div>
+  );
+}
+
+function BlockedCheckoutAuthState() {
+  return (
+    <div className="mx-auto max-w-4xl py-10">
+      <EmptyState
+        action="Sign In"
+        href="/login"
+        icon={ShieldCheck}
+        message="Sign in to continue to secure checkout."
+        title="Authentication required"
       />
     </div>
   );

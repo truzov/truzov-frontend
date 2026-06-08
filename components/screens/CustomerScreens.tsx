@@ -52,6 +52,7 @@ import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 import { useCartStore } from '@/store/cart.store';
 import { useUiStore } from '@/store/ui.store';
 import { useWishlistStore } from '@/store/wishlist.store';
+import { useAuthStore } from '@/store/auth.store';
 import type { Product } from '@/types';
 
 function SectionHeading({
@@ -906,56 +907,149 @@ export function SearchScreen({ query }: { query?: string }) {
   );
 }
 
-export function AccountScreen() {
+const accountNavSections = [
+  {
+    label: null,
+    items: [{ label: 'Overview', href: '/account' }],
+  },
+  {
+    label: 'ORDERS',
+    items: [{ label: 'Orders & Returns', href: '/account/orders' }],
+  },
+  {
+    label: 'ACCOUNT',
+    items: [
+      { label: 'Profile', href: '/account', active: true },
+      { label: 'Addresses', href: '/account/addresses' },
+    ],
+  },
+];
+
+function AccountSidebar({ userName }: { userName: string }) {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="font-heading text-4xl">Your Account</h1>
-      <div className="mt-6 grid gap-6 lg:grid-cols-[0.7fr_1fr]">
-        <section className="rounded-lg border border-surface-border bg-surface-base p-6">
-          <div className="flex items-center gap-4">
-            <span className="grid h-16 w-16 place-items-center rounded-full bg-brand-light text-2xl font-semibold text-brand-primary">
-              AV
-            </span>
-            <div>
-              <h2 className="font-heading text-2xl">Asha Verma</h2>
-              <p className="text-text-secondary">customer@truzov.test</p>
-            </div>
+    <aside className="w-full lg:w-56 shrink-0">
+      <div className="mb-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-text-muted">Account</p>
+        <p className="mt-0.5 font-heading text-lg text-text-primary">{userName}</p>
+      </div>
+      <nav className="flex flex-col gap-4">
+        {accountNavSections.map((section, i) => (
+          <div key={i}>
+            {section.label && (
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-text-muted">
+                {section.label}
+              </p>
+            )}
+            <ul className="flex flex-col">
+              {section.items.map((item) => (
+                <li key={item.href + item.label}>
+                  <Link
+                    href={item.href}
+                    className={`block py-1.5 text-sm transition-colors ${
+                      'active' in item && item.active
+                        ? 'font-semibold text-brand-primary'
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <hr className="mt-3 border-surface-border" />
           </div>
-          <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-md bg-surface-raised p-3">
-              <strong>{orders.length}</strong>
-              <span className="block text-xs text-text-muted">Orders</span>
-            </div>
-            <div className="rounded-md bg-surface-raised p-3">
-              <strong>4</strong>
-              <span className="block text-xs text-text-muted">Wishlist</span>
-            </div>
-            <div className="rounded-md bg-surface-raised p-3">
-              <strong>{addresses.length}</strong>
-              <span className="block text-xs text-text-muted">Addresses</span>
-            </div>
-          </div>
-        </section>
-        <section>
-          <SectionHeading title="Recent orders" />
-          <div className="grid gap-3">
-            {orders.map((order) => (
-              <Link
-                key={order.id}
-                className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs"
-                href={`/account/orders/${order.id}`}
-              >
-                <div className="flex justify-between gap-3">
-                  <strong>{order.id}</strong>
-                  <Badge variant="info">{order.status}</Badge>
+        ))}
+      </nav>
+    </aside>
+  );
+}
+
+export function AccountScreen() {
+  const { user, updateProfile } = useAuthStore();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
+
+  const displayName = user?.name || 'Guest';
+
+  function startEdit() {
+    setForm({ name: user?.name ?? '', email: user?.email ?? '', phone: user?.phone ?? '' });
+    setEditing(true);
+  }
+
+  function saveEdit() {
+    updateProfile({ name: form.name, email: form.email, phone: form.phone || undefined });
+    setEditing(false);
+  }
+
+  const profileRows = [
+    { label: 'Full Name', value: user?.name || '—' },
+    { label: 'Mobile Number', value: user?.phone || '— not added —' },
+    { label: 'Email ID', value: user?.email || '—' },
+    { label: 'Gender', value: 'Not set' },
+    { label: 'Date of Birth', value: '— not added —' },
+    { label: 'Location', value: '— not added —' },
+  ];
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
+        <AccountSidebar userName={displayName} />
+
+        <main className="flex-1">
+          <div className="rounded-lg border border-surface-border bg-surface-base p-6 lg:p-8">
+            <h2 className="font-heading text-xl text-text-primary">Profile Details</h2>
+            <hr className="mt-4 border-surface-border" />
+
+            {editing ? (
+              <div className="mt-6 grid gap-5">
+                <Input
+                  label="Full Name"
+                  name="name"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                />
+                <Input
+                  label="Email ID"
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                />
+                <Input
+                  label="Mobile Number"
+                  name="phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                />
+                <div className="flex gap-3 pt-2">
+                  <Button className="px-10 uppercase tracking-wider" variant="primary" onClick={saveEdit}>
+                    Save
+                  </Button>
+                  <Button className="px-10 uppercase tracking-wider" variant="outline" onClick={() => setEditing(false)}>
+                    Cancel
+                  </Button>
                 </div>
-                <p className="mt-1 text-sm text-text-secondary">
-                  {order.items.length} item(s) - {formatCurrency(order.total)}
-                </p>
-              </Link>
-            ))}
+              </div>
+            ) : (
+              <>
+                <dl className="mt-6 grid gap-y-5">
+                  {profileRows.map(({ label, value }) => (
+                    <div key={label} className="grid grid-cols-[180px_1fr] items-start gap-4">
+                      <dt className="text-sm text-text-secondary">{label}</dt>
+                      <dd className="text-sm font-medium text-text-primary">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-8">
+                  <Button className="px-12 uppercase tracking-wider" variant="primary" onClick={startEdit}>
+                    Edit
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
-        </section>
+        </main>
       </div>
     </div>
   );

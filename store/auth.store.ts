@@ -12,15 +12,17 @@ interface AuthStore {
   error: string | null;
   otpSessionId: string | null;
   pendingEmail: string | null;
+  pendingIdentifier: string | null;
   
   // Actions
   signup: (fullName: string, email: string, password: string) => Promise<void>;
-  sendOTP: (email: string) => Promise<void>;
+  sendOTP: (identifier: string) => Promise<void>;
   verifyOTP: (code: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginAs: (role: UserRole) => void; // For demo/testing purposes
   logout: () => void;
   clearError: () => void;
+  updateProfile: (updates: Partial<Pick<UserProfile, 'name' | 'email' | 'phone'>>) => void;
 }
 
 // Mock user for testing
@@ -43,8 +45,8 @@ const mockAPI = {
     return { sessionId: `session_${Date.now()}`, message: 'OTP sent to email' };
   },
   
-  sendOTP: async (email: string) => {
-    void email;
+  sendOTP: async (identifier: string) => {
+    void identifier;
     await new Promise((resolve) => setTimeout(resolve, 600));
     return { sessionId: `session_${Date.now()}`, expiresIn: 600 };
   },
@@ -71,6 +73,7 @@ export const useAuthStore = create<AuthStore>()(
       error: null,
       otpSessionId: null,
       pendingEmail: null,
+      pendingIdentifier: null,
 
       signup: async (fullName, email, password) => {
         try {
@@ -81,6 +84,7 @@ export const useAuthStore = create<AuthStore>()(
             user: createMockUser(email, fullName),
             otpSessionId: null,
             pendingEmail: null,
+            pendingIdentifier: null,
             isLoading: false,
           });
         } catch (err) {
@@ -90,13 +94,17 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      sendOTP: async (email) => {
+      sendOTP: async (identifier) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await mockAPI.sendOTP(email);
+          const normalizedIdentifier = identifier.includes('@')
+            ? identifier.trim()
+            : identifier.replace(/\D/g, '');
+          const response = await mockAPI.sendOTP(normalizedIdentifier);
           set({
             otpSessionId: response.sessionId,
-            pendingEmail: email,
+            pendingEmail: normalizedIdentifier.includes('@') ? normalizedIdentifier : null,
+            pendingIdentifier: normalizedIdentifier,
             isLoading: false,
           });
         } catch (err) {
@@ -117,12 +125,15 @@ export const useAuthStore = create<AuthStore>()(
 
           await mockAPI.verifyOTP(currentState.otpSessionId, code);
           
-          const mockUser = createMockUser(currentState.pendingEmail || 'user@example.com');
+          const mockUser = createMockUser(
+            currentState.pendingIdentifier || currentState.pendingEmail || 'user@example.com'
+          );
           set({
             isLoggedIn: true,
             user: mockUser,
             otpSessionId: null,
             pendingEmail: null,
+            pendingIdentifier: null,
             isLoading: false,
           });
         } catch (err) {
@@ -155,6 +166,7 @@ export const useAuthStore = create<AuthStore>()(
           user: null,
           otpSessionId: null,
           pendingEmail: null,
+          pendingIdentifier: null,
           error: null,
         });
       },
@@ -172,6 +184,12 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       clearError: () => set({ error: null }),
+
+      updateProfile: (updates) => {
+        const { user } = get();
+        if (!user) return;
+        set({ user: { ...user, ...updates } });
+      },
     }),
     { name: 'truzov-auth' }
   )

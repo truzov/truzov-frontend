@@ -1,13 +1,30 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '@/store/auth.store';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { ArrowRight, Loader2 } from 'lucide-react';
 
-export function LoginForm() {
+export interface AuthFormProps {
+  variant?: 'page' | 'modal';
+  redirectTo?: string;
+  onSuccess?: () => void;
+  onModeChange?: (mode: 'login' | 'signup') => void;
+}
+
+interface LoginFormProps extends AuthFormProps {
+  onOtpSent?: (identifier: string) => void;
+}
+
+export function LoginForm({
+  variant = 'page',
+  redirectTo,
+  onModeChange,
+  onOtpSent,
+}: LoginFormProps) {
   const router = useRouter();
   const { sendOTP, isLoading, error } = useAuthStore();
 
@@ -21,65 +38,91 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      await sendOTP(data.email);
-      const redirect = new URLSearchParams(window.location.search).get('redirect');
-      const verifyHref = redirect ? `/verify-otp?redirect=${encodeURIComponent(redirect)}` : '/verify-otp';
-      // Redirect to OTP verification after a short delay
-      setTimeout(() => {
+      await sendOTP(data.identifier);
+
+      if (onOtpSent) {
+        onOtpSent(data.identifier);
+        return;
+      }
+
+      const redirect =
+        redirectTo ??
+        (typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('redirect')
+          : null);
+      const verifyHref = redirect
+        ? `/verify-otp?redirect=${encodeURIComponent(redirect)}`
+        : '/verify-otp';
+
+      window.setTimeout(() => {
         router.push(verifyHref);
       }, 500);
     } catch {
-      // Error is handled by the store
+      // Error is handled by the store.
     }
   };
 
   return (
-    <form className="w-full flex flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
-      {/* Email Input */}
+    <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col space-y-xs">
-        <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-          Email Address
+        <label className="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
+          Email or Phone Number
         </label>
         <input
-          {...register('email')}
-          className={`w-full border rounded-lg px-md py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md ${
-            errors.email ? 'border-error' : 'border-outline-variant'
+          {...register('identifier')}
+          className={`w-full rounded-lg border px-md py-3 font-body-md outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
+            errors.identifier ? 'border-error' : 'border-outline-variant'
           }`}
-          placeholder="you@example.com"
-          type="email"
+          inputMode="email"
+          placeholder="you@example.com or 9876543210"
+          type="text"
         />
-        {errors.email && <p className="text-caption text-error">{errors.email.message}</p>}
+        {errors.identifier ? (
+          <p className="text-caption text-error">{errors.identifier.message}</p>
+        ) : null}
       </div>
 
-      {/* Error Message */}
-      {error && <p className="text-caption text-error bg-error-container p-sm rounded-lg">{error}</p>}
+      {error ? (
+        <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p>
+      ) : null}
 
-      {/* Submit Button */}
       <button
-        className="w-full bg-primary hover:bg-primary-container text-on-primary font-h5-bold py-md px-lg rounded-lg shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md font-h5-bold text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         disabled={isLoading}
         type="submit"
       >
         {isLoading ? (
           <>
-            <span className="material-symbols-outlined animate-spin">sync</span>
+            <Loader2 className="h-5 w-5 animate-spin" />
             Sending OTP...
           </>
         ) : (
           <>
             Send OTP
-            <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+            <ArrowRight className="h-5 w-5" />
           </>
         )}
       </button>
 
-      {/* Signup Link */}
       <div className="text-center">
         <p className="font-body-md text-body-md text-on-surface-variant">
           Don&apos;t have an account?{' '}
-          <Link href="/register" className="text-primary hover:text-primary-container font-h5-bold transition-colors">
-            Sign Up
-          </Link>
+          {variant === 'modal' && onModeChange ? (
+            <button
+              className="font-h5-bold text-primary transition-colors hover:text-primary-container"
+              type="button"
+              onClick={() => onModeChange('signup')}
+            >
+              Sign Up
+            </button>
+          ) : (
+            <Link
+              className="font-h5-bold text-primary transition-colors hover:text-primary-container"
+              href="/signup"
+            >
+              Sign Up
+            </Link>
+          )}
         </p>
       </div>
     </form>

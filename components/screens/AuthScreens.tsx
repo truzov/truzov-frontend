@@ -58,7 +58,7 @@ export function AuthScreen({
           {mode === 'login' ? (
             <>
               New to Truzov?{' '}
-              <Link className="font-semibold text-brand-primary" href={role === 'customer' ? '/register' : `/${role}/register`}>
+              <Link className="font-semibold text-brand-primary" href={role === 'customer' ? '/signup' : `/${role}/register`}>
                 Create an account
               </Link>
             </>
