@@ -83,9 +83,8 @@ export function BagScreen() {
                     : 'Sign in to select your delivery address'}
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  {isLoggedIn
-                    ? `${fixtureAddresses[0].city}, ${fixtureAddresses[0].state} - ${fixtureAddresses[0].pincode}`
-                    : 'Bag is public. Address selection starts after login.'}
+                  {isLoggedIn &&
+                    `${fixtureAddresses[0].city}, ${fixtureAddresses[0].state} - ${fixtureAddresses[0].pincode}`}
                 </p>
               </div>
               <Button variant="outline" onClick={continueToAddress}>
@@ -112,7 +111,7 @@ export function BagScreen() {
                   {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag
                 </h1>
                 <p className="text-sm font-semibold text-text-secondary">
-                  Review quantities before address selection
+                  Review cart before address selection
                 </p>
               </div>
             </section>
@@ -458,16 +457,21 @@ export function ConfirmationScreen() {
             aria-hidden="true"
             className="mx-auto h-14 w-14 sm:h-16 sm:w-16 fill-brand-primary text-brand-primary"
           />
-          <h1 className="mt-4 font-heading text-2xl sm:text-3xl text-brand-primary">Order confirmed</h1>
+          <h1 className="mt-4 font-heading text-2xl sm:text-3xl text-brand-primary">
+            Order confirmed
+          </h1>
           <p className="mt-2 text-sm sm:text-base text-text-secondary">
-            You will receive an order confirmation email/SMS shortly with the expected delivery date for your items.
+            You will receive an order confirmation email/SMS shortly with the expected delivery date
+            for your items.
           </p>
         </div>
 
         {/* Delivery Details */}
         <div className="grid gap-6 py-6 sm:py-8 sm:grid-cols-[1fr_auto]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">Delivering to:</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
+              Delivering to:
+            </p>
             <div className="mt-3">
               <p className="font-semibold text-text-primary">
                 {selectedAddress.fullName} | {selectedAddress.phone}
@@ -494,7 +498,9 @@ export function ConfirmationScreen() {
 
           {/* Order Summary Card */}
           <div className="sm:pl-6 border-t sm:border-t-0 sm:border-l border-surface-border pt-6 sm:pt-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">Order Summary</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
+              Order Summary
+            </p>
             <div className="mt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Order ID:</span>
@@ -517,17 +523,10 @@ export function ConfirmationScreen() {
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-between pt-6 border-t border-surface-border">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => router.push('/')}
-          >
+          <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>
             Continue Shopping
           </Button>
-          <Button
-            className="flex-1"
-            onClick={() => router.push(`/account/orders/${orderId}`)}
-          >
+          <Button className="flex-1" onClick={() => router.push(`/account/orders/${orderId}`)}>
             View Order
           </Button>
         </div>
