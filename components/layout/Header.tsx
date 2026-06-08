@@ -34,22 +34,20 @@ export function Header() {
       <header className="sticky top-0 z-50 border-b border-outline-variant bg-white font-body shadow-xs">
         <div className="bg-primary text-on-primary">
           <div className="mx-auto hidden max-w-[1440px] items-center justify-center gap-8 px-6 py-2 text-[13px] font-semibold lg:flex">
-            {[
-              [FlaskConical, 'Lab Tested'],
-              [BadgeCheck, 'Authentic Products'],
-              [Users, 'Trusted Vendors'],
-              [ShieldCheck, 'Transparency You Can Trust'],
-              [Heart, "India's Verified Health Marketplace"],
-            ].map(([Icon, label]) => {
-              const TrustIcon = Icon as typeof FlaskConical;
-
-              return (
-                <span key={label as string} className="flex items-center gap-2 whitespace-nowrap">
-                  <TrustIcon aria-hidden="true" className="h-[18px] w-[18px]" />
-                  {label as string}
-                </span>
-              );
-            })}
+            {(
+              [
+                [FlaskConical, 'Lab Tested'],
+                [BadgeCheck, 'Authentic Products'],
+                [Users, 'Trusted Vendors'],
+                [ShieldCheck, 'Transparency You Can Trust'],
+                [Heart, "India's Verified Health Marketplace"],
+              ] as Array<[typeof FlaskConical, string]>
+            ).map(([Icon, label]) => (
+              <span key={label} className="flex items-center gap-2 whitespace-nowrap">
+                <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
+                {label}
+              </span>
+            ))}
           </div>
         </div>
         <div className="mx-auto grid max-w-[1440px] gap-3 px-4 py-3 lg:grid-cols-[140px_1fr_auto] lg:items-center lg:gap-10 lg:px-6 lg:py-5">

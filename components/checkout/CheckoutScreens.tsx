@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -17,7 +17,6 @@ import {
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
-import { CheckoutProgress } from '@/components/checkout/CheckoutProgress';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
 import { BagItemRow } from '@/components/checkout/BagItemRow';
 import { addressSchema } from '@/lib/validations/checkout';
@@ -56,14 +55,13 @@ export function BagScreen() {
 
   if (!items.length) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
-        <CheckoutProgress active={0} />
-        <div className="mt-8">
+      <div className="mx-auto max-w-5xl">
+        <div>
           <EmptyState
             action="Start Shopping"
             href="/products"
             icon={AlertCircle}
-            message="Your bag feels light. Browse lab-verified staples and add a few favorites."
+            message="Your bag feels light. Browse verified staples and add a few favorites."
             title="Your bag is empty"
           />
         </div>
@@ -90,10 +88,7 @@ export function BagScreen() {
                     : 'Bag is public. Address selection starts after login.'}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                onClick={continueToAddress}
-              >
+              <Button variant="outline" onClick={continueToAddress}>
                 {isLoggedIn ? 'Change Address' : 'Login to Continue'}
               </Button>
             </section>
@@ -316,7 +311,6 @@ export function PaymentScreen() {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const coupon = useCartStore((state) => state.coupon);
-  const clearCart = useCartStore((state) => state.clearCart);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const paymentMethod = useCheckoutStore((state) => state.paymentMethod);
   const setPaymentMethod = useCheckoutStore((state) => state.setPaymentMethod);
@@ -357,8 +351,7 @@ export function PaymentScreen() {
     setProcessing(true);
     setError(null);
     window.setTimeout(() => {
-      clearCart();
-      router.push('/checkout/confirm?paid=1');
+      router.push('/checkout/confirm');
     }, 700);
   }
 
@@ -443,31 +436,103 @@ export function PaymentScreen() {
 }
 
 export function ConfirmationScreen() {
+  const router = useRouter();
   const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const items = useCartStore((state) => state.items);
+  const itemCountRef = useRef(items.length); // capture before clearCart fires
+  const orderId = 'TRZ-2026-1042';
+  const selectedAddress = fixtureAddresses[0];
 
   useEffect(() => {
     resetCheckout();
-  }, [resetCheckout]);
+    clearCart();
+  }, [resetCheckout, clearCart]);
 
   return (
-    <section className="mx-auto max-w-3xl rounded-md border border-surface-border bg-surface-base p-8 text-center shadow-xs">
-      <ShieldCheck
-        aria-hidden="true"
-        className="mx-auto h-16 w-16 fill-brand-primary text-brand-primary"
-      />
-      <h1 className="mt-5 font-heading text-4xl">Your order is confirmed!</h1>
-      <p className="mt-3 text-text-secondary">
-        Order ID <span className="font-mono">TRZ-2026-1042</span> has been placed successfully.
-      </p>
-      <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <Button onClick={() => window.location.assign('/account/orders/TRZ-2026-1042')}>
-          Track Order
-        </Button>
-        <Button variant="outline" onClick={() => window.location.assign('/')}>
-          Continue Shopping
-        </Button>
+    <div className="mx-auto max-w-4xl">
+      <div className="rounded-md border border-surface-border bg-surface-base p-6 sm:p-8 shadow-xs">
+        {/* Confirmation Message */}
+        <div className="border-b border-surface-border pb-6 text-center sm:pb-8">
+          <ShieldCheck
+            aria-hidden="true"
+            className="mx-auto h-14 w-14 sm:h-16 sm:w-16 fill-brand-primary text-brand-primary"
+          />
+          <h1 className="mt-4 font-heading text-2xl sm:text-3xl text-brand-primary">Order confirmed</h1>
+          <p className="mt-2 text-sm sm:text-base text-text-secondary">
+            You will receive an order confirmation email/SMS shortly with the expected delivery date for your items.
+          </p>
+        </div>
+
+        {/* Delivery Details */}
+        <div className="grid gap-6 py-6 sm:py-8 sm:grid-cols-[1fr_auto]">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">Delivering to:</p>
+            <div className="mt-3">
+              <p className="font-semibold text-text-primary">
+                {selectedAddress.fullName} | {selectedAddress.phone}
+              </p>
+              <p className="mt-1 text-sm text-text-secondary leading-relaxed">
+                {selectedAddress.addressLine1}
+                {selectedAddress.addressLine2 ? `, ${selectedAddress.addressLine2}` : ''},{' '}
+                {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-4 text-brand-primary border-brand-primary hover:bg-brand-light"
+              onClick={() => router.push('/account/orders')}
+            >
+              ORDER DETAILS →
+            </Button>
+            <p className="mt-4 text-xs text-text-secondary flex items-start gap-2">
+              <span>📋</span>
+              <span>You can Track/View/Modify order from orders page.</span>
+            </p>
+          </div>
+
+          {/* Order Summary Card */}
+          <div className="sm:pl-6 border-t sm:border-t-0 sm:border-l border-surface-border pt-6 sm:pt-0">
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">Order Summary</p>
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary">Order ID:</span>
+                <span className="font-mono font-semibold">{orderId}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary">Items:</span>
+                <span className="font-semibold">{itemCountRef.current}</span>
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t border-surface-border">
+                <span className="text-text-secondary">Status:</span>
+                <span className="inline-flex items-center gap-1.5 font-semibold text-text-success">
+                  <span className="inline-block h-2 w-2 rounded-full bg-text-success" />
+                  Confirmed
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between pt-6 border-t border-surface-border">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => router.push('/')}
+          >
+            Continue Shopping
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() => router.push(`/account/orders/${orderId}`)}
+          >
+            View Order
+          </Button>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 

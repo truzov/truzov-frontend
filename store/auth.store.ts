@@ -5,62 +5,45 @@ import { persist } from 'zustand/middleware';
 import type { UserProfile, UserRole } from '@/types';
 
 interface AuthStore {
-  // State
   isLoggedIn: boolean;
   user: UserProfile | null;
+  token: string | null;
   isLoading: boolean;
   error: string | null;
   otpSessionId: string | null;
-  pendingEmail: string | null;
   pendingIdentifier: string | null;
-  
-  // Actions
   signup: (fullName: string, email: string, password: string) => Promise<void>;
   sendOTP: (identifier: string) => Promise<void>;
   verifyOTP: (code: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  loginAs: (role: UserRole) => void; // For demo/testing purposes
+  loginAs: (role: UserRole) => void;
   logout: () => void;
   clearError: () => void;
-  updateProfile: (updates: Partial<Pick<UserProfile, 'name' | 'email' | 'phone'>>) => void;
+  updateProfile: (updates: Partial<Pick<UserProfile, 'name' | 'email' | 'phone' | 'gender' | 'dateOfBirth' | 'location'>>) => void;
 }
 
-// Mock user for testing
 const createMockUser = (emailOrPhone: string, fullName?: string): UserProfile => ({
   id: `user_${Date.now()}`,
-  name: fullName?.trim() || (emailOrPhone.includes('@') ? emailOrPhone.split('@')[0] : 'Darrell Steward'),
-  email: emailOrPhone.includes('@') ? emailOrPhone : 'darrell.s@example.com',
+  name: fullName?.trim() || (emailOrPhone.includes('@') ? emailOrPhone.split('@')[0] : 'User'),
+  email: emailOrPhone.includes('@') ? emailOrPhone : `${emailOrPhone}@truzov.test`,
   phone: emailOrPhone.includes('@') ? undefined : emailOrPhone,
   role: 'customer',
   createdAt: new Date().toISOString(),
 });
 
-// Simple mock API calls (replace with real API later)
+// Mock API — replace each method body with apiFetch() calls when backend is ready
 const mockAPI = {
-  signup: async (fullName: string, email: string, password: string) => {
-    void fullName;
-    void email;
-    void password;
+  signup: async (_fullName: string, _email: string, _password: string) => {
     await new Promise((resolve) => setTimeout(resolve, 800));
-    return { sessionId: `session_${Date.now()}`, message: 'OTP sent to email' };
+    return { sessionId: `session_${Date.now()}` };
   },
-  
-  sendOTP: async (identifier: string) => {
-    void identifier;
+  sendOTP: async (_identifier: string) => {
     await new Promise((resolve) => setTimeout(resolve, 600));
-    return { sessionId: `session_${Date.now()}`, expiresIn: 600 };
+    return { sessionId: `session_${Date.now()}` };
   },
-  
-  verifyOTP: async (sessionId: string, code: string) => {
+  verifyOTP: async (_sessionId: string, code: string) => {
     await new Promise((resolve) => setTimeout(resolve, 800));
     if (code === '000000') throw new Error('Invalid OTP code');
-    return { token: `token_${Date.now()}`, user: { email: 'user@example.com' } };
-  },
-  
-  login: async (email: string, password: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    if (password.length < 6) throw new Error('Invalid password');
-    return { token: `token_${Date.now()}`, user: { email } };
+    return { token: `token_${Date.now()}` };
   },
 };
 
@@ -69,27 +52,19 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       isLoggedIn: false,
       user: null,
+      token: null,
       isLoading: false,
       error: null,
       otpSessionId: null,
-      pendingEmail: null,
       pendingIdentifier: null,
 
       signup: async (fullName, email, password) => {
         try {
           set({ isLoading: true, error: null });
           await mockAPI.signup(fullName, email, password);
-          set({
-            isLoggedIn: true,
-            user: createMockUser(email, fullName),
-            otpSessionId: null,
-            pendingEmail: null,
-            pendingIdentifier: null,
-            isLoading: false,
-          });
+          set({ isLoggedIn: true, user: createMockUser(email, fullName), otpSessionId: null, pendingIdentifier: null, isLoading: false });
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Signup failed';
-          set({ error: errorMessage, isLoading: false });
+          set({ error: err instanceof Error ? err.message : 'Signup failed', isLoading: false });
           throw err;
         }
       },
@@ -97,19 +72,11 @@ export const useAuthStore = create<AuthStore>()(
       sendOTP: async (identifier) => {
         try {
           set({ isLoading: true, error: null });
-          const normalizedIdentifier = identifier.includes('@')
-            ? identifier.trim()
-            : identifier.replace(/\D/g, '');
-          const response = await mockAPI.sendOTP(normalizedIdentifier);
-          set({
-            otpSessionId: response.sessionId,
-            pendingEmail: normalizedIdentifier.includes('@') ? normalizedIdentifier : null,
-            pendingIdentifier: normalizedIdentifier,
-            isLoading: false,
-          });
+          const normalized = identifier.includes('@') ? identifier.trim() : identifier.replace(/\D/g, '');
+          const response = await mockAPI.sendOTP(normalized);
+          set({ otpSessionId: response.sessionId, pendingIdentifier: normalized, isLoading: false });
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to send OTP';
-          set({ error: errorMessage, isLoading: false });
+          set({ error: err instanceof Error ? err.message : 'Failed to send OTP', isLoading: false });
           throw err;
         }
       },
@@ -117,71 +84,24 @@ export const useAuthStore = create<AuthStore>()(
       verifyOTP: async (code) => {
         try {
           set({ isLoading: true, error: null });
-          const currentState = get();
-          
-          if (!currentState.otpSessionId) {
-            throw new Error('OTP session not found');
-          }
-
-          await mockAPI.verifyOTP(currentState.otpSessionId, code);
-          
-          const mockUser = createMockUser(
-            currentState.pendingIdentifier || currentState.pendingEmail || 'user@example.com'
-          );
-          set({
-            isLoggedIn: true,
-            user: mockUser,
-            otpSessionId: null,
-            pendingEmail: null,
-            pendingIdentifier: null,
-            isLoading: false,
-          });
+          const { otpSessionId, pendingIdentifier } = get();
+          if (!otpSessionId) throw new Error('OTP session not found');
+          const response = await mockAPI.verifyOTP(otpSessionId, code);
+          set({ isLoggedIn: true, user: createMockUser(pendingIdentifier ?? 'user@example.com'), token: response.token, otpSessionId: null, pendingIdentifier: null, isLoading: false });
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'OTP verification failed';
-          set({ error: errorMessage, isLoading: false });
+          set({ error: err instanceof Error ? err.message : 'OTP verification failed', isLoading: false });
           throw err;
         }
-      },
-
-      login: async (email, password) => {
-        try {
-          set({ isLoading: true, error: null });
-          await mockAPI.login(email, password);
-          const mockUser = createMockUser(email);
-          set({
-            isLoggedIn: true,
-            user: mockUser,
-            isLoading: false,
-          });
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Login failed';
-          set({ error: errorMessage, isLoading: false });
-          throw err;
-        }
-      },
-
-      logout: () => {
-        set({
-          isLoggedIn: false,
-          user: null,
-          otpSessionId: null,
-          pendingEmail: null,
-          pendingIdentifier: null,
-          error: null,
-        });
       },
 
       loginAs: (role) => {
-        // Demo/testing utility to quickly log in as a specific role
-        const mockUser: UserProfile = {
-          id: `user_${Date.now()}`,
-          name: role.charAt(0).toUpperCase() + role.slice(1),
-          email: `${role}@truzov.test`,
-          role,
-          createdAt: new Date().toISOString(),
-        };
-        set({ isLoggedIn: true, user: mockUser });
+        set({
+          isLoggedIn: true,
+          user: { id: `user_${Date.now()}`, name: role.charAt(0).toUpperCase() + role.slice(1), email: `${role}@truzov.test`, role, createdAt: new Date().toISOString() },
+        });
       },
+
+      logout: () => set({ isLoggedIn: false, user: null, token: null, otpSessionId: null, pendingIdentifier: null, error: null }),
 
       clearError: () => set({ error: null }),
 

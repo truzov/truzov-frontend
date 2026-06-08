@@ -20,7 +20,7 @@ export function AuthScreen({
   const searchParams = useSearchParams();
   const loginAs = useAuthStore((state) => state.loginAs);
   const returnUrl =
-    searchParams.get('returnUrl') ??
+    searchParams.get('redirect') ??
     (role === 'vendor' ? '/vendor' : role === 'admin' ? '/admin' : role === 'lab' ? '/lab' : '/account');
 
   return (

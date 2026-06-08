@@ -102,6 +102,9 @@ export interface UserProfile {
   role: UserRole;
   phone?: string;
   avatarUrl?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  location?: string;
   createdAt: string;
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
 import type { AuthFormProps } from './LoginForm';
@@ -66,12 +67,12 @@ export function SignupForm({
   return (
     <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col space-y-xs">
-        <label className="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
+        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
           Full Name
         </label>
         <input
           {...register('fullName')}
-          className={`w-full rounded-lg border px-md py-3 font-body-md outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
+          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
             errors.fullName ? 'border-error' : 'border-outline-variant'
           }`}
           placeholder="John Doe"
@@ -81,12 +82,12 @@ export function SignupForm({
       </div>
 
       <div className="flex flex-col space-y-xs">
-        <label className="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
+        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
           Email Address
         </label>
         <input
           {...register('email')}
-          className={`w-full rounded-lg border px-md py-3 font-body-md outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
+          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
             errors.email ? 'border-error' : 'border-outline-variant'
           }`}
           placeholder="you@example.com"
@@ -96,14 +97,14 @@ export function SignupForm({
       </div>
 
       <div className="flex flex-col space-y-xs">
-        <label className="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
+        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
           Password
         </label>
         <input
           {...register('password', {
             onChange: (event) => calculateStrength(event.target.value),
           })}
-          className={`w-full rounded-lg border px-md py-3 font-body-md outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
+          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
             errors.password ? 'border-error' : 'border-outline-variant'
           }`}
           placeholder="Password"
@@ -121,7 +122,7 @@ export function SignupForm({
                 }`}
               />
             ))}
-            <span className="ml-sm font-caption text-caption text-on-surface-variant">
+            <span className="ml-sm text-caption font-body text-on-surface-variant">
               {passwordStrength <= 2 ? 'Weak' : passwordStrength <= 3 ? 'Medium' : 'Strong'}
             </span>
           </div>
@@ -129,12 +130,12 @@ export function SignupForm({
       </div>
 
       <div className="flex flex-col space-y-xs">
-        <label className="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
+        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
           Confirm Password
         </label>
         <input
           {...register('confirmPassword')}
-          className={`w-full rounded-lg border px-md py-3 font-body-md outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
+          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
             errors.confirmPassword ? 'border-error' : 'border-outline-variant'
           }`}
           placeholder="Confirm password"
@@ -148,29 +149,29 @@ export function SignupForm({
       {error ? <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p> : null}
 
       <button
-        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md font-h5-bold text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         disabled={isLoading}
         type="submit"
       >
         {isLoading ? (
           <>
-            <span className="material-symbols-outlined animate-spin">sync</span>
+            <Loader2 className="h-5 w-5 animate-spin" />
             Creating Account...
           </>
         ) : (
           <>
             Create Account
-            <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+            <ArrowRight className="h-5 w-5" />
           </>
         )}
       </button>
 
       <div className="text-center">
-        <p className="font-body-md text-body-md text-on-surface-variant">
+        <p className="text-body-md font-body text-on-surface-variant">
           Already have an account?{' '}
           {variant === 'modal' && onModeChange ? (
             <button
-              className="font-h5-bold text-primary transition-colors hover:text-primary-container"
+              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
               type="button"
               onClick={() => onModeChange('login')}
             >
@@ -178,7 +179,7 @@ export function SignupForm({
             </button>
           ) : (
             <Link
-              className="font-h5-bold text-primary transition-colors hover:text-primary-container"
+              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
               href="/login"
             >
               Log In

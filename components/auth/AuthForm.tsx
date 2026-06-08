@@ -25,7 +25,7 @@ export function AuthForm({
   onSuccess,
   onModeChange,
 }: AuthFormProps) {
-  const { verifyOTP, loginAs, isLoading, error, pendingIdentifier, pendingEmail, clearError } =
+  const { verifyOTP, loginAs, isLoading, error, pendingIdentifier, clearError } =
     useAuthStore();
   const [step, setStep] = useState<AuthStep>('form');
   const [otp, setOtp] = useState('');
@@ -61,7 +61,7 @@ export function AuthForm({
   };
 
   if (step === 'otp') {
-    const displayIdentifier = pendingIdentifier || pendingEmail || 'your account';
+    const displayIdentifier = pendingIdentifier || 'your account';
 
     return (
       <div className="grid gap-4">

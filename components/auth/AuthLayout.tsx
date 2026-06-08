@@ -11,10 +11,8 @@ interface AuthLayoutProps {
 export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
   return (
     <main className="flex-grow flex flex-col lg:flex-row w-full min-h-screen">
-      {/* Brand Panel */}
       <BrandPanel />
 
-      {/* Form Panel */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-margin lg:p-xxl bg-surface">
         <div className="w-full max-w-md mx-auto flex flex-col">
           {/* Mobile Logo */}
@@ -24,11 +22,10 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
 
           {/* Header */}
           <div className="mb-xl text-center lg:text-left">
-            <h2 className="font-h2 text-h2 text-on-surface mb-sm">{title}</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">{subtitle}</p>
+            <h2 className="text-h2 font-heading text-on-surface mb-sm">{title}</h2>
+            <p className="text-body-md font-body text-on-surface-variant">{subtitle}</p>
           </div>
 
-          {/* Form Content */}
           {children}
         </div>
       </div>

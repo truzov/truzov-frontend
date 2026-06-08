@@ -13,12 +13,14 @@ export interface ProductFilterState {
 }
 
 export function parseFilters(params: URLSearchParams): ProductFilterState {
+  const minPrice = params.get('minPrice');
+  const maxPrice = params.get('maxPrice');
   return {
     category: params.get('category') ?? undefined,
     brand: params.get('brand') ?? undefined,
     sort: params.get('sort') ?? 'relevance',
-    minPrice: params.get('minPrice') ? Number(params.get('minPrice')) : undefined,
-    maxPrice: params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
     tags: params.get('tags')?.split(',').filter(Boolean),
     inStock: params.get('inStock') === 'true' ? true : undefined,
     labVerified: params.get('labVerified') === 'true' ? true : undefined,

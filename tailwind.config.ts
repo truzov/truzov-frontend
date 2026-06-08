@@ -14,6 +14,7 @@ const config: Config = {
           accentLight: '#FAF0E6',
         },
         surface: {
+          DEFAULT: '#FFFFFF',
           base: '#FFFFFF',
           raised: '#F7F5F2',
           overlay: '#F0EDE8',
@@ -36,6 +37,11 @@ const config: Config = {
           dangerBg: '#FDECEA',
           infoBg: '#EAF2EC',
         },
+
+        // ✅ MISSING TOKENS (added to fix silent no-style bugs)
+        'neutral-mid-gray': '#D1CBC3',
+        'neutral-light-gray': '#F0EDE8',
+        'accent-link': '#3B6B4A',
 
         // ✅ MATERIAL DESIGN 3 COLORS (for auth pages)
         primary: '#00600a',

@@ -63,7 +63,13 @@ function VerificationCard({ item }: { item: VerificationSubmission }) {
   return (
     <article className="rounded-md border border-surface-border bg-surface-raised p-3 shadow-xs">
       <div className="relative mb-3 aspect-video overflow-hidden rounded-md bg-surface-overlay">
-        <Image alt={item.productName} className="object-cover" fill src={item.thumbnail} />
+        <Image
+          alt={item.productName}
+          className="object-cover"
+          fill
+          sizes="200px"
+          src={item.thumbnail}
+        />
       </div>
       <div className="flex items-start gap-2">
         <ShieldCheck aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-brand-primary" />

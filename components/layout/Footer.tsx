@@ -1,4 +1,3 @@
-import { Globe, Link2, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './Logo';
 
@@ -18,11 +17,6 @@ export function Footer() {
             The world&apos;s first verification-led health marketplace. We use science to bridge
             the gap between marketing claims and nutritional truth.
           </p>
-          <div className="mt-5 flex gap-4 text-on-surface-variant">
-            <Globe aria-hidden="true" className="h-5 w-5" />
-            <Link2 aria-hidden="true" className="h-5 w-5" />
-            <Share2 aria-hidden="true" className="h-5 w-5" />
-          </div>
         </div>
         {groups.map(([title, links]) => (
           <div key={title}>

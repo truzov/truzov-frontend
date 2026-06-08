@@ -47,7 +47,7 @@ export function ProductCard({
         compact && 'min-w-[180px]'
       )}
     >
-      <div className={cn('relative bg-surface-raised', variant === 'featured' ? 'aspect-[4/3]' : 'aspect-square')}>
+      <div className={cn('bg-surface-raised', variant === 'featured' ? 'aspect-[4/3]' : 'aspect-square')} style={{ position: 'relative' }}>
         <Link href={`/products/${product.slug}`} aria-label={`View ${product.name}`}>
           <Image
             alt={product.images[0].alt}

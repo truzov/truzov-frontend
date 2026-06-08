@@ -53,8 +53,8 @@ export function AccountMenu({ className }: { className?: string }) {
     openAuth();
   };
 
-  const displayName = user?.name || 'Darrell Steward';
-  const displayEmail = user?.email || 'darrell.s@example.com';
+  const displayName = user?.name ?? 'Account';
+  const displayEmail = user?.email ?? '';
 
   return (
     <div ref={menuRef} className={cn('relative', className)}>

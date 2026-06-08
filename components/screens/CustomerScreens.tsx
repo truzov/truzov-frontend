@@ -15,14 +15,13 @@ import {
   Microscope,
   PackageCheck,
   Search,
-  Share2,
   ShieldCheck,
-  ShoppingBag,
   ShoppingCart,
-  Star,
+  Share2,
   Store,
   Truck,
   Zap,
+  Star,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -32,9 +31,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Rating } from '@/components/ui/Rating';
-import { Stepper } from '@/components/ui/Stepper';
 import { CartItemRow } from '@/components/commerce/CartItemRow';
-import { OrderSummary } from '@/components/commerce/OrderSummary';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import {
   addresses,
@@ -48,183 +45,270 @@ import {
   reviews,
 } from '@/lib/data/fixtures';
 import { filterProducts, type ProductFilterState } from '@/lib/utils/filters';
-import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
+import { formatCurrency } from '@/lib/utils/money';
 import { useCartStore } from '@/store/cart.store';
 import { useUiStore } from '@/store/ui.store';
 import { useWishlistStore } from '@/store/wishlist.store';
 import { useAuthStore } from '@/store/auth.store';
 import type { Product } from '@/types';
 
-function SectionHeading({
-  eyebrow,
-  title,
-  action,
-}: {
-  eyebrow?: string;
-  title: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-6 flex items-end justify-between gap-4">
-      <div>
-        {eyebrow ? <p className="text-sm font-semibold text-text-secondary">{eyebrow}</p> : null}
-        <h2 className="font-heading text-3xl">{title}</h2>
-      </div>
-      {action}
-    </div>
-  );
-}
-
 function TrustStrip() {
   const items = [
-    [Leaf, 'Certified Organic Sources'],
-    [ShieldCheck, 'Third-Party Lab Audited'],
+    [ShieldCheck, 'Certified Organic Sources'],
     [CreditCard, 'Secure Checkout'],
-    [Truck, '2-3 Day Delivery'],
+    [Microscope, 'Third-Party Lab Audited'],
+    [Truck, 'Temperature Controlled'],
   ] as const;
 
   return (
-    <div className="border-y border-surface-border bg-surface-overlay">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-5 text-sm text-text-secondary md:grid-cols-4">
+    <section className="border-y border-outline-variant bg-surface-container-high py-8">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-8 px-6 text-on-surface md:justify-between">
         {items.map(([Icon, label]) => (
-          <div key={label} className="flex items-center gap-2">
-            <Icon aria-hidden="true" className="h-4 w-4 text-brand-primary" />
-            <span>{label}</span>
+          <div key={label} className="flex items-center gap-3">
+            <Icon aria-hidden="true" className="h-5 w-5 fill-current text-primary" />
+            <span className="text-sm font-bold">{label}</span>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
 export function HomeScreen() {
   const hero = banners[0];
   const featured = products.filter((product) => product.isFeatured);
-  const newArrivals = products.filter((product) => product.isNewArrival);
+  // Duplicate for seamless infinite carousel loop
+  const carouselProducts = [...featured, ...featured];
 
   return (
     <>
-      <section className="bg-brand-primary text-text-inverse">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 lg:grid-cols-[1fr_0.9fr] lg:py-20">
-          <div>
-            <Badge className="bg-brand-secondary text-text-inverse">
-              Clinically audited inventory
-            </Badge>
-            <h1 className="mt-6 max-w-xl font-heading text-5xl">{hero.headline}</h1>
-            <p className="mt-5 max-w-lg text-md text-brand-light">{hero.subtext}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
+      {/* Hero Section */}
+      <section className="bg-[#1f7a1f] py-16 text-white md:py-32">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-6 md:flex-row md:gap-12">
+          <div className="flex-1 space-y-6 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wide">
+              <BadgeCheck aria-hidden="true" className="h-4 w-4 fill-current" />
+              Clinically Audited Inventory
+            </div>
+            <h1 className="text-[36px] font-black leading-[1.1] tracking-tight md:text-[64px]">
+              Scientific Purity. <span className="text-[#adff9d]">Every batch lab-verified.</span>
+            </h1>
+            <p className="mx-auto max-w-lg text-base leading-relaxed text-white/90 md:mx-0 md:text-lg">
+              Shop with absolute confidence. We lab-test random batches from every vendor to ensure
+              zero pesticides and 100% potency.
+            </p>
+            <div className="pt-2">
               <Link
-                className="inline-flex h-[52px] items-center justify-center rounded-md bg-surface-base px-6 font-semibold text-brand-primary"
-                href={hero.href}
+                className="inline-flex items-center rounded-full bg-white px-8 py-4 font-bold text-[#1f7a1f] shadow-md transition hover:bg-white/90"
+                href="/products"
               >
-                {hero.ctaLabel}
-              </Link>
-              <Link
-                className="inline-flex h-[52px] items-center justify-center rounded-md border border-brand-light px-6 font-semibold text-text-inverse"
-                href="/trust/how-it-works"
-              >
-                Learn verification
+                Browse Marketplace
               </Link>
             </div>
           </div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl border-4 border-brand-secondary bg-brand-light">
-            <Image alt={hero.headline} className="object-cover" fill priority src={hero.imageUrl} />
+          <div className="relative w-full max-w-[340px] flex-shrink-0 md:max-w-none md:flex-1">
+            <div className="aspect-square overflow-hidden rounded-[3rem] border-[12px] border-white/10 shadow-2xl">
+              <Image
+                alt={hero.headline}
+                className="object-cover"
+                fill
+                priority
+                sizes="(min-width: 1024px) 45vw, 340px"
+                src={hero.imageUrl}
+              />
+            </div>
           </div>
         </div>
       </section>
+
       <TrustStrip />
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <SectionHeading eyebrow="Shop by lab-verified category" title="Popular categories" />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+
+      {/* Category Section */}
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <h2 className="mb-10 text-center font-heading text-2xl text-on-surface md:text-left">
+          Shop by Lab-Verified Category
+        </h2>
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
           {categories.map((category) => (
             <Link
               key={category.slug}
-              className="group rounded-md border border-surface-border bg-surface-base p-3 text-center shadow-xs transition hover:shadow-sm"
+              className="group flex cursor-pointer flex-col items-center gap-4"
               href={`/category/${category.slug}`}
             >
-              <div className="relative mx-auto aspect-square w-24 overflow-hidden rounded-md bg-surface-raised">
+              <div className="relative aspect-square w-full overflow-hidden rounded-3xl border-2 border-transparent bg-surface-container shadow-md transition group-hover:border-primary group-hover:shadow-lg">
                 <Image
                   alt={category.name}
                   className="object-cover transition group-hover:scale-105"
                   fill
+                  sizes="(min-width: 1024px) 16vw, (min-width: 768px) 33vw, 50vw"
                   src={category.image}
                 />
               </div>
-              <p className="mt-3 text-sm font-semibold">{category.name}</p>
+              <p className="text-center text-sm font-bold">{category.name}</p>
             </Link>
           ))}
         </div>
       </section>
-      <section className="bg-surface-raised">
-        <div className="mx-auto max-w-7xl px-4 py-12">
-          <SectionHeading
-            eyebrow="Verified best-sellers"
-            title="Top performing products"
-            action={
-              <Link
-                className="hidden text-sm font-semibold text-brand-primary sm:flex"
-                href="/products"
-              >
-                View All Marketplace <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
-              </Link>
-            }
-          />
-          <ProductGrid priorityCount={4} products={featured} />
-        </div>
-      </section>
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-12 lg:grid-cols-[1fr_0.55fr]">
-        <div className="rounded-lg border border-surface-border bg-surface-base p-6">
-          <SectionHeading title="Why Truzov?" />
-          <div className="grid gap-4 md:grid-cols-4">
-            {[
-              ['1. Sourced', 'Carefully sourced from trusted farms and brands'],
-              ['2. Lab Tested', 'Every batch tested in accredited labs'],
-              ['3. Verified', 'Only passing products are sold'],
-              ['4. Delivered', 'Cold-chain and secure delivery where needed'],
-            ].map(([title, text]) => (
-              <div key={title} className="text-center">
-                <span className="mx-auto grid h-12 w-12 place-items-center rounded-md bg-brand-light text-brand-primary">
-                  <ShieldCheck aria-hidden="true" className="h-5 w-5" />
-                </span>
-                <h3 className="mt-3 text-sm font-semibold">{title}</h3>
-                <p className="mt-1 text-xs text-text-secondary">{text}</p>
-              </div>
-            ))}
+
+      {/* Best-sellers Carousel */}
+      <section className="bg-surface-container-low py-16">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-heading text-2xl text-on-surface">Verified Best-Sellers</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">
+                Top performing products from our last 24-hour lab audit cycle.
+              </p>
+            </div>
+            <Link
+              className="flex shrink-0 items-center gap-1 text-sm font-bold text-primary hover:underline"
+              href="/products"
+            >
+              View All
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="overflow-hidden">
+            <div className="carousel-track gap-4 py-2">
+              {carouselProducts.map((product, idx) => (
+                <div
+                  key={`${product.id}-${idx}`}
+                  className="w-[200px] flex-shrink-0 sm:w-[220px] lg:w-[calc((100%-48px)/4)]"
+                >
+                  <Link
+                    className="flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm transition hover:shadow-md"
+                    href={`/products/${product.slug}`}
+                  >
+                    <div className="relative aspect-square w-full overflow-hidden">
+                      <Image
+                        alt={product.name}
+                        className="object-cover"
+                        fill
+                        sizes="(min-width: 1024px) 25vw, 220px"
+                        src={product.images[0]?.url ?? ''}
+                      />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-2 p-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                          {product.category}
+                        </p>
+                        <h3 className="mt-0.5 text-sm font-bold leading-snug text-on-surface line-clamp-2">
+                          {product.name}
+                        </h3>
+                      </div>
+                      <Rating rating={product.rating} />
+                      <div className="mt-auto flex items-center justify-between pt-1">
+                        <span className="text-base font-bold text-primary">
+                          ₹{product.price.toLocaleString('en-IN')}
+                        </span>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
+                          <ShoppingCart aria-hidden="true" className="h-3.5 w-3.5" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="rounded-lg bg-brand-light p-6">
-          <h2 className="font-heading text-2xl">See the Proof, Always</h2>
-          <p className="mt-3 text-sm text-text-secondary">
-            Every product comes with a lab report excerpt because you deserve to know what you eat.
-          </p>
-          <Link
-            className="mt-5 inline-flex h-10 items-center rounded-md bg-brand-primary px-4 text-sm font-semibold text-text-inverse"
-            href="/trust/lab-reports"
-          >
-            View Lab Reports
-          </Link>
-        </div>
       </section>
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <SectionHeading eyebrow="New lab arrivals" title="Recently verified" />
-        <ProductGrid products={newArrivals} />
-      </section>
-      <section className="bg-surface-raised">
-        <div className="mx-auto max-w-7xl px-4 py-12">
-          <SectionHeading eyebrow="Verified purchase reviews" title="Customers trust the reports" />
-          <div className="grid gap-4 md:grid-cols-3">
-            {reviews.concat(reviews.slice(0, 1)).map((review, index) => (
-              <article
-                key={`${review.id}-${index}`}
-                className="rounded-md border border-surface-border bg-surface-base p-5"
-              >
-                <Rating rating={review.rating} />
-                <h3 className="mt-3 font-semibold">{review.title}</h3>
-                <p className="mt-2 line-clamp-3 text-sm text-text-secondary">{review.body}</p>
-                <Badge className="mt-4" variant="success">
-                  Verified Purchase
-                </Badge>
-              </article>
+
+      {/* Why Truzov + See the Proof */}
+      <section className="py-16">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="flex flex-col gap-6 lg:flex-row">
+            {/* Why truzov card */}
+            <div className="flex-[2] rounded-[2rem] border border-gray-100 bg-white p-10 shadow-sm">
+              <h2 className="mb-12 text-[28px] font-extrabold text-on-surface">Why truzov?</h2>
+              <div className="relative flex flex-col gap-8 md:flex-row md:gap-4">
+                <div className="absolute left-[10%] right-[10%] top-10 hidden h-px bg-gray-200 md:block" />
+                {[
+                  {
+                    step: '1. Sourced',
+                    text: 'Carefully sourced from trusted farmers & brands',
+                    icon: Leaf,
+                  },
+                  {
+                    step: '2. Lab Tested',
+                    text: 'Every batch tested in NABL accredited labs',
+                    icon: Microscope,
+                  },
+                  {
+                    step: '3. Verified',
+                    text: 'We verify results for purity & authenticity',
+                    icon: ShieldCheck,
+                  },
+                  {
+                    step: '4. Delivered',
+                    text: 'Delivered to you with complete transparency',
+                    icon: Truck,
+                  },
+                ].map(({ step, text, icon: Icon }) => (
+                  <div
+                    key={step}
+                    className="relative z-10 flex flex-1 flex-col items-center text-center"
+                  >
+                    <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white bg-[#f0f9f0] shadow-sm">
+                      <Icon aria-hidden="true" className="h-8 w-8 text-[#1f7a1f]" />
+                    </div>
+                    <h3 className="mb-2 text-sm font-bold text-on-surface">{step}</h3>
+                    <p className="max-w-[140px] text-xs leading-relaxed text-on-surface-variant">
+                      {text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* See the Proof card */}
+            <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-[2rem] bg-[#f0f9f0] p-10">
+              <div className="z-10">
+                <h2 className="mb-4 text-[28px] font-extrabold text-on-surface">
+                  See the Proof, Always
+                </h2>
+                <p className="mb-10 max-w-[240px] text-sm leading-relaxed text-on-surface-variant">
+                  Every product comes with a lab report. Because you deserve to know what you eat.
+                </p>
+                <Link
+                  className="inline-flex rounded-xl bg-[#1f7a1f] px-8 py-3.5 text-sm font-bold text-white transition hover:bg-[#165a16]"
+                  href="/trust/lab-reports"
+                >
+                  View Lab Reports
+                </Link>
+              </div>
+              {/* Decorative doc */}
+              <div className="absolute bottom-0 right-0 p-4 opacity-40">
+                <div className="relative flex h-32 w-24 flex-col gap-2 rounded-tr-3xl bg-[#c9e0c9] p-4">
+                  <div className="h-1.5 w-full rounded-full bg-white" />
+                  <div className="h-1.5 w-full rounded-full bg-white" />
+                  <div className="h-1.5 w-2/3 rounded-full bg-white" />
+                  <div className="absolute -left-4 -top-4 rounded-full bg-white p-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1f7a1f]">
+                      <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom trust grid */}
+          <div className="mt-0 grid grid-cols-2 gap-8 border-t border-gray-100 py-8 md:grid-cols-4">
+            {[
+              { icon: Truck, title: '2-3 Days Delivery', sub: 'Across Major Cities' },
+              { icon: ArrowRight, title: 'Hassle Free Returns', sub: 'Easy 7 Days Return' },
+              { icon: ShieldCheck, title: 'Secure Payments', sub: '100% Safe & Secure' },
+              { icon: Zap, title: 'Dedicated Support', sub: "We're Here to Help" },
+            ].map(({ icon: Icon, title, sub }) => (
+              <div key={title} className="flex items-center gap-4">
+                <Icon aria-hidden="true" className="h-7 w-7 flex-shrink-0 text-[#1f7a1f]" />
+                <div>
+                  <p className="text-sm font-extrabold text-on-surface">{title}</p>
+                  <p className="text-xs text-on-surface-variant">{sub}</p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -425,11 +509,19 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   key={image.id}
                   aria-label={`View product image ${index + 2}`}
                   className={`relative aspect-square overflow-hidden rounded-lg border bg-white ${
-                    selectedImage.id === image.id ? 'border-2 border-primary' : 'border-outline-variant'
+                    selectedImage.id === image.id
+                      ? 'border-2 border-primary'
+                      : 'border-outline-variant'
                   }`}
                   onClick={() => setSelectedImage(image)}
                 >
-                  <Image alt={image.alt} className="object-cover" fill sizes="12vw" src={image.url} />
+                  <Image
+                    alt={image.alt}
+                    className="object-cover"
+                    fill
+                    sizes="12vw"
+                    src={image.url}
+                  />
                   {index === 3 ? (
                     <span className="absolute inset-0 grid place-items-center bg-black/45 text-sm font-bold text-white">
                       +3
@@ -522,7 +614,9 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                         Certifications
                       </p>
                       <p className="mt-2 font-medium">
-                        {product.id === 'prd-001' ? 'FSSAI, ISO 22000' : product.certifications.join(', ')}
+                        {product.id === 'prd-001'
+                          ? 'FSSAI, ISO 22000'
+                          : product.certifications.join(', ')}
                       </p>
                     </div>
                   </div>
@@ -565,11 +659,15 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               {tab === 'Lab Report' ? (
                 <div className="rounded-xl border border-outline-variant bg-white p-4">
                   <p className="text-sm text-on-surface-variant">
-                    Batch #{product.batchId}. {report?.summary ?? 'Lab report will be available after testing.'}
+                    Batch #{product.batchId}.{' '}
+                    {report?.summary ?? 'Lab report will be available after testing.'}
                   </p>
                   <div className="mt-4 grid gap-3">
                     {product.labMetrics.map((metric) => (
-                      <div key={metric.label} className="flex justify-between rounded-lg bg-surface-container-low p-3">
+                      <div
+                        key={metric.label}
+                        className="flex justify-between rounded-lg bg-surface-container-low p-3"
+                      >
                         <span>{metric.label}</span>
                         <strong className="text-primary">{metric.value}</strong>
                       </div>
@@ -581,7 +679,10 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               {tab === 'Reviews' ? (
                 <div id="reviews" className="grid gap-3">
                   {reviews.map((review) => (
-                    <article key={review.id} className="rounded-lg border border-outline-variant bg-white p-4">
+                    <article
+                      key={review.id}
+                      className="rounded-lg border border-outline-variant bg-white p-4"
+                    >
                       <Rating rating={review.rating} />
                       <h3 className="mt-2 font-body text-base font-semibold">{review.title}</h3>
                       <p className="mt-1 text-sm text-on-surface-variant">{review.body}</p>
@@ -671,7 +772,9 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   <Truck aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
                     <p className="font-medium">Delivery by Thu, Oct 24</p>
-                    <p className="text-xs text-on-surface-variant">Free delivery on orders over Rs 999</p>
+                    <p className="text-xs text-on-surface-variant">
+                      Free delivery on orders over Rs 999
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -715,7 +818,13 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                 className="overflow-hidden rounded-xl border border-outline-variant bg-white transition hover:shadow-md"
               >
                 <div className="relative aspect-square">
-                  <Image alt={item.name} className="object-cover" fill sizes="220px" src={item.image} />
+                  <Image
+                    alt={item.name}
+                    className="object-cover"
+                    fill
+                    sizes="(min-width: 1280px) 180px, (min-width: 768px) 22vw, 45vw"
+                    src={item.image}
+                  />
                   <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">
                     <BadgeCheck aria-hidden="true" className="h-3 w-3" />
                     Verified
@@ -724,7 +833,10 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                 <div className="p-4">
                   <h3 className="truncate font-body text-base font-medium">{item.name}</h3>
                   <p className="mt-1 flex items-center gap-1 text-sm text-on-surface-variant">
-                    <Star aria-hidden="true" className="h-3.5 w-3.5 fill-brand-accent text-brand-accent" />
+                    <Star
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5 fill-brand-accent text-brand-accent"
+                    />
                     {item.rating}
                   </p>
                   <p className="mt-2 font-semibold">{formatCurrency(item.price)}</p>
@@ -735,166 +847,6 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
         </section>
       </div>
     </div>
-  );
-}
-
-export function CartScreen() {
-  const items = useCartStore((state) => state.items);
-
-  if (!items.length) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
-        <EmptyState
-          action="Start Shopping"
-          href="/products"
-          icon={ShoppingBag}
-          message="Your cart feels light. Browse lab-verified staples and add a few favorites."
-          title="Your cart is empty"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[1fr_360px]">
-      <section>
-        <h1 className="mb-6 font-heading text-4xl">Your Shopping Cart</h1>
-        <div className="grid gap-4">
-          {items.map((item) => (
-            <CartItemRow key={`${item.product.id}-${item.variantId ?? 'base'}`} item={item} />
-          ))}
-        </div>
-      </section>
-      <OrderSummary />
-    </div>
-  );
-}
-
-export function CheckoutAddressScreen() {
-  return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-lg border border-surface-border bg-surface-base p-6">
-        <Stepper active={0} steps={['Address', 'Payment', 'Confirmation']} />
-        <h1 className="mt-8 font-heading text-3xl">Select delivery address</h1>
-        <div className="mt-5 grid gap-3">
-          {addresses.map((address) => (
-            <label
-              key={address.id}
-              className="flex gap-3 rounded-md border border-surface-border p-4"
-            >
-              <input defaultChecked={address.isDefault} name="address" type="radio" />
-              <span>
-                <strong>{address.fullName}</strong>
-                <span className="mt-1 block text-sm text-text-secondary">
-                  {address.addressLine1}, {address.city}, {address.state} - {address.pincode}
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <Input label="Full name" placeholder="Asha Verma" />
-          <Input label="Phone" placeholder="9876543210" />
-          <Input label="Pincode" placeholder="560001" />
-          <Input label="City" placeholder="Bengaluru" />
-          <Input
-            className="md:col-span-2"
-            label="Address line 1"
-            placeholder="Flat / house / street"
-          />
-        </div>
-        <Link className="mt-6 inline-block" href="/checkout/payment">
-          <Button size="lg">Continue to Payment</Button>
-        </Link>
-      </section>
-      <OrderSummary checkoutHref="/checkout/payment" />
-    </div>
-  );
-}
-
-export function CheckoutPaymentScreen() {
-  const [method, setMethod] = useState('UPI');
-  const items = useCartStore((state) => state.items);
-  const coupon = useCartStore((state) => state.coupon);
-  const totals = calculateCartTotals(items, coupon);
-
-  return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-lg border border-surface-border bg-surface-base p-6">
-        <Stepper active={1} steps={['Address', 'Payment', 'Confirmation']} />
-        <h1 className="mt-8 font-heading text-3xl">Choose payment mode</h1>
-        <div className="mt-6 grid gap-4 md:grid-cols-[220px_1fr]">
-          <div className="grid gap-2">
-            {['UPI', 'Cards', 'Net Banking', 'Cash on Delivery'].map((item) => (
-              <button
-                key={item}
-                className={`rounded-md border px-4 py-3 text-left font-semibold ${method === item ? 'border-brand-primary bg-brand-light text-brand-primary' : 'border-surface-border'}`}
-                onClick={() => setMethod(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <div className="rounded-md bg-surface-raised p-5">
-            <h2 className="font-semibold">{method}</h2>
-            {method === 'UPI' ? (
-              <Input className="mt-4" label="UPI ID" placeholder="name@upi" />
-            ) : null}
-            {method === 'Cards' ? (
-              <div className="mt-4 grid gap-4">
-                <Input label="Card number" placeholder="4111 1111 1111 1111" />
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label="Expiry" placeholder="MM/YY" />
-                  <Input label="CVV" placeholder="123" />
-                </div>
-              </div>
-            ) : null}
-            {method === 'Net Banking' ? (
-              <Input className="mt-4" label="Bank" placeholder="Select bank" />
-            ) : null}
-            {method === 'Cash on Delivery' ? (
-              <p className="mt-4 text-sm text-text-secondary">
-                Cash on Delivery available for this address.
-              </p>
-            ) : null}
-            <p className="mt-5 text-sm text-text-secondary">
-              Payments secured by Razorpay. Mock payment for prototype.
-            </p>
-            <Link className="mt-5 inline-block" href="/checkout/confirm">
-              <Button size="lg">Pay {formatCurrency(totals.total)}</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-      <OrderSummary checkoutHref="/checkout/confirm" />
-    </div>
-  );
-}
-
-export function CheckoutConfirmScreen() {
-  return (
-    <section className="mx-auto max-w-3xl rounded-lg border border-surface-border bg-surface-base p-8 text-center">
-      <Stepper active={2} steps={['Address', 'Payment', 'Confirmation']} />
-      <CheckCircle2 aria-hidden="true" className="mx-auto mt-10 h-16 w-16 text-text-success" />
-      <h1 className="mt-5 font-heading text-4xl">Your order is confirmed!</h1>
-      <p className="mt-3 text-text-secondary">
-        Order ID <span className="font-mono">TRZ-2026-1042</span> has been placed successfully.
-      </p>
-      <div className="mt-8 flex justify-center gap-3">
-        <Link
-          className="inline-flex h-10 items-center rounded-md bg-brand-primary px-4 text-sm font-semibold text-text-inverse"
-          href="/account/orders/TRZ-2026-1042"
-        >
-          Track Order
-        </Link>
-        <Link
-          className="inline-flex h-10 items-center rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary"
-          href="/"
-        >
-          Continue Shopping
-        </Link>
-      </div>
-    </section>
   );
 }
 
@@ -967,17 +919,38 @@ function AccountSidebar({ userName }: { userName: string }) {
 export function AccountScreen() {
   const { user, updateProfile } = useAuthStore();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', phone: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    gender: '',
+    dateOfBirth: '',
+    location: '',
+  });
 
   const displayName = user?.name || 'Guest';
 
   function startEdit() {
-    setForm({ name: user?.name ?? '', email: user?.email ?? '', phone: user?.phone ?? '' });
+    setForm({
+      name: user?.name ?? '',
+      email: user?.email ?? '',
+      phone: user?.phone ?? '',
+      gender: user?.gender ?? '',
+      dateOfBirth: user?.dateOfBirth ?? '',
+      location: user?.location ?? '',
+    });
     setEditing(true);
   }
 
   function saveEdit() {
-    updateProfile({ name: form.name, email: form.email, phone: form.phone || undefined });
+    updateProfile({
+      name: form.name,
+      email: form.email,
+      phone: form.phone || undefined,
+      gender: form.gender || undefined,
+      dateOfBirth: form.dateOfBirth || undefined,
+      location: form.location || undefined,
+    });
     setEditing(false);
   }
 
@@ -985,9 +958,9 @@ export function AccountScreen() {
     { label: 'Full Name', value: user?.name || '—' },
     { label: 'Mobile Number', value: user?.phone || '— not added —' },
     { label: 'Email ID', value: user?.email || '—' },
-    { label: 'Gender', value: 'Not set' },
-    { label: 'Date of Birth', value: '— not added —' },
-    { label: 'Location', value: '— not added —' },
+    { label: 'Gender', value: user?.gender || 'Not set' },
+    { label: 'Date of Birth', value: user?.dateOfBirth || '— not added —' },
+    { label: 'Location', value: user?.location || '— not added —' },
   ];
 
   return (
@@ -1022,11 +995,42 @@ export function AccountScreen() {
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 />
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <Input
+                    label="Gender"
+                    name="gender"
+                    value={form.gender}
+                    onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+                  />
+                  <Input
+                    label="Date of Birth"
+                    name="dateOfBirth"
+                    type="date"
+                    value={form.dateOfBirth}
+                    onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
+                  />
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Location"
+                      name="location"
+                      value={form.location}
+                      onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                    />
+                  </div>
+                </div>
                 <div className="flex gap-3 pt-2">
-                  <Button className="px-10 uppercase tracking-wider" variant="primary" onClick={saveEdit}>
+                  <Button
+                    className="px-10 uppercase tracking-wider"
+                    variant="primary"
+                    onClick={saveEdit}
+                  >
                     Save
                   </Button>
-                  <Button className="px-10 uppercase tracking-wider" variant="outline" onClick={() => setEditing(false)}>
+                  <Button
+                    className="px-10 uppercase tracking-wider"
+                    variant="outline"
+                    onClick={() => setEditing(false)}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -1042,7 +1046,11 @@ export function AccountScreen() {
                   ))}
                 </dl>
                 <div className="mt-8">
-                  <Button className="px-12 uppercase tracking-wider" variant="primary" onClick={startEdit}>
+                  <Button
+                    className="px-12 uppercase tracking-wider"
+                    variant="primary"
+                    onClick={startEdit}
+                  >
                     Edit
                   </Button>
                 </div>

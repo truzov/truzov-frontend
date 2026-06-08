@@ -65,12 +65,12 @@ export function LoginForm({
   return (
     <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col space-y-xs">
-        <label className="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
+        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
           Email or Phone Number
         </label>
         <input
           {...register('identifier')}
-          className={`w-full rounded-lg border px-md py-3 font-body-md outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
+          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
             errors.identifier ? 'border-error' : 'border-outline-variant'
           }`}
           inputMode="email"
@@ -87,7 +87,7 @@ export function LoginForm({
       ) : null}
 
       <button
-        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md font-h5-bold text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         disabled={isLoading}
         type="submit"
       >
@@ -105,11 +105,11 @@ export function LoginForm({
       </button>
 
       <div className="text-center">
-        <p className="font-body-md text-body-md text-on-surface-variant">
+        <p className="text-body-md font-body text-on-surface-variant">
           Don&apos;t have an account?{' '}
           {variant === 'modal' && onModeChange ? (
             <button
-              className="font-h5-bold text-primary transition-colors hover:text-primary-container"
+              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
               type="button"
               onClick={() => onModeChange('signup')}
             >
@@ -117,7 +117,7 @@ export function LoginForm({
             </button>
           ) : (
             <Link
-              className="font-h5-bold text-primary transition-colors hover:text-primary-container"
+              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
               href="/signup"
             >
               Sign Up

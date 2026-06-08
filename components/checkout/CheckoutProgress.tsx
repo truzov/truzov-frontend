@@ -20,14 +20,15 @@ function inferActive(pathname: string) {
 export function CheckoutProgress({ active }: { active?: number }) {
   const pathname = usePathname();
   const current = active ?? inferActive(pathname);
+  const isConfirmation = current === 3;
 
   return (
     <div className="flex w-full items-center justify-center">
       <ol aria-label="Checkout progress" className="flex w-full max-w-md items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-text-muted sm:text-sm">
         {steps.map((step, index) => {
           const complete = index < current;
-          const activeStep = index === current;
-          const canNavigate = index <= current;
+          const activeStep = index === current && !isConfirmation;
+          const canNavigate = index <= current && !isConfirmation;
           const content = (
             <span
               className={cn(

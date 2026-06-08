@@ -16,7 +16,13 @@ export function CartItemRow({ item }: { item: CartItem }) {
   return (
     <div className="grid grid-cols-[80px_1fr] gap-4 rounded-md border border-surface-border bg-surface-base p-3">
       <div className="relative aspect-square overflow-hidden rounded-md bg-surface-raised">
-        <Image alt={item.product.images[0].alt} className="object-cover" fill src={item.product.images[0].url} />
+        <Image
+          alt={item.product.images[0].alt}
+          className="object-cover"
+          fill
+          sizes="80px"
+          src={item.product.images[0].url}
+        />
       </div>
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">

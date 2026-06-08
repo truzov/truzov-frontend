@@ -3,7 +3,15 @@ export interface Column<T> {
   cell: (row: T) => React.ReactNode;
 }
 
-export function DataTable<T>({ rows, columns }: { rows: T[]; columns: Column<T>[] }) {
+export function DataTable<T>({
+  rows,
+  columns,
+  rowKey,
+}: {
+  rows: T[];
+  columns: Column<T>[];
+  rowKey?: (row: T) => string | number;
+}) {
   return (
     <div className="overflow-hidden rounded-lg border border-surface-border bg-surface-base shadow-xs">
       <div className="overflow-x-auto">
@@ -19,7 +27,7 @@ export function DataTable<T>({ rows, columns }: { rows: T[]; columns: Column<T>[
           </thead>
           <tbody className="divide-y divide-surface-border">
             {rows.map((row, index) => (
-              <tr key={index} className="hover:bg-surface-raised/70">
+              <tr key={rowKey ? rowKey(row) : index} className="hover:bg-surface-raised/70">
                 {columns.map((column) => (
                   <td key={column.header} className="px-4 py-3">
                     {column.cell(row)}

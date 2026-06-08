@@ -16,10 +16,11 @@ interface CartStore {
 
 export const useCartStore = create<CartStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       items: [],
       coupon: undefined,
       addItem: (product, qty = 1, variantId) => {
+        if (!product.inStock) return;
         set((state) => {
           const existing = state.items.find(
             (item) => item.product.id === product.id && item.variantId === variantId
@@ -29,10 +30,7 @@ export const useCartStore = create<CartStore>()(
             return {
               items: state.items.map((item) =>
                 item.product.id === product.id && item.variantId === variantId
-                  ? {
-                    ...item,
-                    quantity: Math.min(product.stockCount || 99, item.quantity + qty),
-                  }
+                  ? { ...item, quantity: Math.min(product.stockCount, item.quantity + qty) }
                   : item
               ),
             };
@@ -44,7 +42,7 @@ export const useCartStore = create<CartStore>()(
               {
                 product,
                 variantId,
-                quantity: Math.min(product.stockCount || qty, qty),
+                quantity: Math.min(product.stockCount > 0 ? product.stockCount : qty, qty),
                 unitPrice: product.price,
               },
             ],
