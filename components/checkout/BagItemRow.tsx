@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/utils/money';
 import { useCartStore } from '@/store/cart.store';
 import { useWishlistStore } from '@/store/wishlist.store';
 import { cn } from '@/lib/utils/cn';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 
 export function BagItemRow({ item }: { item: CartItem }) {
   const updateQty = useCartStore((state) => state.updateQty);
@@ -69,8 +69,12 @@ export function BagItemRow({ item }: { item: CartItem }) {
           </Button>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {item.product.isLabVerified ? <Badge variant="success">Lab Verified</Badge> : null}
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-text-secondary">
+            <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-brand-primary" />
+            COA available
+          </span>
           {lowStock ? (
             <span className="rounded-sm border border-brand-accent px-2 py-0.5 text-xs font-bold text-brand-accent">
               {item.product.stockCount} left

@@ -93,7 +93,12 @@ export const useCartStore = create<CartStore>()(
       deselectAll: () => set({ selectedItems: [] }),
 
       applyCoupon: async (code) => {
-        set({ coupon: code.trim().toUpperCase() });
+        const trimmed = code.trim().toUpperCase();
+        const validCoupons = ['TRUZOV10', 'WELCOME20', 'FIRST50'];
+        if (!validCoupons.includes(trimmed)) {
+          throw new Error('Invalid coupon code');
+        }
+        set({ coupon: trimmed });
       },
 
       clearCart: () => set({ items: [], selectedItems: [], coupon: undefined }),

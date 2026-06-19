@@ -19,6 +19,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
 import { BagItemRow } from '@/components/checkout/BagItemRow';
+import { AddressForm } from '@/components/checkout/AddressForm';
+import { AddressFormModal } from '@/components/checkout/AddressFormModal';
 import { addressSchema } from '@/lib/validations/checkout';
 import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
@@ -40,9 +42,13 @@ const paymentMethods = [
 export function BagScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
+  const selectAll = useCartStore((state) => state.selectAll);
+  const deselectAll = useCartStore((state) => state.deselectAll);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
 
   const continueToAddress = () => {
     if (isLoggedIn) {
@@ -92,9 +98,13 @@ export function BagScreen() {
                 <h1 className="font-heading text-2xl">
                   {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag
                 </h1>
-                <p className="text-sm font-semibold text-text-secondary">
-                  Review cart before address selection
-                </p>
+                <button
+                  className="text-sm font-semibold text-brand-primary hover:underline"
+                  onClick={allSelected ? deselectAll : selectAll}
+                  type="button"
+                >
+                  {allSelected ? 'Deselect All' : 'Select All'}
+                </button>
               </div>
             </section>
 
@@ -124,11 +134,10 @@ export function AddressScreen() {
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
   const addresses = useAddressStore((state) => state.addresses);
-  const addAddress = useAddressStore((state) => state.addAddress);
   const deleteAddress = useAddressStore((state) => state.deleteAddress);
   const { getAddress, getDefaultAddress } = useAddressStore();
-  const [showForm, setShowForm] = useState(addresses.length === 0);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | undefined>();
   const selectedAddress = getAddress(selectedAddressId ?? '');
 
   useEffect(() => {
@@ -154,34 +163,15 @@ export function AddressScreen() {
     return <BlockedCheckoutAuthState />;
   }
 
-  function handleAddAddress(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const candidate = {
-      fullName: form.get('fullName')?.toString() ?? '',
-      phone: form.get('phone')?.toString() ?? '',
-      pincode: form.get('pincode')?.toString() ?? '',
-      addressLine1: form.get('addressLine1')?.toString() ?? '',
-      addressLine2: form.get('addressLine2')?.toString() || undefined,
-      city: form.get('city')?.toString() ?? '',
-      state: form.get('state')?.toString() ?? '',
-    };
-    const result = addressSchema.safeParse(candidate);
+  const openAddModal = () => {
+    setEditingAddress(undefined);
+    setModalOpen(true);
+  };
 
-    if (!result.success) {
-      setErrors(
-        Object.fromEntries(
-          result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
-        )
-      );
-      return;
-    }
-
-    addAddress({ ...result.data, isDefault: addresses.length === 0 });
-    setShowForm(false);
-    setErrors({});
-    event.currentTarget.reset();
-  }
+  const openEditModal = (address: Address) => {
+    setEditingAddress(address);
+    setModalOpen(true);
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -191,7 +181,7 @@ export function AddressScreen() {
             <p className="text-sm font-bold uppercase tracking-wide text-text-secondary">Address</p>
             <h1 className="font-heading text-3xl">Select Delivery Address</h1>
           </div>
-          <Button variant="outline" onClick={() => setShowForm((value) => !value)}>
+          <Button variant="outline" onClick={openAddModal}>
             <Plus aria-hidden="true" className="h-4 w-4" />
             Add New Address
           </Button>
@@ -210,6 +200,7 @@ export function AddressScreen() {
                 selected={selectedAddressId === address.id}
                 onSelect={() => setSelectedAddress(address.id)}
                 onDelete={() => deleteAddress(address.id)}
+                onEdit={() => openEditModal(address)}
               />
             ))}
         </section>
@@ -228,49 +219,18 @@ export function AddressScreen() {
                   selected={selectedAddressId === address.id}
                   onSelect={() => setSelectedAddress(address.id)}
                   onDelete={() => deleteAddress(address.id)}
+                  onEdit={() => openEditModal(address)}
                 />
               ))}
           </section>
         ) : null}
-
-        {showForm ? (
-          <form
-            className="grid gap-4 rounded-md border border-surface-border bg-surface-base p-5 shadow-xs md:grid-cols-2"
-            onSubmit={handleAddAddress}
-          >
-            <h2 className="font-heading text-2xl md:col-span-2">Add New Address</h2>
-            <Input
-              error={errors.fullName}
-              label="Full name"
-              name="fullName"
-              placeholder="Asha Verma"
-            />
-            <Input error={errors.phone} label="Phone" name="phone" placeholder="9876543210" />
-            <Input error={errors.pincode} label="Pincode" name="pincode" placeholder="560001" />
-            <Input error={errors.city} label="City" name="city" placeholder="Bengaluru" />
-            <Input error={errors.state} label="State" name="state" placeholder="Karnataka" />
-            <Input
-              error={errors.addressLine1}
-              label="Address line 1"
-              name="addressLine1"
-              placeholder="Flat / house / street"
-            />
-            <Input
-              className="md:col-span-2"
-              error={errors.addressLine2}
-              label="Address line 2"
-              name="addressLine2"
-              placeholder="Area / landmark"
-            />
-            <div className="flex gap-3 md:col-span-2">
-              <Button type="submit">Save Address</Button>
-              <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        ) : null}
       </main>
+
+      <AddressFormModal
+        open={modalOpen}
+        address={editingAddress}
+        onClose={() => setModalOpen(false)}
+      />
 
       <div className="grid gap-4">
         <DeliveryEstimateList />
@@ -584,11 +544,13 @@ function AddressCard({
   selected,
   onSelect,
   onDelete,
+  onEdit,
 }: {
   address: Address;
   selected: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onEdit?: () => void;
 }) {
   return (
     <label
@@ -623,9 +585,11 @@ function AddressCard({
           Pay on Delivery available
         </span>
         <span className="mt-4 flex gap-3">
-          <Button size="sm" type="button" variant="outline">
-            Edit
-          </Button>
+          {onEdit ? (
+            <Button size="sm" type="button" variant="outline" onClick={onEdit}>
+              Edit
+            </Button>
+          ) : null}
           <Button size="sm" type="button" variant="ghost" onClick={onDelete}>
             Remove
           </Button>

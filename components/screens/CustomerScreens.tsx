@@ -14,6 +14,7 @@ import {
   MapPin,
   Microscope,
   PackageCheck,
+  Pencil,
   Plus,
   Search,
   ShieldCheck,
@@ -53,7 +54,9 @@ import { useWishlistStore } from '@/store/wishlist.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useAddressStore } from '@/store/address.store';
 import { useOrdersStore } from '@/store/orders.store';
-import type { Product } from '@/types';
+import { addressSchema } from '@/lib/validations/checkout';
+import { AddressFormModal } from '@/components/checkout/AddressFormModal';
+import type { Product, Address } from '@/types';
 
 function TrustStrip() {
   const items = [
@@ -1161,117 +1164,28 @@ export function AddressesScreen() {
   const addresses = useAddressStore((state) => state.addresses);
   const deleteAddress = useAddressStore((state) => state.deleteAddress);
   const setDefault = useAddressStore((state) => state.setDefault);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    fullName: '',
-    phone: '',
-    pincode: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    state: '',
-  });
-  const addAddress = useAddressStore((state) => state.addAddress);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | undefined>();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (
-      !form.fullName ||
-      !form.phone ||
-      !form.pincode ||
-      !form.addressLine1 ||
-      !form.city ||
-      !form.state
-    )
-      return;
-    addAddress({
-      ...form,
-      addressLine2: form.addressLine2 || undefined,
-      isDefault: addresses.length === 0,
-    });
-    setShowForm(false);
-    setForm({
-      fullName: '',
-      phone: '',
-      pincode: '',
-      addressLine1: '',
-      addressLine2: '',
-      city: '',
-      state: '',
-    });
+  const openAddModal = () => {
+    setEditingAddress(undefined);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (address: Address) => {
+    setEditingAddress(address);
+    setModalOpen(true);
   };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="font-heading text-4xl">Saved Addresses</h1>
-        <Button variant="outline" onClick={() => setShowForm(!showForm)}>
+        <Button variant="outline" onClick={openAddModal}>
           <Plus aria-hidden="true" className="h-4 w-4 mr-2" />
           Add New Address
         </Button>
       </div>
-
-      {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="mb-6 grid gap-4 rounded-lg border border-surface-border bg-surface-base p-5 md:grid-cols-2"
-        >
-          <Input
-            label="Full Name"
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            placeholder="Asha Verma"
-            required
-          />
-          <Input
-            label="Phone"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="9876543210"
-            required
-          />
-          <Input
-            label="Pincode"
-            value={form.pincode}
-            onChange={(e) => setForm({ ...form, pincode: e.target.value })}
-            placeholder="560001"
-            required
-          />
-          <Input
-            label="City"
-            value={form.city}
-            onChange={(e) => setForm({ ...form, city: e.target.value })}
-            placeholder="Bengaluru"
-            required
-          />
-          <Input
-            label="State"
-            value={form.state}
-            onChange={(e) => setForm({ ...form, state: e.target.value })}
-            placeholder="Karnataka"
-            required
-          />
-          <Input
-            label="Address Line 1"
-            value={form.addressLine1}
-            onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
-            placeholder="Flat / house / street"
-            required
-          />
-          <Input
-            label="Address Line 2"
-            value={form.addressLine2}
-            onChange={(e) => setForm({ ...form, addressLine2: e.target.value })}
-            placeholder="Area / landmark"
-          />
-          <div className="flex gap-3 md:col-span-2">
-            <Button type="submit">Save Address</Button>
-            <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {addresses.map((address) => (
@@ -1295,6 +1209,10 @@ export function AddressesScreen() {
                   Set as Default
                 </Button>
               )}
+              <Button size="sm" variant="ghost" onClick={() => openEditModal(address)}>
+                <Pencil aria-hidden="true" className="h-3.5 w-3.5 mr-1" />
+                Edit
+              </Button>
               <Button size="sm" variant="ghost" onClick={() => deleteAddress(address.id)}>
                 Delete
               </Button>
@@ -1302,6 +1220,12 @@ export function AddressesScreen() {
           </article>
         ))}
       </div>
+
+      <AddressFormModal
+        open={modalOpen}
+        address={editingAddress}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 }

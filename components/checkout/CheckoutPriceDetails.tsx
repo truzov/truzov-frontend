@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Tag, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -26,6 +27,7 @@ export function CheckoutPriceDetails({
   const selectedItems = useCartStore((state) => state.selectedItems);
   const coupon = useCartStore((state) => state.coupon);
   const applyCoupon = useCartStore((state) => state.applyCoupon);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const selectedCartItems = items.filter((item) => selectedItems.includes(item.product.id));
   const totals = calculateCartTotals(selectedCartItems, coupon);
@@ -54,10 +56,15 @@ export function CheckoutPriceDetails({
 
       <form
         className="mb-4 grid gap-2"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
           const code = new FormData(event.currentTarget).get('coupon')?.toString().trim() || 'TRUZOV10';
-          void applyCoupon(code);
+          try {
+            setCouponError(null);
+            await applyCoupon(code);
+          } catch {
+            setCouponError('Invalid coupon code');
+          }
         }}
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
@@ -70,7 +77,7 @@ export function CheckoutPriceDetails({
             Apply
           </Button>
         </div>
-        {coupon ? <p className="text-xs font-semibold text-text-success">{coupon} applied.</p> : null}
+        {couponError ? <p className="text-xs text-text-danger">{couponError}</p> : coupon ? <p className="text-xs font-semibold text-text-success">{coupon} applied.</p> : null}
       </form>
 
       {helperText ? <p className="mb-3 text-sm text-text-danger">{helperText}</p> : null}
