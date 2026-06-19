@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -20,13 +20,14 @@ import { Input } from '@/components/ui/Input';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
 import { BagItemRow } from '@/components/checkout/BagItemRow';
 import { addressSchema } from '@/lib/validations/checkout';
-import { addresses as fixtureAddresses } from '@/lib/data/fixtures';
 import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useCartStore } from '@/store/cart.store';
 import { useCheckoutStore } from '@/store/checkout.store';
+import { useAddressStore } from '@/store/address.store';
+import { useOrdersStore } from '@/store/orders.store';
 import type { Address } from '@/types';
 
 const paymentMethods = [
@@ -40,7 +41,6 @@ export function BagScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const user = useAuthStore((state) => state.user);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -74,24 +74,6 @@ export function BagScreen() {
       <div className="mx-auto max-w-7xl px-4 py-6 lg:py-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="grid gap-4">
-            <section className="flex flex-col justify-between gap-3 rounded-md border border-surface-border bg-surface-base p-4 shadow-xs sm:flex-row sm:items-center">
-              <div>
-                <p className="text-sm text-text-secondary">Deliver to</p>
-                <p className="font-bold">
-                  {isLoggedIn
-                    ? (user?.name ?? fixtureAddresses[0].fullName)
-                    : 'Sign in to select your delivery address'}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">
-                  {isLoggedIn &&
-                    `${fixtureAddresses[0].city}, ${fixtureAddresses[0].state} - ${fixtureAddresses[0].pincode}`}
-                </p>
-              </div>
-              <Button variant="outline" onClick={continueToAddress}>
-                {isLoggedIn ? 'Change Address' : 'Login to Continue'}
-              </Button>
-            </section>
-
             <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
               <div className="flex items-start gap-3">
                 <BadgePercent aria-hidden="true" className="mt-1 h-5 w-5 text-brand-primary" />
@@ -124,7 +106,7 @@ export function BagScreen() {
           </main>
 
           <CheckoutPriceDetails
-            ctaLabel="Continue"
+            ctaLabel={isLoggedIn ? 'Continue' : 'Login to Continue'}
             termsText="By continuing, you agree to Truzov's terms and verified marketplace policies."
             onCta={continueToAddress}
           />
@@ -141,18 +123,22 @@ export function AddressScreen() {
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
-  const [savedAddresses, setSavedAddresses] = useState<Address[]>(fixtureAddresses);
-  const [showForm, setShowForm] = useState(fixtureAddresses.length === 0);
+  const addresses = useAddressStore((state) => state.addresses);
+  const addAddress = useAddressStore((state) => state.addAddress);
+  const deleteAddress = useAddressStore((state) => state.deleteAddress);
+  const { getAddress, getDefaultAddress } = useAddressStore();
+  const [showForm, setShowForm] = useState(addresses.length === 0);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const selectedAddress = savedAddresses.find((address) => address.id === selectedAddressId);
+  const selectedAddress = getAddress(selectedAddressId ?? '');
 
   useEffect(() => {
-    if (!selectedAddressId && savedAddresses[0]) {
-      setSelectedAddress(
-        savedAddresses.find((address) => address.isDefault)?.id ?? savedAddresses[0].id
-      );
+    if (!selectedAddressId) {
+      const defaultAddr = getDefaultAddress();
+      if (defaultAddr) {
+        setSelectedAddress(defaultAddr.id);
+      }
     }
-  }, [savedAddresses, selectedAddressId, setSelectedAddress]);
+  }, [selectedAddressId, getDefaultAddress, setSelectedAddress]);
 
   useEffect(() => {
     if (items.length && !isLoggedIn) {
@@ -168,7 +154,7 @@ export function AddressScreen() {
     return <BlockedCheckoutAuthState />;
   }
 
-  function addAddress(event: React.FormEvent<HTMLFormElement>) {
+  function handleAddAddress(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const candidate = {
@@ -179,7 +165,6 @@ export function AddressScreen() {
       addressLine2: form.get('addressLine2')?.toString() || undefined,
       city: form.get('city')?.toString() ?? '',
       state: form.get('state')?.toString() ?? '',
-      saveAsDefault: false,
     };
     const result = addressSchema.safeParse(candidate);
 
@@ -192,13 +177,7 @@ export function AddressScreen() {
       return;
     }
 
-    const nextAddress: Address = {
-      id: `addr-${Date.now()}`,
-      ...result.data,
-      isDefault: savedAddresses.length === 0,
-    };
-    setSavedAddresses((current) => [...current, nextAddress]);
-    setSelectedAddress(nextAddress.id);
+    addAddress({ ...result.data, isDefault: addresses.length === 0 });
     setShowForm(false);
     setErrors({});
     event.currentTarget.reset();
@@ -222,7 +201,7 @@ export function AddressScreen() {
           <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
             Default Address
           </h2>
-          {savedAddresses
+          {addresses
             .filter((address) => address.isDefault)
             .map((address) => (
               <AddressCard
@@ -230,16 +209,17 @@ export function AddressScreen() {
                 address={address}
                 selected={selectedAddressId === address.id}
                 onSelect={() => setSelectedAddress(address.id)}
+                onDelete={() => deleteAddress(address.id)}
               />
             ))}
         </section>
 
-        {savedAddresses.some((address) => !address.isDefault) ? (
+        {addresses.some((address) => !address.isDefault) ? (
           <section className="grid gap-3">
             <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
               Other Addresses
             </h2>
-            {savedAddresses
+            {addresses
               .filter((address) => !address.isDefault)
               .map((address) => (
                 <AddressCard
@@ -247,6 +227,7 @@ export function AddressScreen() {
                   address={address}
                   selected={selectedAddressId === address.id}
                   onSelect={() => setSelectedAddress(address.id)}
+                  onDelete={() => deleteAddress(address.id)}
                 />
               ))}
           </section>
@@ -255,7 +236,7 @@ export function AddressScreen() {
         {showForm ? (
           <form
             className="grid gap-4 rounded-md border border-surface-border bg-surface-base p-5 shadow-xs md:grid-cols-2"
-            onSubmit={addAddress}
+            onSubmit={handleAddAddress}
           >
             <h2 className="font-heading text-2xl md:col-span-2">Add New Address</h2>
             <Input
@@ -307,13 +288,22 @@ export function AddressScreen() {
 export function PaymentScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const coupon = useCartStore((state) => state.coupon);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
+  const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
   const paymentMethod = useCheckoutStore((state) => state.paymentMethod);
   const setPaymentMethod = useCheckoutStore((state) => state.setPaymentMethod);
-  const totals = calculateCartTotals(items, coupon);
+  const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
+  const getAddress = useAddressStore((state) => state.getAddress);
+  const { getDefaultAddress } = useAddressStore();
+  const addOrder = useOrdersStore((state) => state.addOrder);
+
+  const selectedCartItems = items.filter((item) => selectedItems.includes(item.product.id));
+  const totals = calculateCartTotals(selectedCartItems, coupon);
+  const selectedAddress = getAddress(selectedAddressId ?? '');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -323,6 +313,22 @@ export function PaymentScreen() {
     }
   }, [isLoggedIn, items.length, openAuthModal]);
 
+  useEffect(() => {
+    // If current address is invalid, auto-select default address
+    if (!selectedAddress && !selectedAddressId) {
+      const defaultAddr = getDefaultAddress();
+      if (defaultAddr) {
+        setSelectedAddress(defaultAddr.id);
+      }
+    } else if (!selectedAddress && selectedAddressId) {
+      // Address ID exists but address was deleted, fallback to default
+      const defaultAddr = getDefaultAddress();
+      if (defaultAddr) {
+        setSelectedAddress(defaultAddr.id);
+      }
+    }
+  }, [selectedAddressId, selectedAddress, getDefaultAddress, setSelectedAddress]);
+
   if (!items.length) {
     return <BlockedCheckoutEmptyState />;
   }
@@ -331,7 +337,7 @@ export function PaymentScreen() {
     return <BlockedCheckoutAuthState />;
   }
 
-  if (!selectedAddressId) {
+  if (!selectedAddressId || !selectedAddress) {
     return (
       <div className="mx-auto max-w-3xl rounded-md border border-surface-border bg-surface-base p-6 text-center shadow-xs">
         <MapPin aria-hidden="true" className="mx-auto h-10 w-10 text-brand-primary" />
@@ -347,9 +353,28 @@ export function PaymentScreen() {
   }
 
   function payNow() {
+    if (!selectedAddress) return;
     setProcessing(true);
     setError(null);
+
+    const order = {
+      id: `TRZ-${Date.now()}`,
+      status: 'pending' as const,
+      items: selectedCartItems,
+      address: selectedAddress,
+      subtotal: totals.subtotal,
+      discount: totals.discount,
+      shipping: totals.shipping,
+      total: totals.total,
+      paymentMethod,
+      createdAt: new Date().toISOString(),
+    };
+
+    addOrder(order);
+    resetCheckout();
+
     window.setTimeout(() => {
+      setProcessing(false);
       router.push('/checkout/confirm');
     }, 700);
   }
@@ -438,15 +463,34 @@ export function ConfirmationScreen() {
   const router = useRouter();
   const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
   const clearCart = useCartStore((state) => state.clearCart);
-  const items = useCartStore((state) => state.items);
-  const itemCountRef = useRef(items.length); // capture before clearCart fires
-  const orderId = 'TRZ-2026-1042';
-  const selectedAddress = fixtureAddresses[0];
+  const orders = useOrdersStore((state) => state.orders);
+  const latestOrder = orders[0];
 
   useEffect(() => {
-    resetCheckout();
-    clearCart();
-  }, [resetCheckout, clearCart]);
+    // Clean up checkout state only when confirmation mounts and order exists
+    if (latestOrder) {
+      resetCheckout();
+      clearCart();
+    }
+  }, [latestOrder?.id, resetCheckout, clearCart]);
+
+  if (!latestOrder) {
+    return (
+      <div className="mx-auto max-w-4xl py-10">
+        <EmptyState
+          action="Continue Shopping"
+          href="/products"
+          icon={AlertCircle}
+          message="No recent order found. Please complete the checkout process."
+          title="Order not found"
+        />
+      </div>
+    );
+  }
+
+  const orderId = latestOrder.id;
+  const selectedAddress = latestOrder.address;
+  const itemCount = latestOrder.items.length;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -508,7 +552,7 @@ export function ConfirmationScreen() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Items:</span>
-                <span className="font-semibold">{itemCountRef.current}</span>
+                <span className="font-semibold">{itemCount}</span>
               </div>
               <div className="flex justify-between text-sm pt-2 border-t border-surface-border">
                 <span className="text-text-secondary">Status:</span>
@@ -539,10 +583,12 @@ function AddressCard({
   address,
   selected,
   onSelect,
+  onDelete,
 }: {
   address: Address;
   selected: boolean;
   onSelect: () => void;
+  onDelete: () => void;
 }) {
   return (
     <label
@@ -580,7 +626,7 @@ function AddressCard({
           <Button size="sm" type="button" variant="outline">
             Edit
           </Button>
-          <Button size="sm" type="button" variant="ghost">
+          <Button size="sm" type="button" variant="ghost" onClick={onDelete}>
             Remove
           </Button>
         </span>

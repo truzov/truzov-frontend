@@ -14,6 +14,7 @@ import {
   MapPin,
   Microscope,
   PackageCheck,
+  Plus,
   Search,
   ShieldCheck,
   ShoppingCart,
@@ -34,7 +35,6 @@ import { Rating } from '@/components/ui/Rating';
 import { CartItemRow } from '@/components/commerce/CartItemRow';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import {
-  addresses,
   banners,
   categories,
   findOrder,
@@ -46,10 +46,13 @@ import {
 } from '@/lib/data/fixtures';
 import { filterProducts, type ProductFilterState } from '@/lib/utils/filters';
 import { formatCurrency } from '@/lib/utils/money';
+import { cn } from '@/lib/utils/cn';
 import { useCartStore } from '@/store/cart.store';
 import { useUiStore } from '@/store/ui.store';
 import { useWishlistStore } from '@/store/wishlist.store';
 import { useAuthStore } from '@/store/auth.store';
+import { useAddressStore } from '@/store/address.store';
+import { useOrdersStore } from '@/store/orders.store';
 import type { Product } from '@/types';
 
 function TrustStrip() {
@@ -83,7 +86,7 @@ export function HomeScreen() {
   return (
     <>
       {/* Hero Section */}
-      <section className="bg-[#1f7a1f] py-16 text-white md:py-32">
+      <section className="bg-primary py-16 text-white md:py-32">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-6 md:flex-row md:gap-12">
           <div className="flex-1 space-y-6 text-center md:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wide">
@@ -91,7 +94,8 @@ export function HomeScreen() {
               Clinically Audited Inventory
             </div>
             <h1 className="text-[36px] font-black leading-[1.1] tracking-tight md:text-[64px]">
-              Scientific Purity. <span className="text-[#adff9d]">Every batch lab-verified.</span>
+              Scientific Purity.{' '}
+              <span className="text-primary-fixed">Every batch lab-verified.</span>
             </h1>
             <p className="mx-auto max-w-lg text-base leading-relaxed text-white/90 md:mx-0 md:text-lg">
               Shop with absolute confidence. We lab-test random batches from every vendor to ensure
@@ -99,7 +103,7 @@ export function HomeScreen() {
             </p>
             <div className="pt-2">
               <Link
-                className="inline-flex items-center rounded-full bg-white px-8 py-4 font-bold text-[#1f7a1f] shadow-md transition hover:bg-white/90"
+                className="inline-flex items-center rounded-full bg-white px-8 py-4 font-bold text-primary shadow-md transition hover:bg-white/90"
                 href="/products"
               >
                 Browse Marketplace
@@ -250,8 +254,8 @@ export function HomeScreen() {
                     key={step}
                     className="relative z-10 flex flex-1 flex-col items-center text-center"
                   >
-                    <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white bg-[#f0f9f0] shadow-sm">
-                      <Icon aria-hidden="true" className="h-8 w-8 text-[#1f7a1f]" />
+                    <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white bg-brand-light shadow-sm">
+                      <Icon aria-hidden="true" className="h-8 w-8 text-brand-primary" />
                     </div>
                     <h3 className="mb-2 text-sm font-bold text-on-surface">{step}</h3>
                     <p className="max-w-[140px] text-xs leading-relaxed text-on-surface-variant">
@@ -272,7 +276,7 @@ export function HomeScreen() {
                   Every product comes with a lab report. Because you deserve to know what you eat.
                 </p>
                 <Link
-                  className="inline-flex rounded-xl bg-[#1f7a1f] px-8 py-3.5 text-sm font-bold text-white transition hover:bg-[#165a16]"
+                  className="inline-flex rounded-xl bg-primary px-8 py-3.5 text-sm font-bold text-white transition hover:bg-primary/90"
                   href="/trust/lab-reports"
                 >
                   View Lab Reports
@@ -285,7 +289,7 @@ export function HomeScreen() {
                   <div className="h-1.5 w-full rounded-full bg-white" />
                   <div className="h-1.5 w-2/3 rounded-full bg-white" />
                   <div className="absolute -left-4 -top-4 rounded-full bg-white p-1">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1f7a1f]">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary">
                       <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-white" />
                     </div>
                   </div>
@@ -303,7 +307,7 @@ export function HomeScreen() {
               { icon: Zap, title: 'Dedicated Support', sub: "We're Here to Help" },
             ].map(({ icon: Icon, title, sub }) => (
               <div key={title} className="flex items-center gap-4">
-                <Icon aria-hidden="true" className="h-7 w-7 flex-shrink-0 text-[#1f7a1f]" />
+                <Icon aria-hidden="true" className="h-7 w-7 flex-shrink-0 text-brand-primary" />
                 <div>
                   <p className="text-sm font-extrabold text-on-surface">{title}</p>
                   <p className="text-xs text-on-surface-variant">{sub}</p>
@@ -388,10 +392,8 @@ export function ProductListingScreen({
       </div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-heading text-4xl">{title}</h1>
-          <p className="mt-1 text-text-secondary">
-            Showing {visibleProducts.length} laboratory-certified products
-          </p>
+          <h1 className="font-heading text-4xl capitalize">{title}</h1>
+          <p className="mt-1 text-text-secondary">Showing {visibleProducts.length} products</p>
         </div>
         <Link
           className="inline-flex h-10 items-center rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary lg:hidden"
@@ -459,6 +461,8 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const addItem = useCartStore((state) => state.addItem);
   const addToast = useUiStore((state) => state.addToast);
   const toggleWishlist = useWishlistStore((state) => state.toggle);
+  const wishlistIds = useWishlistStore((state) => state.ids);
+  const isInWishlist = wishlistIds.includes(product.id);
   const report = labReports.find((item) => item.id === product.labReportId);
   const similar = [
     {
@@ -750,12 +754,20 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                 </Link>
                 <div className="mt-2 grid grid-cols-2 gap-4">
                   <Button
-                    className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
+                    className={cn(
+                      'h-auto rounded-lg border-primary/20 py-2 hover:bg-primary/5',
+                      isInWishlist ? 'bg-red-50 text-red-500 border-red-200' : 'text-primary'
+                    )}
                     variant="outline"
                     onClick={() => toggleWishlist(product.id)}
                   >
-                    <Heart aria-hidden="true" className="h-4 w-4" />
-                    <span className="leading-tight">Add to Wishlist</span>
+                    <Heart
+                      aria-hidden="true"
+                      className={cn('h-4 w-4', isInWishlist && 'fill-current')}
+                    />
+                    <span className="leading-tight">
+                      {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+                    </span>
                   </Button>
                   <Button
                     className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
@@ -1064,11 +1076,14 @@ export function AccountScreen() {
 }
 
 export function OrdersScreen() {
+  const storeOrders = useOrdersStore((state) => state.orders);
+  const displayOrders = storeOrders.length > 0 ? storeOrders : orders;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="font-heading text-4xl">Your Orders</h1>
       <div className="mt-6 grid gap-4">
-        {orders.map((order) => (
+        {displayOrders.map((order) => (
           <article
             key={order.id}
             className="rounded-lg border border-surface-border bg-surface-base p-5"
@@ -1143,10 +1158,122 @@ export function OrderDetailScreen({ id }: { id: string }) {
 }
 
 export function AddressesScreen() {
+  const addresses = useAddressStore((state) => state.addresses);
+  const deleteAddress = useAddressStore((state) => state.deleteAddress);
+  const setDefault = useAddressStore((state) => state.setDefault);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    fullName: '',
+    phone: '',
+    pincode: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+  });
+  const addAddress = useAddressStore((state) => state.addAddress);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !form.fullName ||
+      !form.phone ||
+      !form.pincode ||
+      !form.addressLine1 ||
+      !form.city ||
+      !form.state
+    )
+      return;
+    addAddress({
+      ...form,
+      addressLine2: form.addressLine2 || undefined,
+      isDefault: addresses.length === 0,
+    });
+    setShowForm(false);
+    setForm({
+      fullName: '',
+      phone: '',
+      pincode: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+    });
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="font-heading text-4xl">Saved Addresses</h1>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="font-heading text-4xl">Saved Addresses</h1>
+        <Button variant="outline" onClick={() => setShowForm(!showForm)}>
+          <Plus aria-hidden="true" className="h-4 w-4 mr-2" />
+          Add New Address
+        </Button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="mb-6 grid gap-4 rounded-lg border border-surface-border bg-surface-base p-5 md:grid-cols-2"
+        >
+          <Input
+            label="Full Name"
+            value={form.fullName}
+            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+            placeholder="Asha Verma"
+            required
+          />
+          <Input
+            label="Phone"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            placeholder="9876543210"
+            required
+          />
+          <Input
+            label="Pincode"
+            value={form.pincode}
+            onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+            placeholder="560001"
+            required
+          />
+          <Input
+            label="City"
+            value={form.city}
+            onChange={(e) => setForm({ ...form, city: e.target.value })}
+            placeholder="Bengaluru"
+            required
+          />
+          <Input
+            label="State"
+            value={form.state}
+            onChange={(e) => setForm({ ...form, state: e.target.value })}
+            placeholder="Karnataka"
+            required
+          />
+          <Input
+            label="Address Line 1"
+            value={form.addressLine1}
+            onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
+            placeholder="Flat / house / street"
+            required
+          />
+          <Input
+            label="Address Line 2"
+            value={form.addressLine2}
+            onChange={(e) => setForm({ ...form, addressLine2: e.target.value })}
+            placeholder="Area / landmark"
+          />
+          <div className="flex gap-3 md:col-span-2">
+            <Button type="submit">Save Address</Button>
+            <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
         {addresses.map((address) => (
           <article
             key={address.id}
@@ -1155,13 +1282,23 @@ export function AddressesScreen() {
             <MapPin aria-hidden="true" className="h-5 w-5 text-brand-primary" />
             <h2 className="mt-3 font-semibold">{address.fullName}</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              {address.addressLine1}, {address.city}, {address.state} - {address.pincode}
+              {address.addressLine1}
+              {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city},{' '}
+              {address.state} - {address.pincode}
             </p>
-            {address.isDefault ? (
-              <Badge className="mt-4" variant="success">
-                Default
-              </Badge>
-            ) : null}
+            <p className="mt-1 text-sm text-text-secondary">📞 {address.phone}</p>
+            <div className="mt-4 flex gap-2">
+              {address.isDefault ? (
+                <Badge variant="success">Default</Badge>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={() => setDefault(address.id)}>
+                  Set as Default
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => deleteAddress(address.id)}>
+                Delete
+              </Button>
+            </div>
           </article>
         ))}
       </div>

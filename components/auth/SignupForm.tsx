@@ -9,6 +9,7 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
 import type { AuthFormProps } from './LoginForm';
+import { Input } from '@/components/ui/Input';
 
 export function SignupForm({
   variant = 'page',
@@ -66,87 +67,60 @@ export function SignupForm({
 
   return (
     <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
-      <div className="flex flex-col space-y-xs">
-        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
-          Full Name
-        </label>
-        <input
-          {...register('fullName')}
-          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
-            errors.fullName ? 'border-error' : 'border-outline-variant'
-          }`}
-          placeholder="John Doe"
-          type="text"
-        />
-        {errors.fullName ? <p className="text-caption text-error">{errors.fullName.message}</p> : null}
-      </div>
+      <Input
+        {...register('fullName')}
+        error={errors.fullName?.message}
+        label="Full Name"
+        placeholder="John Doe"
+        type="text"
+      />
 
-      <div className="flex flex-col space-y-xs">
-        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
-          Email Address
-        </label>
-        <input
-          {...register('email')}
-          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
-            errors.email ? 'border-error' : 'border-outline-variant'
-          }`}
-          placeholder="you@example.com"
-          type="email"
-        />
-        {errors.email ? <p className="text-caption text-error">{errors.email.message}</p> : null}
-      </div>
+      <Input
+        {...register('email')}
+        error={errors.email?.message}
+        label="Email Address"
+        placeholder="you@example.com"
+        type="email"
+      />
 
-      <div className="flex flex-col space-y-xs">
-        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
-          Password
-        </label>
-        <input
+      <div>
+        <Input
           {...register('password', {
             onChange: (event) => calculateStrength(event.target.value),
           })}
-          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
-            errors.password ? 'border-error' : 'border-outline-variant'
-          }`}
+          error={errors.password?.message}
+          label="Password"
           placeholder="Password"
           type="password"
         />
-        {errors.password ? <p className="text-caption text-error">{errors.password.message}</p> : null}
-
         {password ? (
-          <div className="mt-xs flex items-center gap-xs">
+          <div className="mt-2 flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((level) => (
               <div
                 key={level}
-                className={`h-1 flex-grow rounded-full transition-colors ${
+                className={`h-1 flex-1 rounded-full transition-colors ${
                   level <= passwordStrength ? 'bg-primary' : 'bg-outline-variant'
                 }`}
               />
             ))}
-            <span className="ml-sm text-caption font-body text-on-surface-variant">
+            <span className="ml-2 text-xs text-on-surface-variant">
               {passwordStrength <= 2 ? 'Weak' : passwordStrength <= 3 ? 'Medium' : 'Strong'}
             </span>
           </div>
         ) : null}
       </div>
 
-      <div className="flex flex-col space-y-xs">
-        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
-          Confirm Password
-        </label>
-        <input
-          {...register('confirmPassword')}
-          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
-            errors.confirmPassword ? 'border-error' : 'border-outline-variant'
-          }`}
-          placeholder="Confirm password"
-          type="password"
-        />
-        {errors.confirmPassword ? (
-          <p className="text-caption text-error">{errors.confirmPassword.message}</p>
-        ) : null}
-      </div>
+      <Input
+        {...register('confirmPassword')}
+        error={errors.confirmPassword?.message}
+        label="Confirm Password"
+        placeholder="Confirm password"
+        type="password"
+      />
 
-      {error ? <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p> : null}
+      {error ? (
+        <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p>
+      ) : null}
 
       <button
         className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"

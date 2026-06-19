@@ -23,12 +23,16 @@ export function CheckoutPriceDetails({
   onCta,
 }: CheckoutPriceDetailsProps) {
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
   const coupon = useCartStore((state) => state.coupon);
   const applyCoupon = useCartStore((state) => state.applyCoupon);
-  const totals = calculateCartTotals(items, coupon);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const mrpTotal = items.reduce((sum, item) => sum + item.product.mrp * item.quantity, 0);
+
+  const selectedCartItems = items.filter((item) => selectedItems.includes(item.product.id));
+  const totals = calculateCartTotals(selectedCartItems, coupon);
+  const itemCount = selectedCartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const mrpTotal = selectedCartItems.reduce((sum, item) => sum + item.product.mrp * item.quantity, 0);
   const productDiscount = Math.max(0, mrpTotal - totals.subtotal);
+  const noItemsSelected = selectedItems.length === 0;
 
   return (
     <aside className="rounded-md border border-surface-border bg-surface-base p-5 shadow-xs lg:sticky lg:top-28">
@@ -70,7 +74,10 @@ export function CheckoutPriceDetails({
       </form>
 
       {helperText ? <p className="mb-3 text-sm text-text-danger">{helperText}</p> : null}
-      <Button className="w-full" disabled={disabled || itemCount === 0} size="lg" onClick={onCta}>
+      {noItemsSelected && !helperText ? (
+        <p className="mb-3 text-sm text-text-danger">Select at least one item to continue</p>
+      ) : null}
+      <Button className="w-full" disabled={disabled || noItemsSelected} size="lg" onClick={onCta}>
         {ctaLabel}
       </Button>
       {termsText ? <p className="mt-3 text-xs leading-5 text-text-secondary">{termsText}</p> : null}
