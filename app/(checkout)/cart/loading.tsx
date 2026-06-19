@@ -1,5 +1,9 @@
-import { CartScreenSkeleton } from '@/components/ui/Skeleton';
+﻿import { CartScreenSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <CartScreenSkeleton />;
+  return (
+    <div role="status" aria-label="Loading cart...">
+      <CartScreenSkeleton />
+    </div>
+  );
 }

@@ -1,5 +1,9 @@
-import { AccountScreenSkeleton } from '@/components/ui/Skeleton';
+﻿import { AccountScreenSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <AccountScreenSkeleton />;
+  return (
+    <div role="status" aria-label="Loading account...">
+      <AccountScreenSkeleton />
+    </div>
+  );
 }

@@ -1,5 +1,9 @@
-import { OrdersScreenSkeleton } from '@/components/ui/Skeleton';
+﻿import { OrdersScreenSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <OrdersScreenSkeleton />;
+  return (
+    <div role="status" aria-label="Loading orders...">
+      <OrdersScreenSkeleton />
+    </div>
+  );
 }

@@ -1,5 +1,9 @@
-import { TrustScreenSkeleton } from '@/components/ui/Skeleton';
+﻿import { TrustScreenSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <TrustScreenSkeleton />;
+  return (
+    <div role="status" aria-label="Loading page...">
+      <TrustScreenSkeleton />
+    </div>
+  );
 }

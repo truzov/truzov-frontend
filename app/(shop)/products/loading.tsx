@@ -1,5 +1,9 @@
-import { ProductListingScreenSkeleton } from '@/components/ui/Skeleton';
+﻿import { ProductListingScreenSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <ProductListingScreenSkeleton />;
+  return (
+    <div role="status" aria-label="Loading products...">
+      <ProductListingScreenSkeleton />
+    </div>
+  );
 }

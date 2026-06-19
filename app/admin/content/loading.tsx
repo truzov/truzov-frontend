@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
   return (
-    <div className="p-6">
+    <div role="status" aria-label="Loading content..." className="p-6">
       <div className="rounded-lg border border-surface-border bg-surface-base p-6">
         <Skeleton className="h-7 w-48 mb-5" />
         <div className="grid gap-4 md:grid-cols-2">

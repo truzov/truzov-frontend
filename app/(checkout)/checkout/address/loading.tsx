@@ -1,5 +1,9 @@
-import { CheckoutScreenSkeleton } from '@/components/ui/Skeleton';
+﻿import { CheckoutScreenSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <CheckoutScreenSkeleton />;
+  return (
+    <div role="status" aria-label="Loading checkout...">
+      <CheckoutScreenSkeleton />
+    </div>
+  );
 }

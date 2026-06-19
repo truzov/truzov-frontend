@@ -1,8 +1,17 @@
 import { cn } from '@/lib/utils/cn';
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-md bg-surface-raised', className)} />;
+  return (
+    <div
+      className={cn(
+        'animate-pulse rounded-md bg-surface-raised dark:bg-slate-700',
+        'motion-reduce:opacity-50',
+        className
+      )}
+    />
+  );
 }
+
 
 export function ProductCardSkeleton() {
   return (

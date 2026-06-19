@@ -2,7 +2,11 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
   return (
-    <section className="mx-auto max-w-3xl rounded-lg border border-surface-border bg-surface-base p-8 text-center">
+    <section
+      role="status"
+      aria-label="Loading confirmation..."
+      className="mx-auto max-w-3xl rounded-lg border border-surface-border bg-surface-base p-8 text-center"
+    >
       {/* Stepper */}
       <div className="flex items-center justify-center gap-3 mb-10">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -23,3 +27,4 @@ export default function Loading() {
     </section>
   );
 }
+

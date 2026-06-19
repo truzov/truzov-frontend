@@ -1,5 +1,9 @@
-import { AddressesScreenSkeleton } from '@/components/ui/Skeleton';
+﻿import { AddressesScreenSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <AddressesScreenSkeleton />;
+  return (
+    <div role="status" aria-label="Loading addresses...">
+      <AddressesScreenSkeleton />
+    </div>
+  );
 }

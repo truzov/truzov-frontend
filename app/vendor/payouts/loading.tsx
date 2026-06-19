@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
   return (
-    <div className="p-6">
+    <div role="status" aria-label="Loading payouts..." className="p-6">
       <div className="grid gap-5 md:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="rounded-lg border border-surface-border bg-surface-base p-5">
