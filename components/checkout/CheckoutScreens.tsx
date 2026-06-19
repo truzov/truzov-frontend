@@ -19,9 +19,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
 import { BagItemRow } from '@/components/checkout/BagItemRow';
-import { AddressForm } from '@/components/checkout/AddressForm';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
-import { addressSchema } from '@/lib/validations/checkout';
 import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
@@ -176,7 +174,7 @@ export function AddressScreen() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <main className="grid gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="max-h-fit flex flex-wrap align-top justify-between gap-3">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-text-secondary">Address</p>
             <h1 className="font-heading text-3xl">Select Delivery Address</h1>
