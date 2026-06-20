@@ -28,7 +28,7 @@ import { useCartStore } from '@/store/cart.store';
 import { useCheckoutStore } from '@/store/checkout.store';
 import { useAddressStore } from '@/store/address.store';
 import { useOrdersStore } from '@/store/orders.store';
-import type { Address } from '@/types';
+import type { Address, CartItem } from '@/types';
 
 const paymentMethods = [
   { id: 'UPI', label: 'UPI', icon: Smartphone, helper: 'Pay via any UPI app' },
@@ -127,6 +127,7 @@ export function BagScreen() {
 export function AddressScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
@@ -137,6 +138,10 @@ export function AddressScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | undefined>();
   const selectedAddress = getAddress(selectedAddressId ?? '');
+  const selectedCartItems = useMemo(
+    () => items.filter((item) => selectedItems.includes(item.product.id)),
+    [items, selectedItems]
+  );
   const defaultAddresses = useMemo(
     () => addresses.filter((address) => address.isDefault),
     [addresses]
@@ -248,7 +253,7 @@ export function AddressScreen() {
       />
 
       <div className="grid gap-4 lg:sticky lg:top-6 lg:self-start">
-        <DeliveryEstimateList />
+        <DeliveryEstimateList items={selectedCartItems} />
         <CheckoutPriceDetails
           ctaLabel="Continue"
           disabled={!selectedAddress}
@@ -448,7 +453,7 @@ export function ConfirmationScreen() {
       resetCheckout();
       clearCart();
     }
-  }, [latestOrder?.id, resetCheckout, clearCart]);
+  }, [latestOrder, resetCheckout, clearCart]);
 
   if (!latestOrder) {
     return (
@@ -640,8 +645,7 @@ function AddressCard({
   );
 }
 
-function DeliveryEstimateList() {
-  const items = useCartStore((state) => state.items);
+function DeliveryEstimateList({ items }: { items: CartItem[] }) {
   const estimates = useMemo(() => items.slice(0, 3), [items]);
 
   return (
@@ -649,25 +653,31 @@ function DeliveryEstimateList() {
       <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
         Delivery Estimates
       </h2>
-      <div className="mt-4 grid gap-3">
-        {estimates.map((item, index) => (
-          <div
-            key={item.product.id}
-            className="flex items-center gap-3 border-b border-surface-border pb-3 last:border-0 last:pb-0"
-          >
-            <div className="relative h-14 w-12 overflow-hidden rounded-sm bg-surface-raised">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="" className="h-full w-full object-cover" src={item.product.images[0].url} />
+      {estimates.length ? (
+        <div className="mt-4 grid gap-3">
+          {estimates.map((item, index) => (
+            <div
+              key={`${item.product.id}-${item.variantId ?? 'base'}`}
+              className="flex items-center gap-3 border-b border-surface-border pb-3 last:border-0 last:pb-0"
+            >
+              <div className="relative h-14 w-12 overflow-hidden rounded-sm bg-surface-raised">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="" className="h-full w-full object-cover" src={item.product.images[0].url} />
+              </div>
+              <p className="text-sm text-text-secondary">
+                Estimated delivery by{' '}
+                <strong className="text-text-primary">
+                  {index === 0 ? '8 Jun 2026' : '9 Jun 2026'}
+                </strong>
+              </p>
             </div>
-            <p className="text-sm text-text-secondary">
-              Estimated delivery by{' '}
-              <strong className="text-text-primary">
-                {index === 0 ? '8 Jun 2026' : '9 Jun 2026'}
-              </strong>
-            </p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-text-secondary">
+          Select items in your bag to see delivery estimates.
+        </p>
+      )}
     </aside>
   );
 }

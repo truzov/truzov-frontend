@@ -3,9 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Header } from '@/components/layout/Header';
 import { CheckoutProgress } from '@/components/checkout/CheckoutProgress';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
-import { BagScreen } from '@/components/checkout/CheckoutScreens';
-import { products } from '@/lib/data/fixtures';
+import { AddressScreen, BagScreen } from '@/components/checkout/CheckoutScreens';
+import { addresses as fixtureAddresses, products } from '@/lib/data/fixtures';
+import { useAddressStore } from '@/store/address.store';
+import { useAuthStore } from '@/store/auth.store';
 import { useCartStore } from '@/store/cart.store';
+import { useCheckoutStore } from '@/store/checkout.store';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/cart',
@@ -16,7 +19,18 @@ vi.mock('next/navigation', () => ({
 
 describe('checkout flow', () => {
   afterEach(() => {
-    useCartStore.setState({ items: [], coupon: undefined });
+    useCartStore.setState({ items: [], selectedItems: [], coupon: undefined });
+    useCheckoutStore.setState({ selectedAddressId: undefined, paymentMethod: 'UPI' });
+    useAuthStore.setState({
+      isLoggedIn: false,
+      user: null,
+      token: null,
+      isLoading: false,
+      error: null,
+      otpSessionId: null,
+      pendingIdentifier: null,
+    });
+    useAddressStore.setState({ addresses: fixtureAddresses });
   });
 
   it('links the cart icon to the dedicated bag page', async () => {
@@ -57,6 +71,25 @@ describe('checkout flow', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
       expect(screen.getByText('Select or add an address to continue.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows delivery estimates only for selected bag items on the address page', async () => {
+    useAuthStore.setState({ isLoggedIn: true });
+    useCartStore.setState({
+      items: [
+        { product: products[0], quantity: 1, unitPrice: products[0].price },
+        { product: products[2], quantity: 1, unitPrice: products[2].price },
+      ],
+      selectedItems: [products[2].id],
+      coupon: undefined,
+    });
+
+    render(<AddressScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/price details \(1 item\)/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/estimated delivery by/i)).toHaveLength(1);
     });
   });
 });

@@ -11,7 +11,6 @@ import {
   Heart,
   Info,
   Leaf,
-  MapPin,
   Microscope,
   PackageCheck,
   Pencil,
@@ -24,9 +23,11 @@ import {
   Truck,
   Zap,
   Star,
+  MapPin,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -82,12 +83,10 @@ function TrustStrip() {
 export function HomeScreen() {
   const hero = banners[0];
   const featured = products.filter((product) => product.isFeatured);
-  // Duplicate for seamless infinite carousel loop
   const carouselProducts = [...featured, ...featured];
 
   return (
     <>
-      {/* Hero Section */}
       <section className="bg-primary py-16 text-white md:py-32">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-6 md:flex-row md:gap-12">
           <div className="flex-1 space-y-6 text-center md:text-left">
@@ -129,7 +128,6 @@ export function HomeScreen() {
 
       <TrustStrip />
 
-      {/* Category Section */}
       <section className="mx-auto max-w-7xl px-6 py-20">
         <h2 className="mb-10 text-center font-heading text-2xl text-on-surface md:text-left">
           Shop by Lab-Verified Category
@@ -156,7 +154,6 @@ export function HomeScreen() {
         </div>
       </section>
 
-      {/* Best-sellers Carousel */}
       <section className="bg-surface-container-low py-16">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-8 flex items-start justify-between gap-4">
@@ -221,11 +218,9 @@ export function HomeScreen() {
         </div>
       </section>
 
-      {/* Why Truzov + See the Proof */}
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col gap-6 lg:flex-row">
-            {/* Why truzov card */}
             <div className="flex-[2] rounded-[2rem] border border-gray-100 bg-white p-10 shadow-sm">
               <h2 className="mb-12 text-[28px] font-extrabold text-on-surface">Why truzov?</h2>
               <div className="relative flex flex-col gap-8 md:flex-row md:gap-4">
@@ -268,7 +263,6 @@ export function HomeScreen() {
               </div>
             </div>
 
-            {/* See the Proof card */}
             <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-[2rem] bg-[#f0f9f0] p-10">
               <div className="z-10">
                 <h2 className="mb-4 text-[28px] font-extrabold text-on-surface">
@@ -284,7 +278,6 @@ export function HomeScreen() {
                   View Lab Reports
                 </Link>
               </div>
-              {/* Decorative doc */}
               <div className="absolute bottom-0 right-0 p-4 opacity-40">
                 <div className="relative flex h-32 w-24 flex-col gap-2 rounded-tr-3xl bg-[#c9e0c9] p-4">
                   <div className="h-1.5 w-full rounded-full bg-white" />
@@ -300,7 +293,6 @@ export function HomeScreen() {
             </div>
           </div>
 
-          {/* Bottom trust grid */}
           <div className="mt-0 grid grid-cols-2 gap-8 border-t border-gray-100 py-8 md:grid-cols-4">
             {[
               { icon: Truck, title: '2-3 Days Delivery', sub: 'Across Major Cities' },
@@ -457,6 +449,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
       alt: 'Honey jar packaging detail',
     },
   ].slice(0, 5);
+
   const [selectedImage, setSelectedImage] = useState(gallery[0]);
   const [quantity, setQuantity] = useState(1);
   const [tab, setTab] = useState('Product Details');
@@ -466,6 +459,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const wishlistIds = useWishlistStore((state) => state.ids);
   const isInWishlist = wishlistIds.includes(product.id);
   const report = labReports.find((item) => item.id === product.labReportId);
+
   const similar = [
     {
       name: 'Organic Cinnamon (100g)',
@@ -520,6 +514,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                       : 'border-outline-variant'
                   }`}
                   onClick={() => setSelectedImage(image)}
+                  type="button"
                 >
                   <Image
                     alt={image.alt}
@@ -597,6 +592,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                       : 'text-on-surface-variant hover:text-on-surface'
                   }`}
                   onClick={() => setTab(item)}
+                  type="button"
                 >
                   {item}
                 </button>
@@ -626,6 +622,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                       </p>
                     </div>
                   </div>
+
                   <div className="rounded-xl border border-outline-variant bg-white p-4 shadow-sm">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h2 className="flex items-center gap-2 font-body text-base font-semibold">
@@ -652,7 +649,10 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                         </div>
                       ))}
                     </div>
-                    <button className="mt-4 flex w-full items-center justify-center gap-3 rounded-lg bg-surface-container-highest p-3 font-semibold transition hover:bg-surface-container-high">
+                    <button
+                      className="mt-4 flex w-full items-center justify-center gap-3 rounded-lg bg-surface-container-highest p-3 font-semibold transition hover:bg-surface-container-high"
+                      type="button"
+                    >
                       <span className="grid h-7 w-7 place-items-center rounded bg-on-surface-variant text-white">
                         <FileText aria-hidden="true" className="h-4 w-4" />
                       </span>
@@ -758,7 +758,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   <Button
                     className={cn(
                       'h-auto rounded-lg border-primary/20 py-2 hover:bg-primary/5',
-                      isInWishlist ? 'bg-red-50 text-red-500 border-red-200' : 'text-primary'
+                      isInWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'text-primary'
                     )}
                     variant="outline"
                     onClick={() => toggleWishlist(product.id)}
@@ -875,54 +875,81 @@ export function SearchScreen({ query }: { query?: string }) {
 
 const accountNavSections = [
   {
-    label: null,
-    items: [{ label: 'Overview', href: '/account' }],
+    label: 'OVERVIEW',
+    items: [{ label: 'Profile', href: '/account' }],
   },
   {
     label: 'ORDERS',
     items: [{ label: 'Orders & Returns', href: '/account/orders' }],
   },
   {
-    label: 'ACCOUNT',
+    label: 'MANAGE',
     items: [
-      { label: 'Profile', href: '/account', active: true },
       { label: 'Addresses', href: '/account/addresses' },
+      { label: 'Settings', href: '/account/settings' },
     ],
   },
 ];
 
-function AccountSidebar({ userName }: { userName: string }) {
+function AccountPanel({
+  children,
+  title,
+  titleAction,
+}: {
+  children: React.ReactNode;
+  title: string;
+  titleAction?: React.ReactNode;
+}) {
   return (
-    <aside className="w-full lg:w-56 shrink-0">
-      <div className="mb-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-text-muted">Account</p>
-        <p className="mt-0.5 font-heading text-lg text-text-primary">{userName}</p>
+    <section className="rounded-3xl border border-surface-border bg-surface-base p-6 shadow-sm lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <h2 className="font-heading text-xl text-text-primary">{title}</h2>
+        {titleAction}
       </div>
-      <nav className="flex flex-col gap-4">
-        {accountNavSections.map((section, i) => (
-          <div key={i}>
-            {section.label && (
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-text-muted">
-                {section.label}
-              </p>
-            )}
-            <ul className="flex flex-col">
-              {section.items.map((item) => (
-                <li key={item.href + item.label}>
-                  <Link
-                    href={item.href}
-                    className={`block py-1.5 text-sm transition-colors ${
-                      'active' in item && item.active
-                        ? 'font-semibold text-brand-primary'
-                        : 'text-text-secondary hover:text-text-primary'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+      <hr className="mt-4 border-surface-border" />
+      <div className="mt-6">{children}</div>
+    </section>
+  );
+}
+
+export function AccountSidebar({ userName }: { userName: string }) {
+  const pathname = usePathname();
+
+  return (
+    <aside className="h-fit rounded-3xl border border-surface-border bg-white p-5 shadow-sm lg:sticky lg:top-28">
+      <div className="border-b border-surface-border pb-5">
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-text-muted">Account</p>
+        <p className="mt-1 font-heading text-2xl text-text-primary">{userName}</p>
+        <p className="mt-1 text-sm text-text-secondary">Manage orders, addresses, and preferences.</p>
+      </div>
+      <nav className="mt-5 grid gap-5">
+        {accountNavSections.map((section) => (
+          <div key={section.label}>
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-text-muted">
+              {section.label}
+            </p>
+            <ul className="mt-3 grid gap-1">
+              {section.items.map((item) => {
+                const active =
+                  pathname === item.href ||
+                  (item.href !== '/account' && pathname.startsWith(`${item.href}/`));
+
+                return (
+                  <li key={item.href + item.label}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+                        active
+                          ? 'bg-brand-light font-semibold text-brand-primary'
+                          : 'text-text-secondary hover:bg-surface-raised hover:text-text-primary'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
-            <hr className="mt-3 border-surface-border" />
           </div>
         ))}
       </nav>
@@ -984,120 +1011,111 @@ export function AccountScreen() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-        <AccountSidebar userName={displayName} />
-
-        <main className="flex-1">
-          <div className="rounded-lg border border-surface-border bg-surface-base p-6 lg:p-8">
-            <h2 className="font-heading text-xl text-text-primary">Profile Details</h2>
-            <hr className="mt-4 border-surface-border" />
-
-            {editing ? (
-              <div className="mt-6 grid gap-5">
-                <Input
-                  label="Full Name"
-                  name="name"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                />
-                <Input
-                  label="Email ID"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                />
-                <Input
-                  label="Mobile Number"
-                  name="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                />
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <label
-                    className="grid gap-1.5 text-sm font-medium text-text-secondary"
-                    htmlFor="gender"
-                  >
-                    Gender
-                    <select
-                      id="gender"
-                      name="gender"
-                      className="h-11 rounded-sm border border-surface-border bg-surface-base px-3 text-base text-text-primary shadow-xs outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-light"
-                      value={form.gender}
-                      onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-                    >
-                      <option disabled value="">
-                        Select gender
-                      </option>
-                      {currentGenderOption ? (
-                        <option value={currentGenderOption}>{currentGenderOption} (current)</option>
-                      ) : null}
-                      {genderOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <Input
-                    label="Date of Birth"
-                    name="dateOfBirth"
-                    type="date"
-                    value={form.dateOfBirth}
-                    onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
-                  />
-                  <div className="md:col-span-2">
-                    <Input
-                      label="Location"
-                      name="location"
-                      value={form.location}
-                      onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    className="px-10 uppercase tracking-wider"
-                    variant="primary"
-                    onClick={saveEdit}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    className="px-10 uppercase tracking-wider"
-                    variant="outline"
-                    onClick={() => setEditing(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <dl className="mt-6 grid gap-y-5">
-                  {profileRows.map(({ label, value }) => (
-                    <div key={label} className="grid grid-cols-[180px_1fr] items-start gap-4">
-                      <dt className="text-sm text-text-secondary">{label}</dt>
-                      <dd className="text-sm font-medium text-text-primary">{value}</dd>
-                    </div>
+    <div className="mx-auto max-w-4xl">
+      <AccountPanel title={`Profile Details${displayName ? ` for ${displayName}` : ''}`}>
+        {editing ? (
+          <div className="grid gap-5">
+            <Input
+              label="Full Name"
+              name="name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <Input
+              label="Email ID"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            />
+            <Input
+              label="Mobile Number"
+              name="phone"
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            />
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <label
+                className="grid gap-1.5 text-sm font-medium text-text-secondary"
+                htmlFor="gender"
+              >
+                Gender
+                <select
+                  id="gender"
+                  name="gender"
+                  className="h-11 rounded-sm border border-surface-border bg-surface-base px-3 text-base text-text-primary shadow-xs outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-light"
+                  value={form.gender}
+                  onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+                >
+                  <option disabled value="">
+                    Select gender
+                  </option>
+                  {currentGenderOption ? (
+                    <option value={currentGenderOption}>{currentGenderOption} (current)</option>
+                  ) : null}
+                  {genderOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
                   ))}
-                </dl>
-                <div className="mt-8">
-                  <Button
-                    className="px-12 uppercase tracking-wider"
-                    variant="primary"
-                    onClick={startEdit}
-                  >
-                    Edit
-                  </Button>
-                </div>
-              </>
-            )}
+                </select>
+              </label>
+              <Input
+                label="Date of Birth"
+                name="dateOfBirth"
+                type="date"
+                value={form.dateOfBirth}
+                onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
+              />
+              <div className="md:col-span-2">
+                <Input
+                  label="Location"
+                  name="location"
+                  value={form.location}
+                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                className="px-10 uppercase tracking-wider"
+                variant="primary"
+                onClick={saveEdit}
+              >
+                Save
+              </Button>
+              <Button
+                className="px-10 uppercase tracking-wider"
+                variant="outline"
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-        </main>
-      </div>
+        ) : (
+          <>
+            <dl className="grid gap-y-5">
+              {profileRows.map(({ label, value }) => (
+                <div key={label} className="grid grid-cols-[180px_1fr] items-start gap-4">
+                  <dt className="text-sm text-text-secondary">{label}</dt>
+                  <dd className="text-sm font-medium text-text-primary">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="mt-8">
+              <Button
+                className="px-12 uppercase tracking-wider"
+                variant="primary"
+                onClick={startEdit}
+              >
+                Edit
+              </Button>
+            </div>
+          </>
+        )}
+      </AccountPanel>
     </div>
   );
 }
@@ -1107,37 +1125,38 @@ export function OrdersScreen() {
   const displayOrders = storeOrders.length > 0 ? storeOrders : orders;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="font-heading text-4xl">Your Orders</h1>
-      <div className="mt-6 grid gap-4">
-        {displayOrders.map((order) => (
-          <article
-            key={order.id}
-            className="rounded-lg border border-surface-border bg-surface-base p-5"
-          >
-            <div className="flex flex-wrap justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">{order.id}</h2>
-                <p className="text-sm text-text-secondary">
-                  {new Date(order.createdAt).toLocaleDateString('en-IN')}
-                </p>
+    <div className="mx-auto max-w-4xl">
+      <AccountPanel title="Orders & Returns">
+        <div className="grid gap-4">
+          {displayOrders.map((order) => (
+            <article
+              key={order.id}
+              className="rounded-lg border border-surface-border bg-surface-raised p-5"
+            >
+              <div className="flex flex-wrap justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold">{order.id}</h3>
+                  <p className="text-sm text-text-secondary">
+                    {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                  </p>
+                </div>
+                <Badge variant="info">{order.status}</Badge>
               </div>
-              <Badge variant="info">{order.status}</Badge>
-            </div>
-            <div className="mt-4 flex items-center justify-between gap-4">
-              <p className="text-sm text-text-secondary">
-                {order.items.map((item) => item.product.name).join(', ')}
-              </p>
-              <Link
-                className="font-semibold text-brand-primary"
-                href={`/account/orders/${order.id}`}
-              >
-                View Order
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <p className="text-sm text-text-secondary">
+                  {order.items.map((item) => item.product.name).join(', ')}
+                </p>
+                <Link
+                  className="font-semibold text-brand-primary"
+                  href={`/account/orders/${order.id}`}
+                >
+                  View Order
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </AccountPanel>
     </div>
   );
 }
@@ -1146,14 +1165,16 @@ export function OrderDetailScreen({ id }: { id: string }) {
   const order = findOrder(id);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="font-heading text-4xl">Order {order.id}</h1>
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
+    <AccountPanel
+      title={`Order ${order.id}`}
+      titleAction={<Badge variant="info">{order.status}</Badge>}
+    >
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="grid gap-4">
           {order.items.map((item) => (
             <CartItemRow key={`${item.product.id}-${item.variantId ?? 'base'}`} item={item} />
           ))}
-          <div className="rounded-lg border border-surface-border bg-surface-base p-5">
+          <div className="rounded-2xl border border-surface-border bg-surface-base p-5">
             <h2 className="font-semibold">Timeline</h2>
             <div className="mt-4 grid gap-3 text-sm text-text-secondary">
               {['Confirmed', 'Processing', 'Shipped', 'Delivered'].map((step, index) => (
@@ -1167,9 +1188,8 @@ export function OrderDetailScreen({ id }: { id: string }) {
             </div>
           </div>
         </section>
-        <aside className="rounded-lg border border-surface-border bg-surface-base p-5">
-          <Badge variant="info">{order.status}</Badge>
-          <p className="mt-4 text-sm text-text-secondary">Delivering to</p>
+        <aside className="rounded-2xl border border-surface-border bg-surface-base p-5">
+          <p className="text-sm text-text-secondary">Delivering to</p>
           <p className="font-semibold">{order.address.fullName}</p>
           <p className="text-sm text-text-secondary">
             {order.address.addressLine1}, {order.address.city}
@@ -1180,7 +1200,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
           </Button>
         </aside>
       </div>
-    </div>
+    </AccountPanel>
   );
 }
 
@@ -1203,53 +1223,91 @@ export function AddressesScreen() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="font-heading text-4xl">Saved Addresses</h1>
-        <Button variant="outline" onClick={openAddModal}>
-          <Plus aria-hidden="true" className="h-4 w-4 mr-2" />
-          Add New Address
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {addresses.map((address) => (
-          <article
-            key={address.id}
-            className="rounded-lg border border-surface-border bg-surface-base p-5"
-          >
-            <MapPin aria-hidden="true" className="h-5 w-5 text-brand-primary" />
-            <h2 className="mt-3 font-semibold">{address.fullName}</h2>
-            <p className="mt-1 text-sm text-text-secondary">
-              {address.addressLine1}
-              {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city},{' '}
-              {address.state} - {address.pincode}
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">📞 {address.phone}</p>
-            <div className="mt-4 flex gap-2">
-              {address.isDefault ? (
-                <Badge variant="success">Default</Badge>
-              ) : (
-                <Button size="sm" variant="ghost" onClick={() => setDefault(address.id)}>
-                  Set as Default
+      <AccountPanel
+        title="Saved Addresses"
+        titleAction={
+          <Button variant="outline" onClick={openAddModal}>
+            <Plus aria-hidden="true" className="mr-2 h-4 w-4" />
+            Add New Address
+          </Button>
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          {addresses.map((address) => (
+            <article
+              key={address.id}
+              className="rounded-lg border border-surface-border bg-surface-base p-5"
+            >
+              <MapPin aria-hidden="true" className="h-5 w-5 text-brand-primary" />
+              <h2 className="mt-3 font-semibold">{address.fullName}</h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                {address.addressLine1}
+                {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city},{' '}
+                {address.state} - {address.pincode}
+              </p>
+              <p className="mt-1 text-sm text-text-secondary">📞 {address.phone}</p>
+              <div className="mt-4 flex gap-2">
+                {address.isDefault ? (
+                  <Badge variant="success">Default</Badge>
+                ) : (
+                  <Button size="sm" variant="ghost" onClick={() => setDefault(address.id)}>
+                    Set as Default
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => openEditModal(address)}>
+                  <Pencil aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
+                  Edit
                 </Button>
-              )}
-              <Button size="sm" variant="ghost" onClick={() => openEditModal(address)}>
-                <Pencil aria-hidden="true" className="h-3.5 w-3.5 mr-1" />
-                Edit
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => deleteAddress(address.id)}>
-                Delete
-              </Button>
-            </div>
-          </article>
-        ))}
-      </div>
+                <Button size="sm" variant="ghost" onClick={() => deleteAddress(address.id)}>
+                  Delete
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
 
-      <AddressFormModal
-        open={modalOpen}
-        address={editingAddress}
-        onClose={() => setModalOpen(false)}
-      />
+        <AddressFormModal
+          open={modalOpen}
+          address={editingAddress}
+          onClose={() => setModalOpen(false)}
+        />
+      </AccountPanel>
+    </div>
+  );
+}
+
+export function SettingsScreen() {
+  const { user } = useAuthStore();
+
+  const settingsRows = [
+    { label: 'Email notifications', value: 'Order updates and delivery alerts' },
+    { label: 'Login email', value: user?.email ?? 'Not set' },
+    { label: 'Mobile number', value: user?.phone ?? 'Not added' },
+    { label: 'Language', value: 'English (India)' },
+  ];
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <AccountPanel
+        title="Settings"
+        titleAction={<Button variant="outline">Update Preferences</Button>}
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          {settingsRows.map(({ label, value }) => (
+            <article
+              key={label}
+              className="rounded-2xl border border-surface-border bg-surface-base p-5"
+            >
+              <p className="text-sm font-semibold text-text-primary">{label}</p>
+              <p className="mt-2 text-sm leading-relaxed text-text-secondary">{value}</p>
+            </article>
+          ))}
+        </div>
+        <div className="mt-5 rounded-2xl border border-dashed border-surface-border bg-surface-raised/50 p-5 text-sm text-text-secondary">
+          This section is ready for password, notification, and privacy controls when those
+          settings are backed by API endpoints.
+        </div>
+      </AccountPanel>
     </div>
   );
 }

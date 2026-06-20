@@ -12,7 +12,7 @@ const menuItems = [
   { label: 'Orders', href: '/account/orders', icon: ReceiptText },
   { label: 'Wishlist', href: '/wishlist', icon: Heart },
   { label: 'Saved Addresses', href: '/account/addresses', icon: MapPin },
-  { label: 'Settings', href: '/account', icon: Settings },
+  { label: 'Settings', href: '/account/settings', icon: Settings },
 ];
 
 export function AccountMenu({ className }: { className?: string }) {
