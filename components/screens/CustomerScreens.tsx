@@ -54,7 +54,6 @@ import { useWishlistStore } from '@/store/wishlist.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useAddressStore } from '@/store/address.store';
 import { useOrdersStore } from '@/store/orders.store';
-import { addressSchema } from '@/lib/validations/checkout';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
 import type { Product, Address } from '@/types';
 
@@ -931,6 +930,8 @@ function AccountSidebar({ userName }: { userName: string }) {
   );
 }
 
+const genderOptions = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
+
 export function AccountScreen() {
   const { user, updateProfile } = useAuthStore();
   const [editing, setEditing] = useState(false);
@@ -944,6 +945,10 @@ export function AccountScreen() {
   });
 
   const displayName = user?.name || 'Guest';
+  const currentGenderOption =
+    form.gender && !genderOptions.includes(form.gender as (typeof genderOptions)[number])
+      ? form.gender
+      : null;
 
   function startEdit() {
     setForm({
@@ -1011,12 +1016,31 @@ export function AccountScreen() {
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 />
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <Input
-                    label="Gender"
-                    name="gender"
-                    value={form.gender}
-                    onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-                  />
+                  <label
+                    className="grid gap-1.5 text-sm font-medium text-text-secondary"
+                    htmlFor="gender"
+                  >
+                    Gender
+                    <select
+                      id="gender"
+                      name="gender"
+                      className="h-11 rounded-sm border border-surface-border bg-surface-base px-3 text-base text-text-primary shadow-xs outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-light"
+                      value={form.gender}
+                      onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+                    >
+                      <option disabled value="">
+                        Select gender
+                      </option>
+                      {currentGenderOption ? (
+                        <option value={currentGenderOption}>{currentGenderOption} (current)</option>
+                      ) : null}
+                      {genderOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <Input
                     label="Date of Birth"
                     name="dateOfBirth"
