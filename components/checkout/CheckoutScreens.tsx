@@ -137,6 +137,14 @@ export function AddressScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | undefined>();
   const selectedAddress = getAddress(selectedAddressId ?? '');
+  const defaultAddresses = useMemo(
+    () => addresses.filter((address) => address.isDefault),
+    [addresses]
+  );
+  const otherAddresses = useMemo(
+    () => addresses.filter((address) => !address.isDefault),
+    [addresses]
+  );
 
   useEffect(() => {
     if (!selectedAddressId) {
@@ -152,6 +160,16 @@ export function AddressScreen() {
       openAuthModal({ mode: 'login', redirectTo: '/checkout/address' });
     }
   }, [isLoggedIn, items.length, openAuthModal]);
+
+  useEffect(() => {
+    if (selectedAddressId && !addresses.some((address) => address.id === selectedAddressId)) {
+      const defaultAddr = getDefaultAddress();
+
+      if (defaultAddr) {
+        setSelectedAddress(defaultAddr.id);
+      }
+    }
+  }, [addresses, selectedAddressId, getDefaultAddress, setSelectedAddress]);
 
   if (!items.length) {
     return <BlockedCheckoutEmptyState />;
@@ -173,25 +191,43 @@ export function AddressScreen() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <main className="grid gap-5">
-        <div className="max-h-fit flex flex-wrap align-top justify-between gap-3">
+      <main className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-text-secondary">Address</p>
             <h1 className="font-heading text-3xl">Select Delivery Address</h1>
           </div>
+
           <Button variant="outline" onClick={openAddModal}>
             <Plus aria-hidden="true" className="h-4 w-4" />
             Add New Address
           </Button>
         </div>
 
-        <section className="grid gap-3">
+        <section className="flex flex-col gap-3">
           <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
             Default Address
           </h2>
-          {addresses
-            .filter((address) => address.isDefault)
-            .map((address) => (
+
+          {defaultAddresses.map((address) => (
+            <AddressCard
+              key={address.id}
+              address={address}
+              selected={selectedAddressId === address.id}
+              onSelect={() => setSelectedAddress(address.id)}
+              onDelete={() => deleteAddress(address.id)}
+              onEdit={() => openEditModal(address)}
+            />
+          ))}
+        </section>
+
+        {otherAddresses.length > 0 ? (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
+              Other Addresses
+            </h2>
+
+            {otherAddresses.map((address) => (
               <AddressCard
                 key={address.id}
                 address={address}
@@ -201,25 +237,6 @@ export function AddressScreen() {
                 onEdit={() => openEditModal(address)}
               />
             ))}
-        </section>
-
-        {addresses.some((address) => !address.isDefault) ? (
-          <section className="grid gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-              Other Addresses
-            </h2>
-            {addresses
-              .filter((address) => !address.isDefault)
-              .map((address) => (
-                <AddressCard
-                  key={address.id}
-                  address={address}
-                  selected={selectedAddressId === address.id}
-                  onSelect={() => setSelectedAddress(address.id)}
-                  onDelete={() => deleteAddress(address.id)}
-                  onEdit={() => openEditModal(address)}
-                />
-              ))}
           </section>
         ) : null}
       </main>
@@ -230,7 +247,7 @@ export function AddressScreen() {
         onClose={() => setModalOpen(false)}
       />
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 lg:sticky lg:top-6 lg:self-start">
         <DeliveryEstimateList />
         <CheckoutPriceDetails
           ctaLabel="Continue"
@@ -272,14 +289,12 @@ export function PaymentScreen() {
   }, [isLoggedIn, items.length, openAuthModal]);
 
   useEffect(() => {
-    // If current address is invalid, auto-select default address
     if (!selectedAddress && !selectedAddressId) {
       const defaultAddr = getDefaultAddress();
       if (defaultAddr) {
         setSelectedAddress(defaultAddr.id);
       }
     } else if (!selectedAddress && selectedAddressId) {
-      // Address ID exists but address was deleted, fallback to default
       const defaultAddr = getDefaultAddress();
       if (defaultAddr) {
         setSelectedAddress(defaultAddr.id);
@@ -354,6 +369,7 @@ export function PaymentScreen() {
 
         <section>
           <h2 className="font-heading text-3xl">Choose Payment Mode</h2>
+
           <div className="mt-5 overflow-hidden rounded-md border border-surface-border bg-surface-base shadow-xs lg:grid lg:grid-cols-[280px_1fr]">
             <div className="bg-surface-raised">
               {paymentMethods.map((method) => {
@@ -386,14 +402,17 @@ export function PaymentScreen() {
             <div className="p-5">
               <h3 className="font-heading text-2xl">Recommended Payment Options</h3>
               <PaymentDetails method={paymentMethod} total={totals.total} />
+
               {error ? (
                 <div className="mt-4 rounded-md border border-text-danger bg-status-dangerBg p-3 text-sm text-text-danger">
                   {error}
                 </div>
               ) : null}
+
               <Button className="mt-5 w-full" loading={processing} size="lg" onClick={payNow}>
                 Pay {formatCurrency(totals.total)}
               </Button>
+
               <button
                 className="mt-3 text-sm font-semibold text-text-secondary hover:text-text-danger"
                 type="button"
@@ -425,7 +444,6 @@ export function ConfirmationScreen() {
   const latestOrder = orders[0];
 
   useEffect(() => {
-    // Clean up checkout state only when confirmation mounts and order exists
     if (latestOrder) {
       resetCheckout();
       clearCart();
@@ -452,24 +470,22 @@ export function ConfirmationScreen() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="rounded-md border border-surface-border bg-surface-base p-6 sm:p-8 shadow-xs">
-        {/* Confirmation Message */}
+      <div className="rounded-md border border-surface-border bg-surface-base p-6 shadow-xs sm:p-8">
         <div className="border-b border-surface-border pb-6 text-center sm:pb-8">
           <ShieldCheck
             aria-hidden="true"
-            className="mx-auto h-14 w-14 sm:h-16 sm:w-16 fill-brand-primary text-brand-primary"
+            className="mx-auto h-14 w-14 fill-brand-primary text-brand-primary sm:h-16 sm:w-16"
           />
-          <h1 className="mt-4 font-heading text-2xl sm:text-3xl text-brand-primary">
+          <h1 className="mt-4 font-heading text-2xl text-brand-primary sm:text-3xl">
             Order confirmed
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-text-secondary">
+          <p className="mt-2 text-sm text-text-secondary sm:text-base">
             You will receive an order confirmation email/SMS shortly with the expected delivery date
             for your items.
           </p>
         </div>
 
-        {/* Delivery Details */}
-        <div className="grid gap-6 py-6 sm:py-8 sm:grid-cols-[1fr_auto]">
+        <div className="grid gap-6 py-6 sm:grid-cols-[1fr_auto] sm:py-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
               Delivering to:
@@ -478,41 +494,45 @@ export function ConfirmationScreen() {
               <p className="font-semibold text-text-primary">
                 {selectedAddress.fullName} | {selectedAddress.phone}
               </p>
-              <p className="mt-1 text-sm text-text-secondary leading-relaxed">
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
                 {selectedAddress.addressLine1}
                 {selectedAddress.addressLine2 ? `, ${selectedAddress.addressLine2}` : ''},{' '}
                 {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
               </p>
             </div>
+
             <Button
               size="sm"
               variant="outline"
-              className="mt-4 text-brand-primary border-brand-primary hover:bg-brand-light"
+              className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-light"
               onClick={() => router.push('/account/orders')}
             >
               ORDER DETAILS →
             </Button>
-            <p className="mt-4 text-xs text-text-secondary flex items-start gap-2">
+
+            <p className="mt-4 flex items-start gap-2 text-xs text-text-secondary">
               <span>📋</span>
               <span>You can Track/View/Modify order from orders page.</span>
             </p>
           </div>
 
-          {/* Order Summary Card */}
-          <div className="sm:pl-6 border-t sm:border-t-0 sm:border-l border-surface-border pt-6 sm:pt-0">
+          <div className="border-t border-surface-border pt-6 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
               Order Summary
             </p>
+
             <div className="mt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Order ID:</span>
                 <span className="font-mono font-semibold">{orderId}</span>
               </div>
+
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Items:</span>
                 <span className="font-semibold">{itemCount}</span>
               </div>
-              <div className="flex justify-between text-sm pt-2 border-t border-surface-border">
+
+              <div className="flex justify-between border-t border-surface-border pt-2 text-sm">
                 <span className="text-text-secondary">Status:</span>
                 <span className="inline-flex items-center gap-1.5 font-semibold text-text-success">
                   <span className="inline-block h-2 w-2 rounded-full bg-text-success" />
@@ -523,8 +543,7 @@ export function ConfirmationScreen() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between pt-6 border-t border-surface-border">
+        <div className="flex flex-col gap-3 border-t border-surface-border pt-6 sm:flex-row sm:justify-between">
           <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>
             Continue Shopping
           </Button>
@@ -551,7 +570,8 @@ function AddressCard({
   onEdit?: () => void;
 }) {
   return (
-    <label
+    <div
+      onClick={onSelect}
       className={cn(
         'flex cursor-pointer gap-4 rounded-md border bg-surface-base p-5 shadow-xs transition',
         selected ? 'border-brand-primary ring-2 ring-brand-light' : 'border-surface-border'
@@ -559,41 +579,64 @@ function AddressCard({
     >
       <input
         checked={selected}
-        className="mt-1 h-5 w-5 accent-brand-primary"
+        className="mt-1 h-5 w-5 cursor-pointer accent-brand-primary"
         name="address"
         type="radio"
         onChange={onSelect}
+        onClick={(e) => e.stopPropagation()}
       />
-      <span className="min-w-0">
-        <span className="flex flex-wrap items-center gap-2">
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
           <strong>{address.fullName}</strong>
           <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
             Home
           </span>
-        </span>
-        <span className="mt-3 block text-sm leading-6 text-text-secondary">
+        </div>
+
+        <div className="mt-3 text-sm leading-6 text-text-secondary">
           {address.addressLine1}
           {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city}, {address.state}{' '}
           - {address.pincode}
-        </span>
-        <span className="mt-2 block text-sm text-text-secondary">
+        </div>
+
+        <div className="mt-2 text-sm text-text-secondary">
           Mobile: <strong className="text-text-primary">{address.phone}</strong>
-        </span>
-        <span className="mt-3 block text-sm font-semibold text-text-success">
+        </div>
+
+        <div className="mt-3 text-sm font-semibold text-text-success">
           Pay on Delivery available
-        </span>
-        <span className="mt-4 flex gap-3">
+        </div>
+
+        <div className="mt-4 flex gap-3">
           {onEdit ? (
-            <Button size="sm" type="button" variant="outline" onClick={onEdit}>
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
               Edit
             </Button>
           ) : null}
-          <Button size="sm" type="button" variant="ghost" onClick={onDelete}>
+
+          <Button
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
             Remove
           </Button>
-        </span>
-      </span>
-    </label>
+        </div>
+      </div>
+    </div>
   );
 }
 
