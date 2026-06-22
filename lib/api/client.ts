@@ -14,20 +14,38 @@ function getToken(): string | null {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init?.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => null) as { message?: string; error?: string } | null;
-    throw new Error(body?.message ?? body?.error ?? `API request failed: ${response.status}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init?.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        message?: string;
+        error?: string;
+      } | null;
+      throw new Error(body?.message ?? body?.error ?? `API request failed: ${response.status}`);
+    }
+
+    const payload = (await response.json()) as ApiResponse<T> | T;
+    return 'data' in (payload as ApiResponse<T>)
+      ? (payload as ApiResponse<T>).data
+      : (payload as T);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out. Please refresh.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const payload = (await response.json()) as ApiResponse<T> | T;
-  return 'data' in (payload as ApiResponse<T>) ? (payload as ApiResponse<T>).data : (payload as T);
 }
