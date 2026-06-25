@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -19,15 +19,16 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
 import { BagItemRow } from '@/components/checkout/BagItemRow';
-import { addressSchema } from '@/lib/validations/checkout';
-import { addresses as fixtureAddresses } from '@/lib/data/fixtures';
+import { AddressFormModal } from '@/components/checkout/AddressFormModal';
 import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useCartStore } from '@/store/cart.store';
 import { useCheckoutStore } from '@/store/checkout.store';
-import type { Address } from '@/types';
+import { useAddressStore } from '@/store/address.store';
+import { useOrdersStore } from '@/store/orders.store';
+import type { Address, CartItem } from '@/types';
 
 const paymentMethods = [
   { id: 'UPI', label: 'UPI', icon: Smartphone, helper: 'Pay via any UPI app' },
@@ -39,10 +40,13 @@ const paymentMethods = [
 export function BagScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
+  const selectAll = useCartStore((state) => state.selectAll);
+  const deselectAll = useCartStore((state) => state.deselectAll);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const user = useAuthStore((state) => state.user);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
 
   const continueToAddress = () => {
     if (isLoggedIn) {
@@ -74,24 +78,6 @@ export function BagScreen() {
       <div className="mx-auto max-w-7xl px-4 py-6 lg:py-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="grid gap-4">
-            <section className="flex flex-col justify-between gap-3 rounded-md border border-surface-border bg-surface-base p-4 shadow-xs sm:flex-row sm:items-center">
-              <div>
-                <p className="text-sm text-text-secondary">Deliver to</p>
-                <p className="font-bold">
-                  {isLoggedIn
-                    ? (user?.name ?? fixtureAddresses[0].fullName)
-                    : 'Sign in to select your delivery address'}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">
-                  {isLoggedIn &&
-                    `${fixtureAddresses[0].city}, ${fixtureAddresses[0].state} - ${fixtureAddresses[0].pincode}`}
-                </p>
-              </div>
-              <Button variant="outline" onClick={continueToAddress}>
-                {isLoggedIn ? 'Change Address' : 'Login to Continue'}
-              </Button>
-            </section>
-
             <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
               <div className="flex items-start gap-3">
                 <BadgePercent aria-hidden="true" className="mt-1 h-5 w-5 text-brand-primary" />
@@ -110,9 +96,13 @@ export function BagScreen() {
                 <h1 className="font-heading text-2xl">
                   {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag
                 </h1>
-                <p className="text-sm font-semibold text-text-secondary">
-                  Review cart before address selection
-                </p>
+                <button
+                  className="text-sm font-semibold text-brand-primary hover:underline"
+                  onClick={allSelected ? deselectAll : selectAll}
+                  type="button"
+                >
+                  {allSelected ? 'Deselect All' : 'Select All'}
+                </button>
               </div>
             </section>
 
@@ -124,7 +114,7 @@ export function BagScreen() {
           </main>
 
           <CheckoutPriceDetails
-            ctaLabel="Continue"
+            ctaLabel={isLoggedIn ? 'Continue' : 'Login to Continue'}
             termsText="By continuing, you agree to Truzov's terms and verified marketplace policies."
             onCta={continueToAddress}
           />
@@ -137,22 +127,40 @@ export function BagScreen() {
 export function AddressScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
-  const [savedAddresses, setSavedAddresses] = useState<Address[]>(fixtureAddresses);
-  const [showForm, setShowForm] = useState(fixtureAddresses.length === 0);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const selectedAddress = savedAddresses.find((address) => address.id === selectedAddressId);
+  const addresses = useAddressStore((state) => state.addresses);
+  const deleteAddress = useAddressStore((state) => state.deleteAddress);
+  const { getAddress, getDefaultAddress } = useAddressStore();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | undefined>();
+  const selectedAddress = getAddress(selectedAddressId ?? '');
+  const selectedCartItems = useMemo(
+    () => items.filter((item) => selectedItems.includes(item.product.id)),
+    [items, selectedItems]
+  );
+  const defaultAddresses = useMemo(
+    () => addresses.filter((address) => address.isDefault),
+    [addresses]
+  );
+  const otherAddresses = useMemo(
+    () => addresses.filter((address) => !address.isDefault),
+    [addresses]
+  );
 
   useEffect(() => {
-    if (!selectedAddressId && savedAddresses[0]) {
-      setSelectedAddress(
-        savedAddresses.find((address) => address.isDefault)?.id ?? savedAddresses[0].id
-      );
+    if (selectedAddress) {
+      return;
     }
-  }, [savedAddresses, selectedAddressId, setSelectedAddress]);
+
+    const defaultAddr = getDefaultAddress();
+    if (defaultAddr) {
+      setSelectedAddress(defaultAddr.id);
+    }
+  }, [addresses, selectedAddress, selectedAddressId, getDefaultAddress, setSelectedAddress]);
 
   useEffect(() => {
     if (items.length && !isLoggedIn) {
@@ -168,131 +176,82 @@ export function AddressScreen() {
     return <BlockedCheckoutAuthState />;
   }
 
-  function addAddress(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const candidate = {
-      fullName: form.get('fullName')?.toString() ?? '',
-      phone: form.get('phone')?.toString() ?? '',
-      pincode: form.get('pincode')?.toString() ?? '',
-      addressLine1: form.get('addressLine1')?.toString() ?? '',
-      addressLine2: form.get('addressLine2')?.toString() || undefined,
-      city: form.get('city')?.toString() ?? '',
-      state: form.get('state')?.toString() ?? '',
-      saveAsDefault: false,
-    };
-    const result = addressSchema.safeParse(candidate);
+  const openAddModal = () => {
+    setEditingAddress(undefined);
+    setModalOpen(true);
+  };
 
-    if (!result.success) {
-      setErrors(
-        Object.fromEntries(
-          result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
-        )
-      );
-      return;
-    }
-
-    const nextAddress: Address = {
-      id: `addr-${Date.now()}`,
-      ...result.data,
-      isDefault: savedAddresses.length === 0,
-    };
-    setSavedAddresses((current) => [...current, nextAddress]);
-    setSelectedAddress(nextAddress.id);
-    setShowForm(false);
-    setErrors({});
-    event.currentTarget.reset();
-  }
+  const openEditModal = (address: Address) => {
+    setEditingAddress(address);
+    setModalOpen(true);
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <main className="grid gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <main className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-text-secondary">Address</p>
             <h1 className="font-heading text-3xl">Select Delivery Address</h1>
           </div>
-          <Button variant="outline" onClick={() => setShowForm((value) => !value)}>
+
+          <Button variant="outline" onClick={openAddModal}>
             <Plus aria-hidden="true" className="h-4 w-4" />
             Add New Address
           </Button>
         </div>
 
-        <section className="grid gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-            Default Address
-          </h2>
-          {savedAddresses
-            .filter((address) => address.isDefault)
-            .map((address) => (
+        <div className="grid gap-5" aria-label="Delivery addresses" role="radiogroup">
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
+              Default Address
+            </h2>
+
+            {defaultAddresses.map((address) => (
               <AddressCard
                 key={address.id}
                 address={address}
+                inputId={`delivery-address-${address.id}`}
+                inputName="delivery-address"
                 selected={selectedAddressId === address.id}
                 onSelect={() => setSelectedAddress(address.id)}
+                onDelete={() => deleteAddress(address.id)}
+                onEdit={() => openEditModal(address)}
               />
             ))}
-        </section>
+          </section>
 
-        {savedAddresses.some((address) => !address.isDefault) ? (
-          <section className="grid gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-              Other Addresses
-            </h2>
-            {savedAddresses
-              .filter((address) => !address.isDefault)
-              .map((address) => (
+          {otherAddresses.length > 0 ? (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
+                Other Addresses
+              </h2>
+
+              {otherAddresses.map((address) => (
                 <AddressCard
                   key={address.id}
                   address={address}
+                  inputId={`delivery-address-${address.id}`}
+                  inputName="delivery-address"
                   selected={selectedAddressId === address.id}
                   onSelect={() => setSelectedAddress(address.id)}
+                  onDelete={() => deleteAddress(address.id)}
+                  onEdit={() => openEditModal(address)}
                 />
               ))}
-          </section>
-        ) : null}
-
-        {showForm ? (
-          <form
-            className="grid gap-4 rounded-md border border-surface-border bg-surface-base p-5 shadow-xs md:grid-cols-2"
-            onSubmit={addAddress}
-          >
-            <h2 className="font-heading text-2xl md:col-span-2">Add New Address</h2>
-            <Input
-              error={errors.fullName}
-              label="Full name"
-              name="fullName"
-              placeholder="Asha Verma"
-            />
-            <Input error={errors.phone} label="Phone" name="phone" placeholder="9876543210" />
-            <Input error={errors.pincode} label="Pincode" name="pincode" placeholder="560001" />
-            <Input error={errors.city} label="City" name="city" placeholder="Bengaluru" />
-            <Input error={errors.state} label="State" name="state" placeholder="Karnataka" />
-            <Input
-              error={errors.addressLine1}
-              label="Address line 1"
-              name="addressLine1"
-              placeholder="Flat / house / street"
-            />
-            <Input
-              className="md:col-span-2"
-              error={errors.addressLine2}
-              label="Address line 2"
-              name="addressLine2"
-              placeholder="Area / landmark"
-            />
-            <div className="flex gap-3 md:col-span-2">
-              <Button type="submit">Save Address</Button>
-              <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        ) : null}
+            </section>
+          ) : null}
+        </div>
       </main>
 
-      <div className="grid gap-4">
-        <DeliveryEstimateList />
+      <AddressFormModal
+        open={modalOpen}
+        address={editingAddress}
+        onClose={() => setModalOpen(false)}
+      />
+
+      <div className="grid gap-4 lg:sticky lg:top-6 lg:self-start">
+        <DeliveryEstimateList items={selectedCartItems} />
         <CheckoutPriceDetails
           ctaLabel="Continue"
           disabled={!selectedAddress}
@@ -307,13 +266,23 @@ export function AddressScreen() {
 export function PaymentScreen() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const coupon = useCartStore((state) => state.coupon);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
+  const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
   const paymentMethod = useCheckoutStore((state) => state.paymentMethod);
   const setPaymentMethod = useCheckoutStore((state) => state.setPaymentMethod);
-  const totals = calculateCartTotals(items, coupon);
+  const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
+  const getAddress = useAddressStore((state) => state.getAddress);
+  const addresses = useAddressStore((state) => state.addresses);
+  const { getDefaultAddress } = useAddressStore();
+  const addOrder = useOrdersStore((state) => state.addOrder);
+
+  const selectedCartItems = items.filter((item) => selectedItems.includes(item.product.id));
+  const totals = calculateCartTotals(selectedCartItems, coupon);
+  const selectedAddress = getAddress(selectedAddressId ?? '');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -323,6 +292,17 @@ export function PaymentScreen() {
     }
   }, [isLoggedIn, items.length, openAuthModal]);
 
+  useEffect(() => {
+    if (selectedAddress) {
+      return;
+    }
+
+    const defaultAddr = getDefaultAddress();
+    if (defaultAddr) {
+      setSelectedAddress(defaultAddr.id);
+    }
+  }, [addresses, selectedAddress, selectedAddressId, getDefaultAddress, setSelectedAddress]);
+
   if (!items.length) {
     return <BlockedCheckoutEmptyState />;
   }
@@ -331,7 +311,7 @@ export function PaymentScreen() {
     return <BlockedCheckoutAuthState />;
   }
 
-  if (!selectedAddressId) {
+  if (!selectedAddressId || !selectedAddress) {
     return (
       <div className="mx-auto max-w-3xl rounded-md border border-surface-border bg-surface-base p-6 text-center shadow-xs">
         <MapPin aria-hidden="true" className="mx-auto h-10 w-10 text-brand-primary" />
@@ -347,9 +327,28 @@ export function PaymentScreen() {
   }
 
   function payNow() {
+    if (!selectedAddress) return;
     setProcessing(true);
     setError(null);
+
+    const order = {
+      id: `TRZ-${Date.now()}`,
+      status: 'pending' as const,
+      items: selectedCartItems,
+      address: selectedAddress,
+      subtotal: totals.subtotal,
+      discount: totals.discount,
+      shipping: totals.shipping,
+      total: totals.total,
+      paymentMethod,
+      createdAt: new Date().toISOString(),
+    };
+
+    addOrder(order);
+    resetCheckout();
+
     window.setTimeout(() => {
+      setProcessing(false);
       router.push('/checkout/confirm');
     }, 700);
   }
@@ -363,7 +362,7 @@ export function PaymentScreen() {
             <div>
               <h1 className="font-bold">Bank Offer</h1>
               <p className="mt-2 text-sm text-text-secondary">
-                7.5% assured cashback on verified wellness orders above Rs 100. Terms apply.
+                    7.5% assured cashback on verified wellness orders above Rs 100. Terms apply.
               </p>
             </div>
           </div>
@@ -371,6 +370,7 @@ export function PaymentScreen() {
 
         <section>
           <h2 className="font-heading text-3xl">Choose Payment Mode</h2>
+
           <div className="mt-5 overflow-hidden rounded-md border border-surface-border bg-surface-base shadow-xs lg:grid lg:grid-cols-[280px_1fr]">
             <div className="bg-surface-raised">
               {paymentMethods.map((method) => {
@@ -403,14 +403,17 @@ export function PaymentScreen() {
             <div className="p-5">
               <h3 className="font-heading text-2xl">Recommended Payment Options</h3>
               <PaymentDetails method={paymentMethod} total={totals.total} />
+
               {error ? (
                 <div className="mt-4 rounded-md border border-text-danger bg-status-dangerBg p-3 text-sm text-text-danger">
                   {error}
                 </div>
               ) : null}
+
               <Button className="mt-5 w-full" loading={processing} size="lg" onClick={payNow}>
                 Pay {formatCurrency(totals.total)}
               </Button>
+
               <button
                 className="mt-3 text-sm font-semibold text-text-secondary hover:text-text-danger"
                 type="button"
@@ -438,36 +441,52 @@ export function ConfirmationScreen() {
   const router = useRouter();
   const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
   const clearCart = useCartStore((state) => state.clearCart);
-  const items = useCartStore((state) => state.items);
-  const itemCountRef = useRef(items.length); // capture before clearCart fires
-  const orderId = 'TRZ-2026-1042';
-  const selectedAddress = fixtureAddresses[0];
+  const orders = useOrdersStore((state) => state.orders);
+  const latestOrder = orders[0];
 
   useEffect(() => {
-    resetCheckout();
-    clearCart();
-  }, [resetCheckout, clearCart]);
+    if (latestOrder) {
+      resetCheckout();
+      clearCart();
+    }
+  }, [latestOrder, resetCheckout, clearCart]);
+
+  if (!latestOrder) {
+    return (
+      <div className="mx-auto max-w-4xl py-10">
+        <EmptyState
+          action="Continue Shopping"
+          href="/products"
+          icon={AlertCircle}
+          message="No recent order found. Please complete the checkout process."
+          title="Order not found"
+        />
+      </div>
+    );
+  }
+
+  const orderId = latestOrder.id;
+  const selectedAddress = latestOrder.address;
+  const itemCount = latestOrder.items.length;
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="rounded-md border border-surface-border bg-surface-base p-6 sm:p-8 shadow-xs">
-        {/* Confirmation Message */}
+      <div className="rounded-md border border-surface-border bg-surface-base p-6 shadow-xs sm:p-8">
         <div className="border-b border-surface-border pb-6 text-center sm:pb-8">
           <ShieldCheck
             aria-hidden="true"
-            className="mx-auto h-14 w-14 sm:h-16 sm:w-16 fill-brand-primary text-brand-primary"
+            className="mx-auto h-14 w-14 fill-brand-primary text-brand-primary sm:h-16 sm:w-16"
           />
-          <h1 className="mt-4 font-heading text-2xl sm:text-3xl text-brand-primary">
+          <h1 className="mt-4 font-heading text-2xl text-brand-primary sm:text-3xl">
             Order confirmed
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-text-secondary">
+          <p className="mt-2 text-sm text-text-secondary sm:text-base">
             You will receive an order confirmation email/SMS shortly with the expected delivery date
             for your items.
           </p>
         </div>
 
-        {/* Delivery Details */}
-        <div className="grid gap-6 py-6 sm:py-8 sm:grid-cols-[1fr_auto]">
+        <div className="grid gap-6 py-6 sm:grid-cols-[1fr_auto] sm:py-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
               Delivering to:
@@ -476,41 +495,44 @@ export function ConfirmationScreen() {
               <p className="font-semibold text-text-primary">
                 {selectedAddress.fullName} | {selectedAddress.phone}
               </p>
-              <p className="mt-1 text-sm text-text-secondary leading-relaxed">
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
                 {selectedAddress.addressLine1}
                 {selectedAddress.addressLine2 ? `, ${selectedAddress.addressLine2}` : ''},{' '}
                 {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
               </p>
             </div>
+
             <Button
               size="sm"
               variant="outline"
-              className="mt-4 text-brand-primary border-brand-primary hover:bg-brand-light"
+              className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-light"
               onClick={() => router.push('/account/orders')}
             >
-              ORDER DETAILS →
+              ORDER DETAILS
             </Button>
-            <p className="mt-4 text-xs text-text-secondary flex items-start gap-2">
-              <span>📋</span>
-              <span>You can Track/View/Modify order from orders page.</span>
+
+            <p className="mt-4 text-xs text-text-secondary">
+              Track, view, or modify this order from your orders page.
             </p>
           </div>
 
-          {/* Order Summary Card */}
-          <div className="sm:pl-6 border-t sm:border-t-0 sm:border-l border-surface-border pt-6 sm:pt-0">
+          <div className="border-t border-surface-border pt-6 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
               Order Summary
             </p>
+
             <div className="mt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Order ID:</span>
                 <span className="font-mono font-semibold">{orderId}</span>
               </div>
+
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Items:</span>
-                <span className="font-semibold">{itemCountRef.current}</span>
+                <span className="font-semibold">{itemCount}</span>
               </div>
-              <div className="flex justify-between text-sm pt-2 border-t border-surface-border">
+
+              <div className="flex justify-between border-t border-surface-border pt-2 text-sm">
                 <span className="text-text-secondary">Status:</span>
                 <span className="inline-flex items-center gap-1.5 font-semibold text-text-success">
                   <span className="inline-block h-2 w-2 rounded-full bg-text-success" />
@@ -521,8 +543,7 @@ export function ConfirmationScreen() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between pt-6 border-t border-surface-border">
+        <div className="flex flex-col gap-3 border-t border-surface-border pt-6 sm:flex-row sm:justify-between">
           <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>
             Continue Shopping
           </Button>
@@ -537,60 +558,95 @@ export function ConfirmationScreen() {
 
 function AddressCard({
   address,
+  inputId,
+  inputName,
   selected,
   onSelect,
+  onDelete,
+  onEdit,
 }: {
   address: Address;
+  inputId: string;
+  inputName: string;
   selected: boolean;
   onSelect: () => void;
+  onDelete: () => void;
+  onEdit?: () => void;
 }) {
   return (
-    <label
+    <div
       className={cn(
-        'flex cursor-pointer gap-4 rounded-md border bg-surface-base p-5 shadow-xs transition',
+        'rounded-md border bg-surface-base p-5 shadow-xs transition focus-within:ring-2 focus-within:ring-brand-light',
         selected ? 'border-brand-primary ring-2 ring-brand-light' : 'border-surface-border'
       )}
     >
       <input
         checked={selected}
-        className="mt-1 h-5 w-5 accent-brand-primary"
-        name="address"
+        className="peer sr-only"
+        id={inputId}
+        name={inputName}
         type="radio"
         onChange={onSelect}
       />
-      <span className="min-w-0">
-        <span className="flex flex-wrap items-center gap-2">
-          <strong>{address.fullName}</strong>
-          <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
-            Home
-          </span>
+      <label
+        className="flex cursor-pointer items-start gap-4 rounded-md text-left peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-brand-light"
+        htmlFor={inputId}
+      >
+        <span
+          aria-hidden="true"
+          className={cn(
+            'mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition',
+            selected ? 'border-brand-primary bg-brand-light' : 'border-surface-border bg-white'
+          )}
+        >
+          <span
+            className={cn(
+              'h-2.5 w-2.5 rounded-full bg-brand-primary transition-transform',
+              selected ? 'scale-100' : 'scale-0'
+            )}
+          />
         </span>
-        <span className="mt-3 block text-sm leading-6 text-text-secondary">
-          {address.addressLine1}
-          {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city}, {address.state}{' '}
-          - {address.pincode}
-        </span>
-        <span className="mt-2 block text-sm text-text-secondary">
-          Mobile: <strong className="text-text-primary">{address.phone}</strong>
-        </span>
-        <span className="mt-3 block text-sm font-semibold text-text-success">
-          Pay on Delivery available
-        </span>
-        <span className="mt-4 flex gap-3">
-          <Button size="sm" type="button" variant="outline">
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <strong>{address.fullName}</strong>
+            <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
+              Home
+            </span>
+          </div>
+
+          <div className="mt-3 text-sm leading-6 text-text-secondary">
+            {address.addressLine1}
+            {address.addressLine2 ? ', ' + address.addressLine2 : ''}, {address.city}, {address.state} -{' '}
+            {address.pincode}
+          </div>
+
+          <div className="mt-2 text-sm text-text-secondary">
+            Mobile: <strong className="text-text-primary">{address.phone}</strong>
+          </div>
+
+          <div className="mt-3 text-sm font-semibold text-text-success">
+            Pay on Delivery available
+          </div>
+        </div>
+      </label>
+
+      <div className="mt-4 flex gap-3 pl-9">
+        {onEdit ? (
+          <Button size="sm" type="button" variant="outline" onClick={onEdit}>
             Edit
           </Button>
-          <Button size="sm" type="button" variant="ghost">
-            Remove
-          </Button>
-        </span>
-      </span>
-    </label>
+        ) : null}
+
+        <Button size="sm" type="button" variant="ghost" onClick={onDelete}>
+          Remove
+        </Button>
+      </div>
+    </div>
   );
 }
 
-function DeliveryEstimateList() {
-  const items = useCartStore((state) => state.items);
+function DeliveryEstimateList({ items }: { items: CartItem[] }) {
   const estimates = useMemo(() => items.slice(0, 3), [items]);
 
   return (
@@ -598,25 +654,31 @@ function DeliveryEstimateList() {
       <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
         Delivery Estimates
       </h2>
-      <div className="mt-4 grid gap-3">
-        {estimates.map((item, index) => (
-          <div
-            key={item.product.id}
-            className="flex items-center gap-3 border-b border-surface-border pb-3 last:border-0 last:pb-0"
-          >
-            <div className="relative h-14 w-12 overflow-hidden rounded-sm bg-surface-raised">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="" className="h-full w-full object-cover" src={item.product.images[0].url} />
+      {estimates.length ? (
+        <div className="mt-4 grid gap-3">
+          {estimates.map((item, index) => (
+            <div
+              key={`${item.product.id}-${item.variantId ?? 'base'}`}
+              className="flex items-center gap-3 border-b border-surface-border pb-3 last:border-0 last:pb-0"
+            >
+              <div className="relative h-14 w-12 overflow-hidden rounded-sm bg-surface-raised">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="" className="h-full w-full object-cover" src={item.product.images[0].url} />
+              </div>
+              <p className="text-sm text-text-secondary">
+                Estimated delivery by{' '}
+                <strong className="text-text-primary">
+                  {index === 0 ? '8 Jun 2026' : '9 Jun 2026'}
+                </strong>
+              </p>
             </div>
-            <p className="text-sm text-text-secondary">
-              Estimated delivery by{' '}
-              <strong className="text-text-primary">
-                {index === 0 ? '8 Jun 2026' : '9 Jun 2026'}
-              </strong>
-            </p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-text-secondary">
+          Select items in your bag to see delivery estimates.
+        </p>
+      )}
     </aside>
   );
 }

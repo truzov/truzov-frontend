@@ -1,25 +1,18 @@
 'use client';
 
-import {
-  Heart,
-  LogOut,
-  MapPin,
-  ReceiptText,
-  Settings,
-  UserRound,
-} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/utils/cn';
+import { Heart, LogOut, MapPin, ReceiptText, Settings, UserRound } from 'lucide-react';
 
 const menuItems = [
   { label: 'My Account', href: '/account', icon: UserRound },
   { label: 'Orders', href: '/account/orders', icon: ReceiptText },
   { label: 'Wishlist', href: '/wishlist', icon: Heart },
   { label: 'Saved Addresses', href: '/account/addresses', icon: MapPin },
-  { label: 'Settings', href: '/account', icon: Settings },
+  { label: 'Settings', href: '/account/settings', icon: Settings },
 ];
 
 export function AccountMenu({ className }: { className?: string }) {
@@ -82,7 +75,7 @@ export function AccountMenu({ className }: { className?: string }) {
               return (
                 <Link
                   key={item.label}
-                  className="flex items-center gap-5 px-7 py-3 text-[22px] text-on-surface transition hover:bg-surface-container-low"
+                  className="flex items-center gap-5 px-7 py-3 text-on-surface transition hover:bg-surface-container-low"
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
                 >
@@ -94,7 +87,7 @@ export function AccountMenu({ className }: { className?: string }) {
           </div>
           <div className="border-t border-outline-variant p-4">
             <button
-              className="flex w-full items-center gap-6 rounded-md px-3 py-2 text-left text-xl text-error transition hover:bg-error-container"
+              className="flex w-full items-center gap-6 rounded-md px-3 py-2 text-left text-error transition hover:bg-error-container"
               type="button"
               onClick={() => {
                 logout();
@@ -107,7 +100,6 @@ export function AccountMenu({ className }: { className?: string }) {
           </div>
         </div>
       ) : null}
-
     </div>
   );
 }
