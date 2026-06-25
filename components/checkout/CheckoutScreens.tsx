@@ -152,29 +152,21 @@ export function AddressScreen() {
   );
 
   useEffect(() => {
-    if (!selectedAddressId) {
-      const defaultAddr = getDefaultAddress();
-      if (defaultAddr) {
-        setSelectedAddress(defaultAddr.id);
-      }
+    if (selectedAddress) {
+      return;
     }
-  }, [selectedAddressId, getDefaultAddress, setSelectedAddress]);
+
+    const defaultAddr = getDefaultAddress();
+    if (defaultAddr) {
+      setSelectedAddress(defaultAddr.id);
+    }
+  }, [addresses, selectedAddress, selectedAddressId, getDefaultAddress, setSelectedAddress]);
 
   useEffect(() => {
     if (items.length && !isLoggedIn) {
       openAuthModal({ mode: 'login', redirectTo: '/checkout/address' });
     }
   }, [isLoggedIn, items.length, openAuthModal]);
-
-  useEffect(() => {
-    if (selectedAddressId && !addresses.some((address) => address.id === selectedAddressId)) {
-      const defaultAddr = getDefaultAddress();
-
-      if (defaultAddr) {
-        setSelectedAddress(defaultAddr.id);
-      }
-    }
-  }, [addresses, selectedAddressId, getDefaultAddress, setSelectedAddress]);
 
   if (!items.length) {
     return <BlockedCheckoutEmptyState />;
@@ -209,33 +201,18 @@ export function AddressScreen() {
           </Button>
         </div>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-            Default Address
-          </h2>
-
-          {defaultAddresses.map((address) => (
-            <AddressCard
-              key={address.id}
-              address={address}
-              selected={selectedAddressId === address.id}
-              onSelect={() => setSelectedAddress(address.id)}
-              onDelete={() => deleteAddress(address.id)}
-              onEdit={() => openEditModal(address)}
-            />
-          ))}
-        </section>
-
-        {otherAddresses.length > 0 ? (
+        <div className="grid gap-5" aria-label="Delivery addresses" role="radiogroup">
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-              Other Addresses
+              Default Address
             </h2>
 
-            {otherAddresses.map((address) => (
+            {defaultAddresses.map((address) => (
               <AddressCard
                 key={address.id}
                 address={address}
+                inputId={`delivery-address-${address.id}`}
+                inputName="delivery-address"
                 selected={selectedAddressId === address.id}
                 onSelect={() => setSelectedAddress(address.id)}
                 onDelete={() => deleteAddress(address.id)}
@@ -243,7 +220,28 @@ export function AddressScreen() {
               />
             ))}
           </section>
-        ) : null}
+
+          {otherAddresses.length > 0 ? (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
+                Other Addresses
+              </h2>
+
+              {otherAddresses.map((address) => (
+                <AddressCard
+                  key={address.id}
+                  address={address}
+                  inputId={`delivery-address-${address.id}`}
+                  inputName="delivery-address"
+                  selected={selectedAddressId === address.id}
+                  onSelect={() => setSelectedAddress(address.id)}
+                  onDelete={() => deleteAddress(address.id)}
+                  onEdit={() => openEditModal(address)}
+                />
+              ))}
+            </section>
+          ) : null}
+        </div>
       </main>
 
       <AddressFormModal
@@ -278,6 +276,7 @@ export function PaymentScreen() {
   const setPaymentMethod = useCheckoutStore((state) => state.setPaymentMethod);
   const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
   const getAddress = useAddressStore((state) => state.getAddress);
+  const addresses = useAddressStore((state) => state.addresses);
   const { getDefaultAddress } = useAddressStore();
   const addOrder = useOrdersStore((state) => state.addOrder);
 
@@ -294,18 +293,15 @@ export function PaymentScreen() {
   }, [isLoggedIn, items.length, openAuthModal]);
 
   useEffect(() => {
-    if (!selectedAddress && !selectedAddressId) {
-      const defaultAddr = getDefaultAddress();
-      if (defaultAddr) {
-        setSelectedAddress(defaultAddr.id);
-      }
-    } else if (!selectedAddress && selectedAddressId) {
-      const defaultAddr = getDefaultAddress();
-      if (defaultAddr) {
-        setSelectedAddress(defaultAddr.id);
-      }
+    if (selectedAddress) {
+      return;
     }
-  }, [selectedAddressId, selectedAddress, getDefaultAddress, setSelectedAddress]);
+
+    const defaultAddr = getDefaultAddress();
+    if (defaultAddr) {
+      setSelectedAddress(defaultAddr.id);
+    }
+  }, [addresses, selectedAddress, selectedAddressId, getDefaultAddress, setSelectedAddress]);
 
   if (!items.length) {
     return <BlockedCheckoutEmptyState />;
@@ -366,7 +362,7 @@ export function PaymentScreen() {
             <div>
               <h1 className="font-bold">Bank Offer</h1>
               <p className="mt-2 text-sm text-text-secondary">
-                7.5% assured cashback on verified wellness orders above Rs 100. Terms apply.
+                    7.5% assured cashback on verified wellness orders above Rs 100. Terms apply.
               </p>
             </div>
           </div>
@@ -512,12 +508,11 @@ export function ConfirmationScreen() {
               className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-light"
               onClick={() => router.push('/account/orders')}
             >
-              ORDER DETAILS →
+              ORDER DETAILS
             </Button>
 
-            <p className="mt-4 flex items-start gap-2 text-xs text-text-secondary">
-              <span>📋</span>
-              <span>You can Track/View/Modify order from orders page.</span>
+            <p className="mt-4 text-xs text-text-secondary">
+              Track, view, or modify this order from your orders page.
             </p>
           </div>
 
@@ -563,12 +558,16 @@ export function ConfirmationScreen() {
 
 function AddressCard({
   address,
+  inputId,
+  inputName,
   selected,
   onSelect,
   onDelete,
   onEdit,
 }: {
   address: Address;
+  inputId: string;
+  inputName: string;
   selected: boolean;
   onSelect: () => void;
   onDelete: () => void;
@@ -576,70 +575,72 @@ function AddressCard({
 }) {
   return (
     <div
-      onClick={onSelect}
       className={cn(
-        'flex cursor-pointer gap-4 rounded-md border bg-surface-base p-5 shadow-xs transition',
+        'rounded-md border bg-surface-base p-5 shadow-xs transition focus-within:ring-2 focus-within:ring-brand-light',
         selected ? 'border-brand-primary ring-2 ring-brand-light' : 'border-surface-border'
       )}
     >
       <input
         checked={selected}
-        className="mt-1 h-5 w-5 cursor-pointer accent-brand-primary"
-        name="address"
+        className="peer sr-only"
+        id={inputId}
+        name={inputName}
         type="radio"
         onChange={onSelect}
-        onClick={(e) => e.stopPropagation()}
       />
+      <label
+        className="flex cursor-pointer items-start gap-4 rounded-md text-left peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-brand-light"
+        htmlFor={inputId}
+      >
+        <span
+          aria-hidden="true"
+          className={cn(
+            'mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition',
+            selected ? 'border-brand-primary bg-brand-light' : 'border-surface-border bg-white'
+          )}
+        >
+          <span
+            className={cn(
+              'h-2.5 w-2.5 rounded-full bg-brand-primary transition-transform',
+              selected ? 'scale-100' : 'scale-0'
+            )}
+          />
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <strong>{address.fullName}</strong>
-          <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
-            Home
-          </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <strong>{address.fullName}</strong>
+            <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
+              Home
+            </span>
+          </div>
+
+          <div className="mt-3 text-sm leading-6 text-text-secondary">
+            {address.addressLine1}
+            {address.addressLine2 ? ', ' + address.addressLine2 : ''}, {address.city}, {address.state} -{' '}
+            {address.pincode}
+          </div>
+
+          <div className="mt-2 text-sm text-text-secondary">
+            Mobile: <strong className="text-text-primary">{address.phone}</strong>
+          </div>
+
+          <div className="mt-3 text-sm font-semibold text-text-success">
+            Pay on Delivery available
+          </div>
         </div>
+      </label>
 
-        <div className="mt-3 text-sm leading-6 text-text-secondary">
-          {address.addressLine1}
-          {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city}, {address.state}{' '}
-          - {address.pincode}
-        </div>
-
-        <div className="mt-2 text-sm text-text-secondary">
-          Mobile: <strong className="text-text-primary">{address.phone}</strong>
-        </div>
-
-        <div className="mt-3 text-sm font-semibold text-text-success">
-          Pay on Delivery available
-        </div>
-
-        <div className="mt-4 flex gap-3">
-          {onEdit ? (
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-            >
-              Edit
-            </Button>
-          ) : null}
-
-          <Button
-            size="sm"
-            type="button"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-          >
-            Remove
+      <div className="mt-4 flex gap-3 pl-9">
+        {onEdit ? (
+          <Button size="sm" type="button" variant="outline" onClick={onEdit}>
+            Edit
           </Button>
-        </div>
+        ) : null}
+
+        <Button size="sm" type="button" variant="ghost" onClick={onDelete}>
+          Remove
+        </Button>
       </div>
     </div>
   );

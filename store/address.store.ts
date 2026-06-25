@@ -43,14 +43,18 @@ export const useAddressStore = create<AddressStore>()(
       },
 
       deleteAddress: (id) => {
-        const { addresses } = get();
-        const deleting = addresses.find((a) => a.id === id);
         set((state) => {
+          const deleting = state.addresses.find((a) => a.id === id);
           const remaining = state.addresses.filter((addr) => addr.id !== id);
-          // If deleted address was default, make first one default
+
           if (deleting?.isDefault && remaining.length > 0) {
-            remaining[0].isDefault = true;
+            return {
+              addresses: remaining.map((addr, index) =>
+                index === 0 ? { ...addr, isDefault: true } : addr
+              ),
+            };
           }
+
           return { addresses: remaining };
         });
       },

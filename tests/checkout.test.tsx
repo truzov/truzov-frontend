@@ -17,6 +17,19 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+function getFixtureProduct(id: string) {
+  const product = products.find((item) => item.id === id);
+
+  if (!product) {
+    throw new Error(`Missing fixture product: ${id}`);
+  }
+
+  return product;
+}
+
+const bagProduct = getFixtureProduct('prd-001');
+const addressProduct = getFixtureProduct('prd-003');
+
 describe('checkout flow', () => {
   afterEach(() => {
     useCartStore.setState({ items: [], selectedItems: [], coupon: undefined });
@@ -62,11 +75,17 @@ describe('checkout flow', () => {
 
   it('can disable the checkout continue action until required selections are made', async () => {
     useCartStore.setState({
-      items: [{ product: products[0], quantity: 1, unitPrice: products[0].price }],
+      items: [{ product: bagProduct, quantity: 1, unitPrice: bagProduct.price }],
       coupon: undefined,
     });
 
-    render(<CheckoutPriceDetails ctaLabel="Continue" disabled helperText="Select or add an address to continue." />);
+    render(
+      <CheckoutPriceDetails
+        ctaLabel="Continue"
+        disabled
+        helperText="Select or add an address to continue."
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
@@ -78,10 +97,10 @@ describe('checkout flow', () => {
     useAuthStore.setState({ isLoggedIn: true });
     useCartStore.setState({
       items: [
-        { product: products[0], quantity: 1, unitPrice: products[0].price },
-        { product: products[2], quantity: 1, unitPrice: products[2].price },
+        { product: bagProduct, quantity: 1, unitPrice: bagProduct.price },
+        { product: addressProduct, quantity: 1, unitPrice: addressProduct.price },
       ],
-      selectedItems: [products[2].id],
+      selectedItems: [addressProduct.id],
       coupon: undefined,
     });
 
@@ -90,6 +109,24 @@ describe('checkout flow', () => {
     await waitFor(() => {
       expect(screen.getByText(/price details \(1 item\)/i)).toBeInTheDocument();
       expect(screen.getAllByText(/estimated delivery by/i)).toHaveLength(1);
+    });
+  });
+
+  it('renders delivery addresses as a native radio group with a selected default address', async () => {
+    useAuthStore.setState({ isLoggedIn: true });
+    useCartStore.setState({
+      items: [{ product: bagProduct, quantity: 1, unitPrice: bagProduct.price }],
+      selectedItems: [bagProduct.id],
+      coupon: undefined,
+    });
+
+    render(<AddressScreen />);
+
+    await waitFor(() => {
+      const radios = screen.getAllByRole('radio') as HTMLInputElement[];
+      expect(radios.length).toBeGreaterThan(0);
+      expect(radios.some((radio) => radio.checked)).toBe(true);
+      expect(screen.getByRole('radiogroup', { name: /delivery addresses/i })).toBeInTheDocument();
     });
   });
 });
