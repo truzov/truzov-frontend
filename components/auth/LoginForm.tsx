@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '@/store/auth.store';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { ArrowRight, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
 
 export interface AuthFormProps {
   variant?: 'page' | 'modal';
@@ -64,30 +65,21 @@ export function LoginForm({
 
   return (
     <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
-      <div className="flex flex-col space-y-xs">
-        <label className="text-label-sm font-body uppercase tracking-wide text-on-surface-variant">
-          Email or Phone Number
-        </label>
-        <input
-          {...register('identifier')}
-          className={`w-full rounded-lg border px-md py-3 font-body outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary ${
-            errors.identifier ? 'border-error' : 'border-outline-variant'
-          }`}
-          inputMode="email"
-          placeholder="you@example.com or 9876543210"
-          type="text"
-        />
-        {errors.identifier ? (
-          <p className="text-caption text-error">{errors.identifier.message}</p>
-        ) : null}
-      </div>
+      <Input
+        {...register('identifier')}
+        error={errors.identifier?.message}
+        label="Email or Phone Number"
+        inputMode="email"
+        placeholder="you@example.com or 9876543210"
+        type="text"
+      />
 
       {error ? (
         <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p>
       ) : null}
 
       <button
-        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h6 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         disabled={isLoading}
         type="submit"
       >
@@ -109,7 +101,7 @@ export function LoginForm({
           Don&apos;t have an account?{' '}
           {variant === 'modal' && onModeChange ? (
             <button
-              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
+              className="text-h6 font-body text-primary transition-colors hover:text-primary-container"
               type="button"
               onClick={() => onModeChange('signup')}
             >

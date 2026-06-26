@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Tag, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,12 +24,17 @@ export function CheckoutPriceDetails({
   onCta,
 }: CheckoutPriceDetailsProps) {
   const items = useCartStore((state) => state.items);
+  const selectedItems = useCartStore((state) => state.selectedItems);
   const coupon = useCartStore((state) => state.coupon);
   const applyCoupon = useCartStore((state) => state.applyCoupon);
-  const totals = calculateCartTotals(items, coupon);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const mrpTotal = items.reduce((sum, item) => sum + item.product.mrp * item.quantity, 0);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  const selectedCartItems = items.filter((item) => selectedItems.includes(item.product.id));
+  const totals = calculateCartTotals(selectedCartItems, coupon);
+  const itemCount = selectedCartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const mrpTotal = selectedCartItems.reduce((sum, item) => sum + item.product.mrp * item.quantity, 0);
   const productDiscount = Math.max(0, mrpTotal - totals.subtotal);
+  const noItemsSelected = selectedItems.length === 0;
 
   return (
     <aside className="rounded-md border border-surface-border bg-surface-base p-5 shadow-xs lg:sticky lg:top-28">
@@ -50,10 +56,15 @@ export function CheckoutPriceDetails({
 
       <form
         className="mb-4 grid gap-2"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
           const code = new FormData(event.currentTarget).get('coupon')?.toString().trim() || 'TRUZOV10';
-          void applyCoupon(code);
+          try {
+            setCouponError(null);
+            await applyCoupon(code);
+          } catch {
+            setCouponError('Invalid coupon code');
+          }
         }}
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
@@ -66,11 +77,14 @@ export function CheckoutPriceDetails({
             Apply
           </Button>
         </div>
-        {coupon ? <p className="text-xs font-semibold text-text-success">{coupon} applied.</p> : null}
+        {couponError ? <p className="text-xs text-text-danger">{couponError}</p> : coupon ? <p className="text-xs font-semibold text-text-success">{coupon} applied.</p> : null}
       </form>
 
       {helperText ? <p className="mb-3 text-sm text-text-danger">{helperText}</p> : null}
-      <Button className="w-full" disabled={disabled || itemCount === 0} size="lg" onClick={onCta}>
+      {noItemsSelected && !helperText ? (
+        <p className="mb-3 text-sm text-text-danger">Select at least one item to continue</p>
+      ) : null}
+      <Button className="w-full" disabled={disabled || noItemsSelected} size="lg" onClick={onCta}>
         {ctaLabel}
       </Button>
       {termsText ? <p className="mt-3 text-xs leading-5 text-text-secondary">{termsText}</p> : null}

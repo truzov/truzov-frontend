@@ -18,7 +18,10 @@ export function Toaster() {
   const removeToast = useUiStore((state) => state.removeToast);
 
   useEffect(() => {
-    const timers = toasts.map((toast) => window.setTimeout(() => removeToast(toast.id), 3000));
+    const timers = toasts.map((toast) => {
+      const duration = toast.type === 'error' ? 7000 : 5000;
+      return window.setTimeout(() => removeToast(toast.id), duration);
+    });
     return () => timers.forEach(window.clearTimeout);
   }, [removeToast, toasts]);
 
