@@ -1,10 +1,45 @@
 import Link from 'next/link';
 import { Logo } from './Logo';
 
-const groups: Array<[string, string[]]> = [
-  ['Shop Verified', ['New Lab Arrivals', 'Verified Bestsellers', 'Wholesale Inquiries', 'Gift Certificates']],
-  ['Transparency', ['Lab Partners', 'Audit Methodology', 'Privacy Protocol', 'Terms of Service']],
-  ['Support', ['Quality Support', 'Vendor Onboarding', 'Shipping & Logistics', 'Health Knowledge Base']],
+interface FooterLink {
+  label: string;
+  href: string;
+}
+
+interface FooterGroup {
+  title: string;
+  links: FooterLink[];
+}
+
+const groups: FooterGroup[] = [
+  {
+    title: 'Shop Verified',
+    links: [
+      { label: 'New Lab Arrivals', href: '/products' },
+      { label: 'Verified Bestsellers', href: '/products' },
+      { label: 'Wholesale Inquiries', href: '/products' },
+      { label: 'Gift Certificates', href: '/products' },
+    ],
+  },
+  {
+    title: 'Transparency',
+    links: [
+      { label: 'Lab Partners', href: '/trust/how-it-works' },
+      { label: 'Audit Methodology', href: '/trust/how-it-works' },
+      { label: 'Privacy Policy', href: '/policies/privacy-policy' },
+      { label: 'Terms of Service', href: '/policies/terms-of-service' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { label: 'Quality Support', href: '/trust/how-it-works' },
+      { label: 'Vendor Onboarding', href: '/trust/how-it-works' },
+      { label: 'Shipping & Logistics', href: '/policies/shipping-policy' },
+      { label: 'Refund Policy', href: '/policies/refund-policy' },
+      { label: 'Health Knowledge Base', href: '/trust/how-it-works' },
+    ],
+  },
 ];
 
 export function Footer() {
@@ -18,16 +53,16 @@ export function Footer() {
             the gap between marketing claims and nutritional truth.
           </p>
         </div>
-        {groups.map(([title, links]) => (
-          <div key={title}>
+        {groups.map((group) => (
+          <div key={group.title}>
             <h3 className="font-body text-sm font-semibold uppercase tracking-normal text-on-surface">
-              {title}
+              {group.title}
             </h3>
             <ul className="mt-4 grid gap-2 text-base text-on-surface-variant">
-              {links.map((link) => (
-                <li key={link}>
-                  <Link className="transition hover:text-primary" href="/products">
-                    {link}
+              {group.links.map((link) => (
+                <li key={link.label}>
+                  <Link className="transition hover:text-primary" href={link.href}>
+                    {link.label}
                   </Link>
                 </li>
               ))}

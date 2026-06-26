@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { AccountMenu } from '@/components/auth/AccountMenu';
 import { useCartStore } from '@/store/cart.store';
@@ -27,6 +27,19 @@ export function Header() {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  const [policiesOpen, setPoliciesOpen] = useState(false);
+  const policiesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!policiesRef.current?.contains(event.target as Node)) {
+        setPoliciesOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, []);
 
   return (
@@ -141,6 +154,49 @@ export function Header() {
             <Link href="/trust/how-it-works">Why Verified?</Link>
             <Link href="/trust/lab-reports">Lab Reports</Link>
             <Link href="/trust/how-it-works">About Us</Link>
+            <div ref={policiesRef} className="relative">
+              <button
+                onClick={() => setPoliciesOpen(!policiesOpen)}
+                className="flex items-center gap-1 hover:text-primary font-semibold transition"
+                aria-expanded={policiesOpen}
+                type="button"
+              >
+                Policies
+                <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              </button>
+              {policiesOpen && (
+                <div className="absolute left-0 top-[calc(100%+12px)] z-50 w-48 rounded-lg border border-outline-variant bg-white p-1.5 shadow-md">
+                  <Link
+                    href="/policies/refund-policy"
+                    onClick={() => setPoliciesOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Refund Policy
+                  </Link>
+                  <Link
+                    href="/policies/shipping-policy"
+                    onClick={() => setPoliciesOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Shipping Policy
+                  </Link>
+                  <Link
+                    href="/policies/privacy-policy"
+                    onClick={() => setPoliciesOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    href="/policies/terms-of-service"
+                    onClick={() => setPoliciesOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Terms of Service
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link className="flex items-center gap-1 hover:text-primary" href="/trust/lab-reports">
               Support
               <ChevronDown aria-hidden="true" className="h-4 w-4" />
