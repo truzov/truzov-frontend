@@ -134,4 +134,20 @@ describe('checkout flow', () => {
       expect(screen.getByRole('radiogroup', { name: /delivery addresses/i })).toBeInTheDocument();
     });
   });
+
+  it('clears validation errors once a user corrects an invalid field', async () => {
+    const user = userEvent.setup();
+
+    render(<AddressForm onComplete={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /save address/i }));
+
+    expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/full name/i), 'Asha Verma');
+
+    await waitFor(() => {
+      expect(screen.queryByText(/name must be at least 2 characters/i)).not.toBeInTheDocument();
+    });
+  });
 });
