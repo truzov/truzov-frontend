@@ -8,6 +8,7 @@ import {
   Banknote,
   CreditCard,
   MapPin,
+  Phone,
   Plus,
   QrCode,
   ShieldCheck,
@@ -492,8 +493,10 @@ export function ConfirmationScreen() {
               Delivering to:
             </p>
             <div className="mt-3">
-              <p className="font-semibold text-text-primary">
-                {selectedAddress.fullName} | {selectedAddress.phone}
+              <p className="font-semibold text-text-primary">{selectedAddress.fullName}</p>
+              <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
+                <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
+                <span>{selectedAddress.phone}</span>
               </p>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">
                 {selectedAddress.addressLine1}
@@ -621,8 +624,9 @@ function AddressCard({
             {address.pincode}
           </div>
 
-          <div className="mt-2 text-sm text-text-secondary">
-            Mobile: <strong className="text-text-primary">{address.phone}</strong>
+          <div className="mt-2 flex items-center gap-2 text-sm text-text-secondary">
+            <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
+            <span>{address.phone}</span>
           </div>
 
           <div className="mt-3 text-sm font-semibold text-text-success">

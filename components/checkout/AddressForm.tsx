@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { addressSchema } from '@/lib/validations/checkout';
 import { useAddressStore } from '@/store/address.store';
+import type { Address } from '@/types';
 
 interface AddressFormProps {
   address?: {
@@ -78,6 +79,9 @@ export function AddressForm({ address, onComplete }: AddressFormProps) {
     setTouched((currentTouched) => ({ ...currentTouched, [field]: true }));
   };
 
+  const validationResult = addressSchema.safeParse(form);
+  const isFormValid = validationResult.success;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const result = addressSchema.safeParse(form);
@@ -95,10 +99,22 @@ export function AddressForm({ address, onComplete }: AddressFormProps) {
       setErrors(nextErrors);
       return;
     }
+
+    const payload: Omit<Address, 'id'> = {
+      fullName: result.data.fullName,
+      phone: result.data.phone,
+      pincode: result.data.pincode,
+      addressLine1: result.data.addressLine1,
+      addressLine2: result.data.addressLine2,
+      city: result.data.city,
+      state: result.data.state,
+      isDefault: addresses.length === 0,
+    };
+
     if (address) {
-      updateAddress(address.id, result.data);
+      updateAddress(address.id, payload);
     } else {
-      addAddress({ ...result.data, isDefault: addresses.length === 0 });
+      addAddress(payload);
     }
     onComplete();
   };
@@ -155,7 +171,9 @@ export function AddressForm({ address, onComplete }: AddressFormProps) {
         placeholder="Area / landmark"
       />
       <div className="flex gap-3 md:col-span-2">
-        <Button type="submit">{address ? 'Update' : 'Save'} Address</Button>
+        <Button type="submit" disabled={!isFormValid}>
+          {address ? 'Update' : 'Save'} Address
+        </Button>
         <Button type="button" variant="ghost" onClick={onComplete}>
           Cancel
         </Button>
