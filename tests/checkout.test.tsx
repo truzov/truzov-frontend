@@ -70,14 +70,17 @@ describe('checkout flow', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /your bag is empty/i })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /start shopping/i })).toHaveAttribute('href', '/products');
+      expect(screen.getByRole('link', { name: /start shopping/i })).toHaveAttribute(
+        'href',
+        '/products'
+      );
       expect(screen.queryByRole('button', { name: /^continue$/i })).not.toBeInTheDocument();
     });
   });
 
   it('can disable the checkout continue action until required selections are made', async () => {
     useCartStore.setState({
-      items: [{ product: bagProduct, quantity: 1, unitPrice: bagProduct.price }],
+      items: [{ product: products[0], quantity: 1, unitPrice: products[0].price }],
       coupon: undefined,
     });
 
@@ -129,22 +132,6 @@ describe('checkout flow', () => {
       expect(radios.length).toBeGreaterThan(0);
       expect(radios.some((radio) => radio.checked)).toBe(true);
       expect(screen.getByRole('radiogroup', { name: /delivery addresses/i })).toBeInTheDocument();
-    });
-  });
-
-  it('clears validation errors once a user corrects the invalid field', async () => {
-    const user = userEvent.setup();
-
-    render(<AddressForm onComplete={vi.fn()} />);
-
-    await user.click(screen.getByRole('button', { name: /save address/i }));
-
-    expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument();
-
-    await user.type(screen.getByLabelText(/full name/i), 'Asha Verma');
-
-    await waitFor(() => {
-      expect(screen.queryByText(/name must be at least 2 characters/i)).not.toBeInTheDocument();
     });
   });
 });

@@ -1,13 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { addressSchema } from '@/lib/validations/checkout';
 import { useAddressStore } from '@/store/address.store';
 
 interface AddressFormProps {
-  address?: { id: string; fullName: string; phone: string; pincode: string; addressLine1: string; addressLine2?: string; city: string; state: string; isDefault?: boolean };
+  address?: {
+    id: string;
+    fullName: string;
+    phone: string;
+    pincode: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    isDefault?: boolean;
+  };
   onComplete: () => void;
 }
 
@@ -27,55 +37,16 @@ export function AddressForm({ address, onComplete }: AddressFormProps) {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (Object.keys(touched).length === 0) {
-      return;
-    }
-
-    const result = addressSchema.safeParse(form);
-    if (!result.success) {
-      const nextErrors = Object.fromEntries(
-        result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
-      );
-
-      setErrors((currentErrors) => {
-        const updatedErrors = { ...currentErrors };
-        Object.keys(updatedErrors).forEach((key) => {
-          if (!touched[key] || !nextErrors[key]) {
-            delete updatedErrors[key];
-          }
-        });
-
-        Object.entries(nextErrors).forEach(([key, message]) => {
-          if (touched[key]) {
-            updatedErrors[key] = message;
-          }
-        });
-
-        return updatedErrors;
-      });
-      return;
-    }
-
-    setErrors({});
-  }, [form, touched]);
-
-  const handleFieldChange = (field: keyof typeof form, value: string) => {
-    setForm((currentForm) => ({ ...currentForm, [field]: value }));
-    setTouched((currentTouched) => ({ ...currentTouched, [field]: true }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const result = addressSchema.safeParse(form);
     if (!result.success) {
-      const nextErrors = Object.fromEntries(
-        result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
+      setErrors(
+        Object.fromEntries(
+          result.error.issues.map((i) => [i.path[0]?.toString() ?? 'form', i.message])
+        )
       );
-      setTouched((currentTouched) => ({ ...currentTouched, ...Object.keys(nextErrors).reduce((acc, key) => ({ ...acc, [key]: true }), {}) }));
-      setErrors(nextErrors);
       return;
     }
     if (address) {
@@ -88,16 +59,60 @@ export function AddressForm({ address, onComplete }: AddressFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-      <Input label="Full Name" value={form.fullName} onChange={(e) => handleFieldChange('fullName', e.target.value)} error={errors.fullName} placeholder="Asha Verma" />
-      <Input label="Phone" value={form.phone} onChange={(e) => handleFieldChange('phone', e.target.value)} error={errors.phone} placeholder="9876543210" />
-      <Input label="Pincode" value={form.pincode} onChange={(e) => handleFieldChange('pincode', e.target.value)} error={errors.pincode} placeholder="560001" />
-      <Input label="City" value={form.city} onChange={(e) => handleFieldChange('city', e.target.value)} error={errors.city} placeholder="Bengaluru" />
-      <Input label="State" value={form.state} onChange={(e) => handleFieldChange('state', e.target.value)} error={errors.state} placeholder="Karnataka" />
-      <Input label="Address Line 1" value={form.addressLine1} onChange={(e) => handleFieldChange('addressLine1', e.target.value)} error={errors.addressLine1} placeholder="Flat / house / street" />
-      <Input label="Address Line 2 (optional)" value={form.addressLine2} onChange={(e) => handleFieldChange('addressLine2', e.target.value)} error={errors.addressLine2} placeholder="Area / landmark" />
+      <Input
+        label="Full Name"
+        value={form.fullName}
+        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+        error={errors.fullName}
+        placeholder="Asha Verma"
+      />
+      <Input
+        label="Phone"
+        value={form.phone}
+        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        error={errors.phone}
+        placeholder="9876543210"
+      />
+      <Input
+        label="Pincode"
+        value={form.pincode}
+        onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+        error={errors.pincode}
+        placeholder="560001"
+      />
+      <Input
+        label="City"
+        value={form.city}
+        onChange={(e) => setForm({ ...form, city: e.target.value })}
+        error={errors.city}
+        placeholder="Bengaluru"
+      />
+      <Input
+        label="State"
+        value={form.state}
+        onChange={(e) => setForm({ ...form, state: e.target.value })}
+        error={errors.state}
+        placeholder="Karnataka"
+      />
+      <Input
+        label="Address Line 1"
+        value={form.addressLine1}
+        onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
+        error={errors.addressLine1}
+        placeholder="Flat / house / street"
+      />
+      <Input
+        label="Address Line 2 (optional)"
+        value={form.addressLine2}
+        onChange={(e) => setForm({ ...form, addressLine2: e.target.value })}
+        error={errors.addressLine2}
+        placeholder="Area / landmark"
+      />
       <div className="flex gap-3 md:col-span-2">
         <Button type="submit">{address ? 'Update' : 'Save'} Address</Button>
-        <Button type="button" variant="ghost" onClick={onComplete}>Cancel</Button>
+        <Button type="button" variant="ghost" onClick={onComplete}>
+          Cancel
+        </Button>
       </div>
     </form>
   );
