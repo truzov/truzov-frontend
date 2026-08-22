@@ -14,6 +14,7 @@ import {
   Microscope,
   PackageCheck,
   Pencil,
+  Phone,
   Plus,
   Search,
   ShieldCheck,
@@ -1232,38 +1233,63 @@ export function AddressesScreen() {
           </Button>
         }
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          {addresses.map((address) => (
-            <article
-              key={address.id}
-              className="rounded-lg border border-surface-border bg-surface-base p-5"
-            >
-              <MapPin aria-hidden="true" className="h-5 w-5 text-brand-primary" />
-              <h2 className="mt-3 font-semibold">{address.fullName}</h2>
-              <p className="mt-1 text-sm text-text-secondary">
-                {address.addressLine1}
-                {address.addressLine2 ? `, ${address.addressLine2}` : ''}, {address.city},{' '}
-                {address.state} - {address.pincode}
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">📞 {address.phone}</p>
-              <div className="mt-4 flex gap-2">
-                {address.isDefault ? (
-                  <Badge variant="success">Default</Badge>
-                ) : (
-                  <Button size="sm" variant="ghost" onClick={() => setDefault(address.id)}>
-                    Set as Default
+        <div className="grid gap-4 md:grid-cols-2 items-stretch">
+          {addresses.map((address) => {
+            const addressLines = [address.addressLine1, address.addressLine2].filter(Boolean);
+            const compactAddress = [
+              ...addressLines,
+              `${address.city}, ${address.state} - ${address.pincode}`,
+            ].join(' • ');
+
+            return (
+              <article
+                key={address.id}
+                className="flex h-full flex-col rounded-xl border border-surface-border bg-surface-base p-5 shadow-sm"
+              >
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-2">
+                      <MapPin aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary" />
+                      <div className="min-w-0">
+                        <h2 className="font-semibold text-text-primary">{address.fullName}</h2>
+                        <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
+                          <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
+                          <span>{address.phone}</span>
+                        </p>
+                      </div>
+                    </div>
+                    {address.isDefault ? (
+                      <Badge variant="success">Default</Badge>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-sm text-text-secondary">
+                    <div className="min-w-0">
+                      <p className="font-medium text-text-primary">Address</p>
+                      <p className="mt-1 truncate" title={compactAddress}>
+                        {compactAddress}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                  {!address.isDefault ? (
+                    <Button size="sm" variant="ghost" onClick={() => setDefault(address.id)}>
+                      Set as Default
+                    </Button>
+                  ) : null}
+                  <Button size="sm" variant="ghost" onClick={() => openEditModal(address)}>
+                    <Pencil aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
+                    Edit
                   </Button>
-                )}
-                <Button size="sm" variant="ghost" onClick={() => openEditModal(address)}>
-                  <Pencil aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
-                  Edit
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => deleteAddress(address.id)}>
-                  Delete
-                </Button>
-              </div>
-            </article>
-          ))}
+                  <Button size="sm" variant="ghost" onClick={() => deleteAddress(address.id)}>
+                    Delete
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
         </div>
 
         <AddressFormModal

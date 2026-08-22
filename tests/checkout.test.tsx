@@ -1,9 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Header } from '@/components/layout/Header';
+import { AddressForm } from '@/components/checkout/AddressForm';
 import { CheckoutProgress } from '@/components/checkout/CheckoutProgress';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
 import { AddressScreen, BagScreen } from '@/components/checkout/CheckoutScreens';
+import { AddressesScreen } from '@/components/screens/CustomerScreens';
 import { addresses as fixtureAddresses, products } from '@/lib/data/fixtures';
 import { useAddressStore } from '@/store/address.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -68,14 +71,17 @@ describe('checkout flow', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /your bag is empty/i })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /start shopping/i })).toHaveAttribute('href', '/products');
+      expect(screen.getByRole('link', { name: /start shopping/i })).toHaveAttribute(
+        'href',
+        '/products'
+      );
       expect(screen.queryByRole('button', { name: /^continue$/i })).not.toBeInTheDocument();
     });
   });
 
   it('can disable the checkout continue action until required selections are made', async () => {
     useCartStore.setState({
-      items: [{ product: bagProduct, quantity: 1, unitPrice: bagProduct.price }],
+      items: [{ product: products[0], quantity: 1, unitPrice: products[0].price }],
       coupon: undefined,
     });
 
@@ -128,5 +134,53 @@ describe('checkout flow', () => {
       expect(radios.some((radio) => radio.checked)).toBe(true);
       expect(screen.getByRole('radiogroup', { name: /delivery addresses/i })).toBeInTheDocument();
     });
+  });
+
+  it('clears validation errors once a user corrects an invalid field', async () => {
+    const user = userEvent.setup();
+
+    render(<AddressForm onComplete={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /save address/i }));
+
+    const fullNameField = screen.getByLabelText(/full name/i);
+
+    await user.type(fullNameField, 'Asha Verma');
+
+    await waitFor(() => {
+      expect(fullNameField).toHaveAttribute('aria-invalid', 'false');
+    });
+  });
+
+  it('disables save address until all required fields are valid', async () => {
+    const user = userEvent.setup();
+
+    render(<AddressForm onComplete={vi.fn()} />);
+
+    const submitButton = screen.getByRole('button', { name: /save address/i });
+    expect(submitButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/full name/i), 'Asha Verma');
+    await user.type(screen.getByLabelText(/phone/i), '9876543210');
+    await user.type(screen.getByLabelText(/pincode/i), '560001');
+    await user.type(screen.getByLabelText(/city/i), 'Bengaluru');
+    await user.type(screen.getByLabelText(/state/i), 'Karnataka');
+    await user.type(screen.getByLabelText(/address line 1/i), '123, Main Street, MG Road');
+
+    await waitFor(() => {
+      expect(submitButton).toBeEnabled();
+    });
+  });
+
+  it('keeps address actions anchored to the bottom of each address card', () => {
+    render(<AddressesScreen />);
+
+    const cards = screen.getAllByRole('article');
+    const firstCard = cards[0];
+    const actionRow = within(firstCard).getByRole('button', { name: /edit/i }).closest('div');
+
+    expect(firstCard).toHaveClass('flex');
+    expect(firstCard).toHaveClass('flex-col');
+    expect(actionRow).toHaveClass('mt-auto');
   });
 });
