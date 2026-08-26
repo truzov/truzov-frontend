@@ -1,180 +1,177 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { InlineError } from '@/components/ui/ErrorState';
+import { Input } from '@/components/ui/Input';
+import { useAddresses, useCreateAddress } from '@/hooks/api/useCommerce';
+import { fieldError } from '@/lib/api/errors';
 import { addressSchema } from '@/lib/validations/checkout';
-import { useAddressStore } from '@/store/address.store';
-import type { Address } from '@/types';
 
-interface AddressFormProps {
-  address?: {
-    id: string;
-    fullName: string;
-    phone: string;
-    pincode: string;
-    addressLine1: string;
-    addressLine2?: string;
-    city: string;
-    state: string;
-    isDefault?: boolean;
-  };
-  onComplete: () => void;
-}
-
-export function AddressForm({ address, onComplete }: AddressFormProps) {
-  const addAddress = useAddressStore((state) => state.addAddress);
-  const updateAddress = useAddressStore((state) => state.updateAddress);
-  const addresses = useAddressStore((state) => state.addresses);
+/**
+ * Create a delivery address via `POST /users/me/addresses`.
+ *
+ * Create-only, deliberately. There is no PATCH, DELETE or set-default endpoint (plan §T6), so the
+ * edit path this component used to support has been removed rather than left writing to local state
+ * that vanishes on reload — which is what it did before, and which looked like data loss.
+ */
+export function AddressForm({ onComplete }: { onComplete: () => void }) {
+  const { addresses } = useAddresses();
+  const createAddress = useCreateAddress();
 
   const [form, setForm] = useState({
-    fullName: address?.fullName ?? '',
-    phone: address?.phone ?? '',
-    pincode: address?.pincode ?? '',
-    addressLine1: address?.addressLine1 ?? '',
-    addressLine2: address?.addressLine2 ?? '',
-    city: address?.city ?? '',
-    state: address?.state ?? '',
+    label: '',
+    fullName: '',
+    phone: '',
+    pincode: '',
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // Only validate fields the user has actually interacted with, so the form does not open covered
+  // in red.
   useEffect(() => {
     if (Object.keys(touched).length === 0) {
       return;
     }
 
     const result = addressSchema.safeParse(form);
-    if (!result.success) {
-      const nextErrors = Object.fromEntries(
-        result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
-      );
 
-      setErrors((currentErrors) => {
-        const updatedErrors = { ...currentErrors };
-
-        Object.keys(updatedErrors).forEach((key) => {
-          if (!touched[key] || !nextErrors[key]) {
-            delete updatedErrors[key];
-          }
-        });
-
-        Object.entries(nextErrors).forEach(([key, message]) => {
-          if (touched[key]) {
-            updatedErrors[key] = message;
-          }
-        });
-
-        return updatedErrors;
-      });
+    if (result.success) {
+      setErrors({});
       return;
     }
 
-    setErrors({});
+    const issues = Object.fromEntries(
+      result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
+    );
+
+    setErrors(
+      Object.fromEntries(Object.entries(issues).filter(([key]) => touched[key]))
+    );
   }, [form, touched]);
 
   const handleFieldChange = (field: keyof typeof form, value: string) => {
-    setForm((currentForm) => ({ ...currentForm, [field]: value }));
-    setTouched((currentTouched) => ({ ...currentTouched, [field]: true }));
+    setForm((current) => ({ ...current, [field]: value }));
+    setTouched((current) => ({ ...current, [field]: true }));
   };
 
-  const validationResult = addressSchema.safeParse(form);
-  const isFormValid = validationResult.success;
+  const isFormValid = addressSchema.safeParse(form).success;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     const result = addressSchema.safeParse(form);
+
     if (!result.success) {
-      const nextErrors = Object.fromEntries(
+      const issues = Object.fromEntries(
         result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
       );
-      setTouched((currentTouched) => ({
-        ...currentTouched,
-        ...Object.keys(nextErrors).reduce<Record<string, boolean>>((acc, key) => {
-          acc[key] = true;
-          return acc;
-        }, {}),
+      setTouched((current) => ({
+        ...current,
+        ...Object.fromEntries(Object.keys(issues).map((key) => [key, true])),
       }));
-      setErrors(nextErrors);
+      setErrors(issues);
       return;
     }
 
-    const payload: Omit<Address, 'id'> = {
-      fullName: result.data.fullName,
-      phone: result.data.phone,
-      pincode: result.data.pincode,
-      addressLine1: result.data.addressLine1,
-      addressLine2: result.data.addressLine2,
-      city: result.data.city,
-      state: result.data.state,
-      isDefault: addresses.length === 0,
-    };
-
-    if (address) {
-      updateAddress(address.id, payload);
-    } else {
-      addAddress(payload);
-    }
-    onComplete();
+    createAddress.mutate(
+      {
+        label: result.data.label || undefined,
+        fullName: result.data.fullName,
+        phone: result.data.phone,
+        line1: result.data.line1,
+        // Omitted rather than sent empty: the server validates what it receives.
+        line2: result.data.line2 || undefined,
+        city: result.data.city,
+        state: result.data.state,
+        pincode: result.data.pincode,
+        // The first address becomes the default. There is no set-default endpoint, so this is the
+        // only moment a default can be chosen.
+        isDefault: addresses.length === 0,
+      },
+      { onSuccess: () => onComplete() }
+    );
   };
 
+  /** Server-side field errors take precedence: they reflect what was actually rejected. */
+  const errorFor = (field: string) => fieldError(createAddress.error, field) ?? errors[field];
+
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+    <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
       <Input
+        error={errorFor('fullName')}
         label="Full Name"
+        onChange={(event) => handleFieldChange('fullName', event.target.value)}
+        placeholder="Asha Singh"
         value={form.fullName}
-        onChange={(e) => handleFieldChange('fullName', e.target.value)}
-        error={errors.fullName}
-        placeholder="Asha Verma"
       />
       <Input
+        error={errorFor('phone')}
         label="Phone"
-        value={form.phone}
-        onChange={(e) => handleFieldChange('phone', e.target.value)}
-        error={errors.phone}
+        onChange={(event) => handleFieldChange('phone', event.target.value)}
         placeholder="9876543210"
+        value={form.phone}
       />
       <Input
+        error={errorFor('pincode')}
+        inputMode="numeric"
         label="Pincode"
+        onChange={(event) => handleFieldChange('pincode', event.target.value)}
+        placeholder="411001"
         value={form.pincode}
-        onChange={(e) => handleFieldChange('pincode', e.target.value)}
-        error={errors.pincode}
-        placeholder="560001"
       />
       <Input
+        error={errorFor('city')}
         label="City"
+        onChange={(event) => handleFieldChange('city', event.target.value)}
+        placeholder="Pune"
         value={form.city}
-        onChange={(e) => handleFieldChange('city', e.target.value)}
-        error={errors.city}
-        placeholder="Bengaluru"
       />
       <Input
+        error={errorFor('state')}
         label="State"
+        onChange={(event) => handleFieldChange('state', event.target.value)}
+        placeholder="Maharashtra"
         value={form.state}
-        onChange={(e) => handleFieldChange('state', e.target.value)}
-        error={errors.state}
-        placeholder="Karnataka"
       />
       <Input
+        error={errorFor('label')}
+        label="Label (optional)"
+        onChange={(event) => handleFieldChange('label', event.target.value)}
+        placeholder="Home"
+        value={form.label}
+      />
+      <Input
+        error={errorFor('line1')}
         label="Address Line 1"
-        value={form.addressLine1}
-        onChange={(e) => handleFieldChange('addressLine1', e.target.value)}
-        error={errors.addressLine1}
+        onChange={(event) => handleFieldChange('line1', event.target.value)}
         placeholder="Flat / house / street"
+        value={form.line1}
       />
       <Input
+        error={errorFor('line2')}
         label="Address Line 2 (optional)"
-        value={form.addressLine2}
-        onChange={(e) => handleFieldChange('addressLine2', e.target.value)}
-        error={errors.addressLine2}
+        onChange={(event) => handleFieldChange('line2', event.target.value)}
         placeholder="Area / landmark"
+        value={form.line2}
       />
+
+      {createAddress.isError ? (
+        <div className="md:col-span-2">
+          <InlineError error={createAddress.error} />
+        </div>
+      ) : null}
+
       <div className="flex gap-3 md:col-span-2">
-        <Button type="submit" disabled={!isFormValid}>
-          {address ? 'Update' : 'Save'} Address
+        <Button disabled={!isFormValid || createAddress.isPending} loading={createAddress.isPending} type="submit">
+          Save Address
         </Button>
-        <Button type="button" variant="ghost" onClick={onComplete}>
+        <Button disabled={createAddress.isPending} type="button" variant="ghost" onClick={onComplete}>
           Cancel
         </Button>
       </div>

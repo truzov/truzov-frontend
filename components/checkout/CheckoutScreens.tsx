@@ -1,78 +1,105 @@
 'use client';
 
+import { AlertCircle, MapPin, Phone, Plus, ShieldCheck } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  AlertCircle,
-  BadgePercent,
-  Banknote,
-  CreditCard,
-  MapPin,
-  Phone,
-  Plus,
-  QrCode,
-  ShieldCheck,
-  Smartphone,
-  Wallet,
-} from 'lucide-react';
+import { AddressFormModal } from '@/components/checkout/AddressFormModal';
+import { BagItemRow } from '@/components/checkout/BagItemRow';
+import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
+import { OrderItemRow } from '@/components/commerce/OrderItemRow';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Input } from '@/components/ui/Input';
-import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
-import { BagItemRow } from '@/components/checkout/BagItemRow';
-import { AddressFormModal } from '@/components/checkout/AddressFormModal';
-import { calculateCartTotals, formatCurrency } from '@/lib/utils/money';
+import { ErrorState, InlineError } from '@/components/ui/ErrorState';
+import { CartScreenSkeleton, Skeleton } from '@/components/ui/Skeleton';
+import { useCart } from '@/hooks/api/useCart';
+import {
+  useAddresses,
+  useCheckout,
+  useCreatePaymentSession,
+  useOrder,
+} from '@/hooks/api/useCommerce';
+import { ERROR_CODES, isApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/utils/cn';
-import { useAuthStore } from '@/store/auth.store';
+import { formatCurrency } from '@/lib/utils/money';
 import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useCartStore } from '@/store/cart.store';
+import { useAuthStore } from '@/store/auth.store';
 import { useCheckoutStore } from '@/store/checkout.store';
-import { useAddressStore } from '@/store/address.store';
-import { useOrdersStore } from '@/store/orders.store';
-import type { Address, CartItem } from '@/types';
+import type { AddressDto } from '@/types/api';
 
-const paymentMethods = [
-  { id: 'UPI', label: 'UPI', icon: Smartphone, helper: 'Pay via any UPI app' },
-  { id: 'Card', label: 'Credit/Debit Card', icon: CreditCard, helper: 'Visa, Mastercard, RuPay' },
-  { id: 'COD', label: 'Cash on Delivery', icon: Banknote, helper: 'Cash/UPI at doorstep' },
-  { id: 'Wallet', label: 'Wallets', icon: Wallet, helper: 'Popular prepaid wallets' },
-] as const;
+/**
+ * Cart and checkout, backed by the server-side cart.
+ *
+ * The three structural changes from the previous version:
+ *
+ * 1. No per-item selection. `POST /checkout` orders the ENTIRE cart — there is no partial-checkout
+ *    parameter — so a UI implying "check out 2 of 5 items" would have charged for all five. That is
+ *    a "charged for things I didn't select" bug, so the checkboxes are gone (plan §8.2).
+ * 2. No payment step. There is no payment-intent endpoint; the only payment surface is a
+ *    gateway->server HMAC webhook. The card number / CVV / UPI inputs posted nowhere and have been
+ *    deleted outright rather than hidden behind a flag, because a card-shaped field in the DOM is a
+ *    liability for any future PCI review (plan §8.3). What was the payment step is now an order
+ *    review that calls POST /checkout; `paymentStatus` comes back on the order.
+ * 3. Orders are not minted client-side. The old flow built `{ id: 'TRZ-' + Date.now(), ... }`
+ *    locally, pushed it into a store and waited 700ms to fake latency.
+ */
+
+/* ------------------------------------------------------------------ the bag */
 
 export function BagScreen() {
   const router = useRouter();
-  const items = useCartStore((state) => state.items);
-  const selectedItems = useCartStore((state) => state.selectedItems);
-  const selectAll = useCartStore((state) => state.selectAll);
-  const deselectAll = useCartStore((state) => state.deselectAll);
+  const { cart, isLoading, isError, error, refetch } = useCart();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const allSelected = items.length > 0 && selectedItems.length === items.length;
+  const authStatus = useAuthStore((state) => state.status);
 
-  const continueToAddress = () => {
-    if (isLoggedIn) {
-      router.push('/checkout/address');
-      return;
-    }
+  // Session restore is a network round trip, so "not logged in" is only meaningful once it settles.
+  if (authStatus === 'idle' || authStatus === 'restoring') {
+    return <CartScreenSkeleton />;
+  }
 
-    openAuthModal({ mode: 'login', redirectTo: '/checkout/address' });
-  };
-
-  if (!items.length) {
+  // The cart is bearer-only, so a guest has no cart to show rather than an empty one.
+  if (!isLoggedIn) {
     return (
-      <div className="mx-auto max-w-5xl">
-        <div>
-          <EmptyState
-            action="Start Shopping"
-            href="/products"
-            icon={AlertCircle}
-            message="Your bag feels light. Browse verified staples and add a few favorites."
-            title="Your bag is empty"
-          />
-        </div>
+      <div className="mx-auto max-w-4xl py-10">
+        <EmptyState
+          action="Sign In"
+          href="/login?redirect=%2Fcart"
+          icon={ShieldCheck}
+          message="Your bag is saved to your account, so sign in to see it."
+          title="Sign in to view your bag"
+        />
       </div>
     );
   }
+
+  if (isLoading) {
+    return <CartScreenSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-4xl py-10">
+        <ErrorState error={error} title="We could not load your bag" onRetry={() => void refetch()} />
+      </div>
+    );
+  }
+
+  if (!cart.items.length) {
+    return (
+      <div className="mx-auto max-w-5xl">
+        <EmptyState
+          action="Start Shopping"
+          href="/products"
+          icon={AlertCircle}
+          message="Your bag feels light. Browse verified staples and add a few favorites."
+          title="Your bag is empty"
+        />
+      </div>
+    );
+  }
+
+  // Out-of-stock lines block checkout: the server would reject the order with a 409, so it is
+  // clearer to say so here than to let the user reach the last step and fail.
+  const blockedItems = cart.items.filter((item) => !item.inStock);
 
   return (
     <div className="bg-surface-raised">
@@ -80,44 +107,33 @@ export function BagScreen() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="grid gap-4">
             <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
-              <div className="flex items-start gap-3">
-                <BadgePercent aria-hidden="true" className="mt-1 h-5 w-5 text-brand-primary" />
-                <div>
-                  <h2 className="font-bold">Available Offers</h2>
-                  <p className="mt-2 text-sm text-text-secondary">
-                    10% off with TRUZOV10 on verified wellness essentials. Coupon can be applied in
-                    price details.
-                  </p>
-                </div>
-              </div>
+              <h1 className="font-heading text-2xl">
+                {cart.itemCount} {cart.itemCount === 1 ? 'Item' : 'Items'} in Your Bag
+              </h1>
             </section>
 
-            <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="font-heading text-2xl">
-                  {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag
-                </h1>
-                <button
-                  className="text-sm font-semibold text-brand-primary hover:underline"
-                  onClick={allSelected ? deselectAll : selectAll}
-                  type="button"
-                >
-                  {allSelected ? 'Deselect All' : 'Select All'}
-                </button>
-              </div>
-            </section>
+            {blockedItems.length ? (
+              <p className="rounded-md border border-text-danger/30 bg-status-dangerBg p-3 text-sm text-text-danger">
+                {blockedItems.length === 1 ? 'One item is' : `${blockedItems.length} items are`} out
+                of stock. Remove {blockedItems.length === 1 ? 'it' : 'them'} to continue.
+              </p>
+            ) : null}
 
             <div className="grid gap-3">
-              {items.map((item) => (
-                <BagItemRow key={`${item.product.id}-${item.variantId ?? 'base'}`} item={item} />
+              {cart.items.map((item) => (
+                <BagItemRow key={item.id} item={item} />
               ))}
             </div>
           </main>
 
           <CheckoutPriceDetails
-            ctaLabel={isLoggedIn ? 'Continue' : 'Login to Continue'}
+            ctaLabel="Continue"
+            disabled={blockedItems.length > 0}
+            helperText={
+              blockedItems.length > 0 ? 'Remove out-of-stock items to continue.' : undefined
+            }
             termsText="By continuing, you agree to Truzov's terms and verified marketplace policies."
-            onCta={continueToAddress}
+            onCta={() => router.push('/checkout/address')}
           />
         </div>
       </div>
@@ -125,67 +141,45 @@ export function BagScreen() {
   );
 }
 
+/* -------------------------------------------------------------- address step */
+
 export function AddressScreen() {
   const router = useRouter();
-  const items = useCartStore((state) => state.items);
-  const selectedItems = useCartStore((state) => state.selectedItems);
+  const { cart, isLoading: cartLoading } = useCart();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const authStatus = useAuthStore((state) => state.status);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
-  const addresses = useAddressStore((state) => state.addresses);
-  const deleteAddress = useAddressStore((state) => state.deleteAddress);
-  const { getAddress, getDefaultAddress } = useAddressStore();
+  const { addresses, defaultAddress, isLoading, isError, error, refetch } = useAddresses();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<Address | undefined>();
-  const selectedAddress = getAddress(selectedAddressId ?? '');
-  const selectedCartItems = useMemo(
-    () => items.filter((item) => selectedItems.includes(item.product.id)),
-    [items, selectedItems]
-  );
-  const defaultAddresses = useMemo(
-    () => addresses.filter((address) => address.isDefault),
-    [addresses]
-  );
-  const otherAddresses = useMemo(
-    () => addresses.filter((address) => !address.isDefault),
-    [addresses]
-  );
+
+  const selectedAddress = addresses.find((address) => address.id === selectedAddressId);
 
   useEffect(() => {
-    if (selectedAddress) {
-      return;
-    }
-
-    const defaultAddr = getDefaultAddress();
-    if (defaultAddr) {
-      setSelectedAddress(defaultAddr.id);
-    }
-  }, [addresses, selectedAddress, selectedAddressId, getDefaultAddress, setSelectedAddress]);
-
-  useEffect(() => {
-    if (items.length && !isLoggedIn) {
+    if (authStatus === 'anonymous' && cart.items.length) {
       openAuthModal({ mode: 'login', redirectTo: '/checkout/address' });
     }
-  }, [isLoggedIn, items.length, openAuthModal]);
+  }, [authStatus, cart.items.length, openAuthModal]);
 
-  if (!items.length) {
-    return <BlockedCheckoutEmptyState />;
+  // Preselect the default. Re-runs if the list changes, e.g. right after adding the first address.
+  useEffect(() => {
+    if (!selectedAddress && defaultAddress) {
+      setSelectedAddress(defaultAddress.id);
+    }
+  }, [defaultAddress, selectedAddress, setSelectedAddress]);
+
+  if (authStatus === 'idle' || authStatus === 'restoring' || cartLoading) {
+    return <CartScreenSkeleton />;
   }
 
   if (!isLoggedIn) {
     return <BlockedCheckoutAuthState />;
   }
 
-  const openAddModal = () => {
-    setEditingAddress(undefined);
-    setModalOpen(true);
-  };
-
-  const openEditModal = (address: Address) => {
-    setEditingAddress(address);
-    setModalOpen(true);
-  };
+  if (!cart.items.length) {
+    return <BlockedCheckoutEmptyState />;
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -195,20 +189,37 @@ export function AddressScreen() {
             <p className="text-sm font-bold uppercase tracking-wide text-text-secondary">Address</p>
             <h1 className="font-heading text-3xl">Select Delivery Address</h1>
           </div>
-
-          <Button variant="outline" onClick={openAddModal}>
+          <Button variant="outline" onClick={() => setModalOpen(true)}>
             <Plus aria-hidden="true" className="h-4 w-4" />
             Add New Address
           </Button>
         </div>
 
-        <div className="grid gap-5" aria-label="Delivery addresses" role="radiogroup">
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-              Default Address
-            </h2>
-
-            {defaultAddresses.map((address) => (
+        {isLoading ? (
+          <div className="grid gap-3">
+            <Skeleton className="h-32 w-full rounded-md" />
+            <Skeleton className="h-32 w-full rounded-md" />
+          </div>
+        ) : isError ? (
+          <ErrorState
+            error={error}
+            title="We could not load your addresses"
+            onRetry={() => void refetch()}
+          />
+        ) : addresses.length === 0 ? (
+          <div className="rounded-md border border-dashed border-surface-border bg-surface-base p-8 text-center">
+            <MapPin aria-hidden="true" className="mx-auto h-10 w-10 text-brand-primary" />
+            <h2 className="mt-4 font-heading text-2xl">No saved addresses</h2>
+            <p className="mt-2 text-text-secondary">
+              Checkout needs a delivery address. Add one to continue.
+            </p>
+            <Button className="mt-5" onClick={() => setModalOpen(true)}>
+              Add an address
+            </Button>
+          </div>
+        ) : (
+          <div aria-label="Delivery addresses" className="grid gap-3" role="radiogroup">
+            {addresses.map((address) => (
               <AddressCard
                 key={address.id}
                 address={address}
@@ -216,43 +227,15 @@ export function AddressScreen() {
                 inputName="delivery-address"
                 selected={selectedAddressId === address.id}
                 onSelect={() => setSelectedAddress(address.id)}
-                onDelete={() => deleteAddress(address.id)}
-                onEdit={() => openEditModal(address)}
               />
             ))}
-          </section>
-
-          {otherAddresses.length > 0 ? (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-                Other Addresses
-              </h2>
-
-              {otherAddresses.map((address) => (
-                <AddressCard
-                  key={address.id}
-                  address={address}
-                  inputId={`delivery-address-${address.id}`}
-                  inputName="delivery-address"
-                  selected={selectedAddressId === address.id}
-                  onSelect={() => setSelectedAddress(address.id)}
-                  onDelete={() => deleteAddress(address.id)}
-                  onEdit={() => openEditModal(address)}
-                />
-              ))}
-            </section>
-          ) : null}
-        </div>
+          </div>
+        )}
       </main>
 
-      <AddressFormModal
-        open={modalOpen}
-        address={editingAddress}
-        onClose={() => setModalOpen(false)}
-      />
+      <AddressFormModal open={modalOpen} onClose={() => setModalOpen(false)} />
 
       <div className="grid gap-4 lg:sticky lg:top-6 lg:self-start">
-        <DeliveryEstimateList items={selectedCartItems} />
         <CheckoutPriceDetails
           ctaLabel="Continue"
           disabled={!selectedAddress}
@@ -264,61 +247,64 @@ export function AddressScreen() {
   );
 }
 
+/* --------------------------------------------------------------- review step */
+
+/**
+ * Order review and placement.
+ *
+ * Route is still `/checkout/payment` so existing links and the stepper keep working, but there is
+ * no payment selection here: the server has no payment endpoint, so the honest final step is
+ * "confirm and place", after which `OrderDto.paymentStatus` reports what the gateway did.
+ */
 export function PaymentScreen() {
   const router = useRouter();
-  const items = useCartStore((state) => state.items);
-  const selectedItems = useCartStore((state) => state.selectedItems);
+  const { cart, isLoading: cartLoading } = useCart();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const coupon = useCartStore((state) => state.coupon);
+  const authStatus = useAuthStore((state) => state.status);
+  const user = useAuthStore((state) => state.user);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
-  const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
-  const paymentMethod = useCheckoutStore((state) => state.paymentMethod);
-  const setPaymentMethod = useCheckoutStore((state) => state.setPaymentMethod);
   const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
-  const getAddress = useAddressStore((state) => state.getAddress);
-  const addresses = useAddressStore((state) => state.addresses);
-  const { getDefaultAddress } = useAddressStore();
-  const addOrder = useOrdersStore((state) => state.addOrder);
+  const { addresses } = useAddresses();
+  const placeOrder = useCheckout();
+  const openPayment = useCreatePaymentSession();
 
-  const selectedCartItems = items.filter((item) => selectedItems.includes(item.product.id));
-  const totals = calculateCartTotals(selectedCartItems, coupon);
-  const selectedAddress = getAddress(selectedAddressId ?? '');
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /**
+   * One key per visit to this screen, so pressing "place order" twice — or a retry after a
+   * timeout — replays the first order instead of creating a second. Deliberately NOT derived from
+   * the address or the cart: two genuine orders to the same address must not share a key, or the
+   * second would be answered with the first.
+   *
+   * Navigating away and back mints a new key, which is correct: that is a new intent.
+   */
+  const idempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    []
+  );
 
-  useEffect(() => {
-    if (items.length && !isLoggedIn) {
-      openAuthModal({ mode: 'login', redirectTo: '/checkout/payment' });
-    }
-  }, [isLoggedIn, items.length, openAuthModal]);
+  const selectedAddress = addresses.find((address) => address.id === selectedAddressId);
 
-  useEffect(() => {
-    if (selectedAddress) {
-      return;
-    }
-
-    const defaultAddr = getDefaultAddress();
-    if (defaultAddr) {
-      setSelectedAddress(defaultAddr.id);
-    }
-  }, [addresses, selectedAddress, selectedAddressId, getDefaultAddress, setSelectedAddress]);
-
-  if (!items.length) {
-    return <BlockedCheckoutEmptyState />;
+  if (authStatus === 'idle' || authStatus === 'restoring' || cartLoading) {
+    return <CartScreenSkeleton />;
   }
 
   if (!isLoggedIn) {
     return <BlockedCheckoutAuthState />;
   }
 
-  if (!selectedAddressId || !selectedAddress) {
+  if (!cart.items.length) {
+    return <BlockedCheckoutEmptyState />;
+  }
+
+  if (!selectedAddress) {
     return (
       <div className="mx-auto max-w-3xl rounded-md border border-surface-border bg-surface-base p-6 text-center shadow-xs">
         <MapPin aria-hidden="true" className="mx-auto h-10 w-10 text-brand-primary" />
         <h1 className="mt-4 font-heading text-3xl">Select an address first</h1>
         <p className="mt-2 text-text-secondary">
-          Payment can begin after a delivery address is selected.
+          Your order cannot be placed until a delivery address is selected.
         </p>
         <Button className="mt-5" onClick={() => router.push('/checkout/address')}>
           Go to Address
@@ -327,148 +313,173 @@ export function PaymentScreen() {
     );
   }
 
-  function payNow() {
-    if (!selectedAddress) return;
-    setProcessing(true);
-    setError(null);
+  /**
+   * The documented precondition: checkout requires a VERIFIED phone. Checked here so the user is
+   * told before they press the button — otherwise the API client's 403 handler bounces them to
+   * /verify-otp mid-action, which feels like a crash.
+   */
+  const phoneUnverified = user ? !user.phoneVerified : false;
 
-    const order = {
-      id: `TRZ-${Date.now()}`,
-      status: 'pending' as const,
-      items: selectedCartItems,
-      address: selectedAddress,
-      subtotal: totals.subtotal,
-      discount: totals.discount,
-      shipping: totals.shipping,
-      total: totals.total,
-      paymentMethod,
-      createdAt: new Date().toISOString(),
-    };
+  const submit = () => {
+    placeOrder.mutate(
+      { addressId: selectedAddress.id, idempotencyKey },
+      {
+        onSuccess: (order) => {
+          resetCheckout();
+          // Open the payment attempt, then hand the customer to the provider's page. Done here
+          // rather than inside the checkout call because paying is a separate, retryable step:
+          // the order exists either way, and holding checkout open across a gateway round trip
+          // would keep the cart lock alive across a network call.
+          openPayment.mutate(order.id, {
+            onSuccess: (session) => {
+              // Internal navigation rather than following session.payUrl. For the mock the two
+              // are the same destination, and client-side routing keeps the React Query cache.
+              // A genuinely external provider would need window.location.assign(session.payUrl);
+              // there is no such provider yet, so that branch is not written.
+              //
+              // orderId travels in the query string because there is no GET endpoint for a
+              // session. Tampering with it is harmless: the confirmation screen fetches the order
+              // with the caller's own token, so someone else's id answers 403.
+              router.push(
+                `/pay/${encodeURIComponent(session.sessionId)}?orderId=${encodeURIComponent(order.id)}`
+              );
+            },
+            onError: () => {
+              // The order is placed and is not lost. Send the customer to the confirmation, which
+              // shows it as unpaid and offers payment again, rather than leaving them on a screen
+              // that looks like nothing happened.
+              router.push(`/checkout/confirm?orderId=${encodeURIComponent(order.id)}`);
+            },
+          });
+        },
+      }
+    );
+  };
 
-    addOrder(order);
-    resetCheckout();
-
-    window.setTimeout(() => {
-      setProcessing(false);
-      router.push('/checkout/confirm');
-    }, 700);
-  }
+  const conflict =
+    isApiError(placeOrder.error) && placeOrder.error.code === ERROR_CODES.CONFLICT;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <main className="grid gap-5">
         <section className="rounded-md border border-surface-border bg-surface-base p-5 shadow-xs">
-          <div className="flex items-start gap-3">
-            <BadgePercent aria-hidden="true" className="mt-1 h-5 w-5 text-brand-primary" />
-            <div>
-              <h1 className="font-bold">Bank Offer</h1>
-              <p className="mt-2 text-sm text-text-secondary">
-                    7.5% assured cashback on verified wellness orders above Rs 100. Terms apply.
-              </p>
-            </div>
-          </div>
+          <h1 className="font-heading text-3xl">Review your order</h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            Delivering to <strong>{selectedAddress.fullName ?? 'your saved address'}</strong>,{' '}
+            {formatAddress(selectedAddress)}
+          </p>
         </section>
 
-        <section>
-          <h2 className="font-heading text-3xl">Choose Payment Mode</h2>
-
-          <div className="mt-5 overflow-hidden rounded-md border border-surface-border bg-surface-base shadow-xs lg:grid lg:grid-cols-[280px_1fr]">
-            <div className="bg-surface-raised">
-              {paymentMethods.map((method) => {
-                const Icon = method.icon;
-                const active = paymentMethod === method.id;
-
-                return (
-                  <button
-                    key={method.id}
-                    className={cn(
-                      'flex w-full items-center gap-3 border-b border-surface-border px-4 py-4 text-left transition hover:bg-brand-light',
-                      active && 'border-l-4 border-l-brand-primary bg-surface-base'
-                    )}
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod(method.id);
-                      setError(null);
-                    }}
-                  >
-                    <Icon aria-hidden="true" className="h-5 w-5 text-brand-primary" />
-                    <span>
-                      <span className="block font-bold">{method.label}</span>
-                      <span className="text-xs text-text-secondary">{method.helper}</span>
-                    </span>
-                  </button>
-                );
-              })}
+        <section className="grid gap-3">
+          {cart.items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between gap-4 rounded-md border border-surface-border bg-surface-base p-4"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{item.name}</p>
+                <p className="text-sm text-text-secondary">
+                  {formatCurrency(item.unitPrice)} × {item.quantity}
+                </p>
+              </div>
+              <span className="shrink-0 font-semibold">{formatCurrency(item.lineTotal)}</span>
             </div>
-
-            <div className="p-5">
-              <h3 className="font-heading text-2xl">Recommended Payment Options</h3>
-              <PaymentDetails method={paymentMethod} total={totals.total} />
-
-              {error ? (
-                <div className="mt-4 rounded-md border border-text-danger bg-status-dangerBg p-3 text-sm text-text-danger">
-                  {error}
-                </div>
-              ) : null}
-
-              <Button className="mt-5 w-full" loading={processing} size="lg" onClick={payNow}>
-                Pay {formatCurrency(totals.total)}
-              </Button>
-
-              <button
-                className="mt-3 text-sm font-semibold text-text-secondary hover:text-text-danger"
-                type="button"
-                onClick={() =>
-                  setError('Payment failed. Please try again or use another payment method.')
-                }
-              >
-                Simulate payment failure
-              </button>
-            </div>
-          </div>
+          ))}
         </section>
+
+        {phoneUnverified ? (
+          <div className="rounded-md border border-brand-accent bg-surface-base p-4 text-sm">
+            <p className="font-semibold">Verify your phone number to place an order</p>
+            <p className="mt-1 text-text-secondary">
+              Orders require a verified phone number on your account.
+            </p>
+            <Button
+              className="mt-3"
+              size="sm"
+              variant="outline"
+              onClick={() => router.push('/verify-otp?redirect=%2Fcheckout%2Fpayment')}
+            >
+              Verify now
+            </Button>
+          </div>
+        ) : null}
+
+        {placeOrder.isError ? (
+          <InlineError
+            error={placeOrder.error}
+            // A 409 means the cart no longer supports the order (stock moved). Sending the user
+            // back to the bag is more useful than a retry that would fail the same way.
+            onRetry={conflict ? () => router.push('/cart') : () => submit()}
+          />
+        ) : null}
+
+        <p className="text-xs leading-5 text-text-secondary">
+          Payment is collected by our payment provider after the order is placed. Your order&apos;s
+          payment status is shown on the order once confirmed.
+        </p>
       </main>
 
       <CheckoutPriceDetails
-        ctaLabel={`Pay ${formatCurrency(totals.total)}`}
+        ctaLabel="Place Order"
+        disabled={phoneUnverified}
+        loading={placeOrder.isPending}
         termsText="By placing the order, you agree to Truzov's Terms of Use and Privacy Policy."
-        onCta={payNow}
+        onCta={submit}
       />
     </div>
   );
 }
 
+/* ---------------------------------------------------------------- confirmation */
+
 export function ConfirmationScreen() {
   const router = useRouter();
-  const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
-  const clearCart = useCartStore((state) => state.clearCart);
-  const orders = useOrdersStore((state) => state.orders);
-  const latestOrder = orders[0];
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('orderId') ?? '';
+  const { data: order, isLoading, isError, error, refetch } = useOrder(orderId);
+  const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
+  const { addresses } = useAddresses();
 
-  useEffect(() => {
-    if (latestOrder) {
-      resetCheckout();
-      clearCart();
-    }
-  }, [latestOrder, resetCheckout, clearCart]);
+  /**
+   * `OrderDto` has NO address field (plan §T5), so the delivery block cannot come from the order.
+   * The address the user selected is resolved from their saved list instead. It can be absent on a
+   * later visit, which is why the whole block is conditional rather than assumed.
+   */
+  const address = addresses.find((entry) => entry.id === selectedAddressId);
 
-  if (!latestOrder) {
+  if (!orderId) {
     return (
       <div className="mx-auto max-w-4xl py-10">
         <EmptyState
-          action="Continue Shopping"
-          href="/products"
+          action="View your orders"
+          href="/account/orders"
           icon={AlertCircle}
-          message="No recent order found. Please complete the checkout process."
-          title="Order not found"
+          message="We could not tell which order to show. Your orders page lists everything you have placed."
+          title="Order reference missing"
         />
       </div>
     );
   }
 
-  const orderId = latestOrder.id;
-  const selectedAddress = latestOrder.address;
-  const itemCount = latestOrder.items.length;
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl py-10">
+        <Skeleton className="h-64 w-full rounded-md" />
+      </div>
+    );
+  }
+
+  if (isError || !order) {
+    return (
+      <div className="mx-auto max-w-4xl py-10">
+        <ErrorState
+          error={error}
+          title="We could not load your order"
+          onRetry={() => void refetch()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -482,75 +493,78 @@ export function ConfirmationScreen() {
             Order confirmed
           </h1>
           <p className="mt-2 text-sm text-text-secondary sm:text-base">
-            You will receive an order confirmation email/SMS shortly with the expected delivery date
-            for your items.
+            Order <strong className="font-mono">{order.orderNumber}</strong> has been placed.
           </p>
         </div>
 
         <div className="grid gap-6 py-6 sm:grid-cols-[1fr_auto] sm:py-8">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
-              Delivering to:
-            </p>
-            <div className="mt-3">
-              <p className="font-semibold text-text-primary">{selectedAddress.fullName}</p>
-              <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
-                <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
-                <span>{selectedAddress.phone}</span>
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-text-secondary">
-                {selectedAddress.addressLine1}
-                {selectedAddress.addressLine2 ? `, ${selectedAddress.addressLine2}` : ''},{' '}
-                {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
-              </p>
-            </div>
+            {address ? (
+              <>
+                <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
+                  Delivering to:
+                </p>
+                <div className="mt-3">
+                  {address.fullName ? (
+                    <p className="font-semibold text-text-primary">{address.fullName}</p>
+                  ) : null}
+                  {address.phone ? (
+                    <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
+                      <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
+                      <span>{address.phone}</span>
+                    </p>
+                  ) : null}
+                  <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                    {formatAddress(address)}
+                  </p>
+                </div>
+              </>
+            ) : null}
 
             <Button
+              className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-light"
               size="sm"
               variant="outline"
-              className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-light"
-              onClick={() => router.push('/account/orders')}
+              onClick={() => router.push(`/account/orders/${order.id}`)}
             >
               ORDER DETAILS
             </Button>
-
-            <p className="mt-4 text-xs text-text-secondary">
-              Track, view, or modify this order from your orders page.
-            </p>
           </div>
 
           <div className="border-t border-surface-border pt-6 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
               Order Summary
             </p>
-
             <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-text-secondary">Order ID:</span>
-                <span className="font-mono font-semibold">{orderId}</span>
+              <SummaryLine label="Items" value={String(order.items.length)} />
+              <SummaryLine label="Subtotal" value={formatCurrency(order.subtotal)} />
+              <SummaryLine
+                label="Delivery"
+                value={order.deliveryFee === 0 ? 'Free' : formatCurrency(order.deliveryFee)}
+              />
+              <div className="flex justify-between border-t border-surface-border pt-2 text-sm font-bold">
+                <span>Total</span>
+                <span>{formatCurrency(order.totalAmount)}</span>
               </div>
-
-              <div className="flex justify-between text-sm">
-                <span className="text-text-secondary">Items:</span>
-                <span className="font-semibold">{itemCount}</span>
-              </div>
-
-              <div className="flex justify-between border-t border-surface-border pt-2 text-sm">
-                <span className="text-text-secondary">Status:</span>
-                <span className="inline-flex items-center gap-1.5 font-semibold text-text-success">
-                  <span className="inline-block h-2 w-2 rounded-full bg-text-success" />
-                  Confirmed
-                </span>
-              </div>
+              <SummaryLine label="Status" value={order.status} />
+              {/* Real payment status from the gateway webhook, replacing a hardcoded
+                  "Confirmed" pill. */}
+              <SummaryLine label="Payment" value={order.paymentStatus} />
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-surface-border pt-6 sm:flex-row sm:justify-between">
-          <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>
+        <div className="grid gap-3 border-t border-surface-border pt-6">
+          {order.items.map((item) => (
+            <OrderItemRow key={item.id} item={item} />
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 border-t border-surface-border pt-6 sm:flex-row sm:justify-between">
+          <Button className="flex-1" variant="outline" onClick={() => router.push('/')}>
             Continue Shopping
           </Button>
-          <Button className="flex-1" onClick={() => router.push(`/account/orders/${orderId}`)}>
+          <Button className="flex-1" onClick={() => router.push(`/account/orders/${order.id}`)}>
             View Order
           </Button>
         </div>
@@ -559,22 +573,36 @@ export function ConfirmationScreen() {
   );
 }
 
+/* -------------------------------------------------------------------- pieces */
+
+function SummaryLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between text-sm">
+      <span className="text-text-secondary">{label}:</span>
+      <span className="font-semibold capitalize">{value}</span>
+    </div>
+  );
+}
+
+/** Joins the parts an address actually has — every field except `line1` is optional. */
+export function formatAddress(address: AddressDto): string {
+  return [address.line1, address.line2, address.city, address.state, address.pincode]
+    .filter(Boolean)
+    .join(', ');
+}
+
 function AddressCard({
   address,
   inputId,
   inputName,
   selected,
   onSelect,
-  onDelete,
-  onEdit,
 }: {
-  address: Address;
+  address: AddressDto;
   inputId: string;
   inputName: string;
   selected: boolean;
   onSelect: () => void;
-  onDelete: () => void;
-  onEdit?: () => void;
 }) {
   return (
     <div
@@ -591,10 +619,7 @@ function AddressCard({
         type="radio"
         onChange={onSelect}
       />
-      <label
-        className="flex cursor-pointer items-start gap-4 rounded-md text-left peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-brand-light"
-        htmlFor={inputId}
-      >
+      <label className="flex cursor-pointer items-start gap-4 rounded-md text-left" htmlFor={inputId}>
         <span
           aria-hidden="true"
           className={cn(
@@ -612,122 +637,29 @@ function AddressCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <strong>{address.fullName}</strong>
-            <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
-              Home
-            </span>
+            <strong>{address.fullName ?? 'Saved address'}</strong>
+            {/* From AddressDto.label. The old card hardcoded a "Home" pill on every address. */}
+            {address.label ? (
+              <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
+                {address.label}
+              </span>
+            ) : null}
           </div>
 
-          <div className="mt-3 text-sm leading-6 text-text-secondary">
-            {address.addressLine1}
-            {address.addressLine2 ? ', ' + address.addressLine2 : ''}, {address.city}, {address.state} -{' '}
-            {address.pincode}
-          </div>
+          <div className="mt-3 text-sm leading-6 text-text-secondary">{formatAddress(address)}</div>
 
-          <div className="mt-2 flex items-center gap-2 text-sm text-text-secondary">
-            <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
-            <span>{address.phone}</span>
-          </div>
-
-          <div className="mt-3 text-sm font-semibold text-text-success">
-            Pay on Delivery available
-          </div>
+          {address.phone ? (
+            <div className="mt-2 flex items-center gap-2 text-sm text-text-secondary">
+              <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
+              <span>{address.phone}</span>
+            </div>
+          ) : null}
         </div>
       </label>
-
-      <div className="mt-4 flex gap-3 pl-9">
-        {onEdit ? (
-          <Button size="sm" type="button" variant="outline" onClick={onEdit}>
-            Edit
-          </Button>
-        ) : null}
-
-        <Button size="sm" type="button" variant="ghost" onClick={onDelete}>
-          Remove
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function DeliveryEstimateList({ items }: { items: CartItem[] }) {
-  const estimates = useMemo(() => items.slice(0, 3), [items]);
-
-  return (
-    <aside className="rounded-md border border-surface-border bg-surface-base p-5 shadow-xs">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-        Delivery Estimates
-      </h2>
-      {estimates.length ? (
-        <div className="mt-4 grid gap-3">
-          {estimates.map((item, index) => (
-            <div
-              key={`${item.product.id}-${item.variantId ?? 'base'}`}
-              className="flex items-center gap-3 border-b border-surface-border pb-3 last:border-0 last:pb-0"
-            >
-              <div className="relative h-14 w-12 overflow-hidden rounded-sm bg-surface-raised">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img alt="" className="h-full w-full object-cover" src={item.product.images[0].url} />
-              </div>
-              <p className="text-sm text-text-secondary">
-                Estimated delivery by{' '}
-                <strong className="text-text-primary">
-                  {index === 0 ? '8 Jun 2026' : '9 Jun 2026'}
-                </strong>
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-4 text-sm text-text-secondary">
-          Select items in your bag to see delivery estimates.
-        </p>
-      )}
-    </aside>
-  );
-}
-
-function PaymentDetails({ method, total }: { method: string; total: number }) {
-  if (method === 'Card') {
-    return (
-      <div className="mt-5 grid gap-4">
-        <Input label="Card number" placeholder="4111 1111 1111 1111" />
-        <div className="grid grid-cols-2 gap-4">
-          <Input label="Expiry" placeholder="MM/YY" />
-          <Input label="CVV" placeholder="123" />
-        </div>
-      </div>
-    );
-  }
-
-  if (method === 'COD') {
-    return (
-      <p className="mt-5 rounded-md bg-surface-raised p-4 text-sm text-text-secondary">
-        Cash on Delivery is available for the selected address. Keep {formatCurrency(total)} ready
-        at delivery.
-      </p>
-    );
-  }
-
-  if (method === 'Wallet') {
-    return <Input className="mt-5" label="Wallet mobile number" placeholder="9876543210" />;
-  }
-
-  return (
-    <div className="mt-5 grid gap-4">
-      <div className="flex items-center justify-between rounded-md bg-surface-raised p-4">
-        <label className="flex items-center gap-3 font-bold">
-          <input
-            defaultChecked
-            className="h-5 w-5 accent-brand-primary"
-            name="upi-mode"
-            type="radio"
-          />
-          Scan & Pay
-        </label>
-        <QrCode aria-hidden="true" className="h-12 w-12 text-brand-primary" />
-      </div>
-      <Input label="UPI ID" placeholder="name@upi" />
+      {/*
+        Edit and Remove used to sit here. There is no address update or delete endpoint (plan §T6),
+        and buttons that changed local state then reverted on reload looked like data loss.
+      */}
     </div>
   );
 }
@@ -751,7 +683,7 @@ function BlockedCheckoutAuthState() {
     <div className="mx-auto max-w-4xl py-10">
       <EmptyState
         action="Sign In"
-        href="/login"
+        href="/login?redirect=%2Fcart"
         icon={ShieldCheck}
         message="Sign in to continue to secure checkout."
         title="Authentication required"

@@ -15,15 +15,16 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { AccountMenu } from '@/components/auth/AccountMenu';
-import { useCartStore } from '@/store/cart.store';
+import { useCartItemCount } from '@/hooks/api/useCart';
 import { Logo } from './Logo';
 
 export function Header() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [isMounted, setIsMounted] = useState(false);
-  const items = useCartStore((state) => state.items);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  // Server-provided count from the same cache entry the cart page reads, so the badge cannot drift
+  // from the cart. Previously summed from a persisted local cart. Zero for guests, who have no cart.
+  const itemCount = useCartItemCount();
 
   useEffect(() => {
     setIsMounted(true);

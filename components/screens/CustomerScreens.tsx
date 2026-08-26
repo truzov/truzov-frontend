@@ -4,60 +4,67 @@ import {
   ArrowRight,
   BadgeCheck,
   CheckCircle2,
-  ChevronRight,
   ClipboardCheck,
   CreditCard,
   FileText,
   Heart,
-  Info,
   Leaf,
   Microscope,
   PackageCheck,
-  Pencil,
   Phone,
   Plus,
   Search,
   ShieldCheck,
   ShoppingCart,
-  Share2,
-  Store,
   Truck,
   Zap,
-  Star,
   MapPin,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Rating } from '@/components/ui/Rating';
-import { CartItemRow } from '@/components/commerce/CartItemRow';
-import { ProductGrid } from '@/components/product/ProductGrid';
 import {
-  banners,
-  categories,
-  findOrder,
-  findProduct,
-  labReports,
-  orders,
-  products,
-  reviews,
-} from '@/lib/data/fixtures';
-import { filterProducts, type ProductFilterState } from '@/lib/utils/filters';
+  AddressesScreenSkeleton,
+  HomeScreenSkeleton,
+  LabReportsScreenSkeleton,
+  OrderDetailScreenSkeleton,
+  OrdersScreenSkeleton,
+  Skeleton,
+} from '@/components/ui/Skeleton';
+import { OrderItemRow } from '@/components/commerce/OrderItemRow';
+import { ProductGrid } from '@/components/product/ProductGrid';
+import { formatAddress } from '@/components/checkout/CheckoutScreens';
+import {
+  useBanners,
+  useCategories,
+  useHome,
+  useLabReports,
+  useProductList,
+  useProductsByIds,
+} from '@/hooks/api/useCatalog';
+import { useWishlist } from '@/hooks/api/useWishlist';
+import { useAddresses, useCancelOrder, useOrder, useOrders } from '@/hooks/api/useCommerce';
+import { DEFAULT_PRODUCT_LIMIT } from '@/lib/api/endpoints/catalog';
+import { ORDER_PAGE_LIMIT } from '@/lib/api/endpoints/orders';
+import { ERROR_CODES, isApiError } from '@/lib/api/errors';
+import {
+  activeFilterEntries,
+  toProductListParams,
+  type ProductFilterState,
+} from '@/lib/utils/filters';
 import { formatCurrency } from '@/lib/utils/money';
+import { displayImages, humaniseSlug } from '@/lib/utils/product';
 import { cn } from '@/lib/utils/cn';
-import { useCartStore } from '@/store/cart.store';
-import { useUiStore } from '@/store/ui.store';
-import { useWishlistStore } from '@/store/wishlist.store';
 import { useAuthStore } from '@/store/auth.store';
-import { useAddressStore } from '@/store/address.store';
-import { useOrdersStore } from '@/store/orders.store';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
-import type { Product, Address } from '@/types';
+import type { OrderStatus } from '@/types/api';
 
 function TrustStrip() {
   const items = [
@@ -82,9 +89,56 @@ function TrustStrip() {
 }
 
 export function HomeScreen() {
-  const hero = banners[0];
-  const featured = products.filter((product) => product.isFeatured);
-  const carouselProducts = [...featured, ...featured];
+  const { data, isLoading, isError, error, refetch } = useHome();
+
+  /**
+   * Verified against the running backend: `GET /home` returns `banners: []` even though
+   * `GET /banners?placement=hero` returns the seeded hero record. So the hero falls back to the
+   * dedicated endpoint when /home supplies none. `enabled` means the extra request only happens
+   * while that gap exists and stops on its own once /home includes banners (plan §T8).
+   */
+  const heroFallback = useBanners('hero', Boolean(data) && data?.banners.length === 0);
+
+  // One request backs this whole page (`GET /home` returns banners, categories, bestSellers,
+  // newArrivals and featured together), so a single skeleton/error pair covers it rather than
+  // each section loading independently and the layout jumping four times.
+  if (isLoading) {
+    return <HomeScreenSkeleton />;
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <ErrorState
+          error={error}
+          title="We could not load the homepage"
+          onRetry={() => void refetch()}
+        />
+      </div>
+    );
+  }
+
+  // Pick the hero by placement rather than index. `banners[0]` happened to work against
+  // fixtures but is arbitrary against real data, where placements are a marketing concern and
+  // ordering is not guaranteed. Falls back to any active banner so a renamed placement degrades
+  // to "wrong banner" instead of "no hero".
+  const availableBanners = data.banners.length ? data.banners : heroFallback.data ?? [];
+  const hero =
+    availableBanners.find((banner) => banner.placement === 'hero' && banner.active) ??
+    availableBanners.find((banner) => banner.active);
+  const heroImage = hero?.imageUrl;
+
+  const categories = data.categories;
+  // Best sellers are the intended carousel content; `featured` is a reasonable stand-in on a
+  // young catalogue where nothing has sold yet.
+  const carouselSource = data.bestSellers.length ? data.bestSellers : data.featured;
+  // The track is a CSS marquee, so it needs enough tiles to fill the viewport twice over to
+  // loop without a visible gap. Duplicating only when the list is short avoids rendering a
+  // large catalogue twice for no reason.
+  const carouselProducts =
+    carouselSource.length > 0 && carouselSource.length < 8
+      ? [...carouselSource, ...carouselSource]
+      : carouselSource;
 
   return (
     <>
@@ -96,34 +150,38 @@ export function HomeScreen() {
               Clinically Audited Inventory
             </div>
             <h1 className="text-[36px] font-black leading-[1.1] tracking-tight md:text-[64px]">
-              Scientific Purity.{' '}
-              <span className="text-primary-fixed">Every batch lab-verified.</span>
+              {hero?.headline ?? 'Scientific Purity.'}
             </h1>
-            <p className="mx-auto max-w-lg text-base leading-relaxed text-white/90 md:mx-0 md:text-lg">
-              Shop with absolute confidence. We lab-test random batches from every vendor to ensure
-              zero pesticides and 100% potency.
-            </p>
+            {hero?.subtext ? (
+              <p className="mx-auto max-w-lg text-base leading-relaxed text-white/90 md:mx-0 md:text-lg">
+                {hero.subtext}
+              </p>
+            ) : null}
             <div className="pt-2">
               <Link
                 className="inline-flex items-center rounded-full bg-white px-8 py-4 font-bold text-primary shadow-md transition hover:bg-white/90"
-                href="/products"
+                href={hero?.href ?? '/products'}
               >
-                Browse Marketplace
+                {hero?.ctaLabel ?? 'Browse Marketplace'}
               </Link>
             </div>
           </div>
-          <div className="relative w-full max-w-[340px] flex-shrink-0 md:max-w-none md:flex-1">
-            <div className="aspect-square overflow-hidden rounded-[3rem] border-[12px] border-white/10 shadow-2xl">
-              <Image
-                alt={hero.headline}
-                className="object-cover"
-                fill
-                priority
-                sizes="(min-width: 1024px) 45vw, 340px"
-                src={hero.imageUrl}
-              />
+          {/* `imageUrl` is optional on BannerDto, and the backend omits null fields entirely,
+              so the whole panel is conditional rather than passing undefined to next/image. */}
+          {heroImage ? (
+            <div className="relative w-full max-w-[340px] flex-shrink-0 md:max-w-none md:flex-1">
+              <div className="aspect-square overflow-hidden rounded-[3rem] border-[12px] border-white/10 shadow-2xl">
+                <Image
+                  alt={hero?.headline ?? 'Featured promotion'}
+                  className="object-cover"
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 45vw, 340px"
+                  src={heroImage}
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </section>
 
@@ -141,13 +199,21 @@ export function HomeScreen() {
               href={`/category/${category.slug}`}
             >
               <div className="relative aspect-square w-full overflow-hidden rounded-3xl border-2 border-transparent bg-surface-container shadow-md transition group-hover:border-primary group-hover:shadow-lg">
-                <Image
-                  alt={category.name}
-                  className="object-cover transition group-hover:scale-105"
-                  fill
-                  sizes="(min-width: 1024px) 16vw, (min-width: 768px) 33vw, 50vw"
-                  src={category.image}
-                />
+                {/* `image` is optional on CategoryDto and omitted when null, so it cannot be
+                    passed straight to next/image — an undefined src throws at render. */}
+                {category.image ? (
+                  <Image
+                    alt={category.name}
+                    className="object-cover transition group-hover:scale-105"
+                    fill
+                    sizes="(min-width: 1024px) 16vw, (min-width: 768px) 33vw, 50vw"
+                    src={category.image}
+                  />
+                ) : (
+                  <span className="grid h-full w-full place-items-center text-xs text-on-surface-variant">
+                    {category.name}
+                  </span>
+                )}
               </div>
               <p className="text-center text-sm font-bold">{category.name}</p>
             </Link>
@@ -173,8 +239,16 @@ export function HomeScreen() {
             </Link>
           </div>
           <div className="overflow-hidden">
+            {carouselProducts.length === 0 ? (
+              <p className="py-6 text-sm text-on-surface-variant">
+                No products are available yet. Check back shortly.
+              </p>
+            ) : null}
             <div className="carousel-track gap-4 py-2">
-              {carouselProducts.map((product, idx) => (
+              {carouselProducts.map((product, idx) => {
+                const image = displayImages(product.images, product.name)[0];
+
+                return (
                 <div
                   key={`${product.id}-${idx}`}
                   className="w-[200px] flex-shrink-0 sm:w-[220px] lg:w-[calc((100%-48px)/4)]"
@@ -183,19 +257,24 @@ export function HomeScreen() {
                     className="flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm transition hover:shadow-md"
                     href={`/products/${product.slug}`}
                   >
-                    <div className="relative aspect-square w-full overflow-hidden">
-                      <Image
-                        alt={product.name}
-                        className="object-cover"
-                        fill
-                        sizes="(min-width: 1024px) 25vw, 220px"
-                        src={product.images[0]?.url ?? ''}
-                      />
+                    <div className="relative aspect-square w-full overflow-hidden bg-surface-container">
+                      {/* Previously `src={product.images[0]?.url ?? ''}`. An empty string is not
+                          a valid src and next/image rejects it, so the absent case is handled as
+                          a placeholder instead. */}
+                      {image ? (
+                        <Image
+                          alt={image.alt}
+                          className="object-cover"
+                          fill
+                          sizes="(min-width: 1024px) 25vw, 220px"
+                          src={image.url}
+                        />
+                      ) : null}
                     </div>
                     <div className="flex flex-1 flex-col gap-2 p-3">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                          {product.category}
+                          {humaniseSlug(product.categorySlug)}
                         </p>
                         <h3 className="mt-0.5 text-sm font-bold leading-snug text-on-surface line-clamp-2">
                           {product.name}
@@ -204,7 +283,7 @@ export function HomeScreen() {
                       <Rating rating={product.rating} />
                       <div className="mt-auto flex items-center justify-between pt-1">
                         <span className="text-base font-bold text-primary">
-                          ₹{product.price.toLocaleString('en-IN')}
+                          {formatCurrency(product.price)}
                         </span>
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
                           <ShoppingCart aria-hidden="true" className="h-3.5 w-3.5" />
@@ -213,7 +292,8 @@ export function HomeScreen() {
                     </div>
                   </Link>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -317,6 +397,8 @@ export function HomeScreen() {
 }
 
 function FilterPanel({ filters }: { filters: ProductFilterState }) {
+  const { data: categories, isLoading, isError } = useCategories();
+
   return (
     <aside className="rounded-lg border border-surface-border bg-surface-base p-4 lg:sticky lg:top-36">
       <div className="flex items-center justify-between">
@@ -329,19 +411,33 @@ function FilterPanel({ filters }: { filters: ProductFilterState }) {
         <div>
           <h3 className="font-semibold">Category</h3>
           <div className="mt-3 grid gap-2">
-            {categories.map((category) => (
-              <Link
-                key={category.slug}
-                className={
-                  filters.category === category.slug
-                    ? 'font-semibold text-brand-primary'
-                    : 'text-text-secondary'
-                }
-                href={`/products?category=${category.slug}`}
-              >
-                {category.name}
-              </Link>
-            ))}
+            {/* Categories load separately from the product list, so this block degrades on its
+                own. A failure here must not block the grid: browsing by URL still works
+                without the sidebar, so the category list is simply omitted rather than
+                escalated into a page-level error. */}
+            {isLoading ? (
+              <>
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-28" />
+              </>
+            ) : isError ? (
+              <p className="text-xs text-text-muted">Categories are unavailable right now.</p>
+            ) : (
+              categories?.map((category) => (
+                <Link
+                  key={category.slug}
+                  className={
+                    filters.category === category.slug
+                      ? 'font-semibold text-brand-primary'
+                      : 'text-text-secondary'
+                  }
+                  href={`/products?category=${category.slug}`}
+                >
+                  {category.name}
+                </Link>
+              ))
+            )}
           </div>
         </div>
         <div>
@@ -375,10 +471,35 @@ export function ProductListingScreen({
   title?: string;
   filters: ProductFilterState;
 }) {
-  const visibleProducts = useMemo(() => filterProducts(products, filters), [filters]);
-  const activeFilters = Object.entries(filters).filter(
-    ([, value]) => value !== undefined && value !== '' && value !== false
+  const [page, setPage] = useState(filters.page ?? 1);
+
+  // Filtering, sorting and paging are the server's job now. `filterProducts` used to run over a
+  // fixture array in the browser; doing that over one page of API results would silently
+  // disagree with `total` and quietly hide products.
+  const params = useMemo(
+    () => toProductListParams(filters, { page, limit: DEFAULT_PRODUCT_LIMIT }),
+    [filters, page]
   );
+
+  const { data, isLoading, isError, error, isFetching, refetch } = useProductList(params);
+
+  // Identity of the filter set, ignoring the page. Changing a filter must return to page 1 —
+  // otherwise switching category while on page 3 asks for a page that often does not exist and
+  // renders an empty grid that looks like "no products in this category".
+  const filterIdentity = useMemo(
+    () => JSON.stringify(toProductListParams(filters, { page: 1 })),
+    [filters]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterIdentity]);
+
+  const activeFilters = activeFilterEntries(filters);
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const limit = data?.limit ?? DEFAULT_PRODUCT_LIMIT;
+  const lastPage = Math.max(1, Math.ceil(total / limit));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -388,7 +509,11 @@ export function ProductListingScreen({
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-heading text-4xl capitalize">{title}</h1>
-          <p className="mt-1 text-text-secondary">Showing {visibleProducts.length} products</p>
+          {/* `total` is the full server-side count, not `items.length` — the latter would read
+              "Showing 24 products" on a catalogue of 500. */}
+          <p className="mt-1 text-text-secondary">
+            {isLoading ? 'Loading products...' : `Showing ${items.length} of ${total} products`}
+          </p>
         </div>
         <Link
           className="inline-flex h-10 items-center rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary lg:hidden"
@@ -401,7 +526,7 @@ export function ProductListingScreen({
         <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
           {activeFilters.map(([key, value]) => (
             <Badge key={key} variant="info">
-              {key}: {String(value)}
+              {key}: {value}
             </Badge>
           ))}
         </div>
@@ -410,456 +535,59 @@ export function ProductListingScreen({
         <div className="hidden lg:block">
           <FilterPanel filters={filters} />
         </div>
-        {visibleProducts.length ? (
-          <ProductGrid priorityCount={4} products={visibleProducts} />
-        ) : (
-          <EmptyState
-            action="Clear Filters"
-            href="/products"
-            icon={Search}
-            message="No products found matching your filters."
-            title="No matching products"
-          />
-        )}
-      </div>
-    </div>
-  );
-}
+        <div>
+          {isError ? (
+            <ErrorState
+              error={error}
+              title="We could not load these products"
+              onRetry={() => void refetch()}
+            />
+          ) : isLoading ? (
+            <ProductGrid loading products={[]} skeletonCount={DEFAULT_PRODUCT_LIMIT} />
+          ) : items.length ? (
+            <>
+              {/* isFetching without isLoading means a page change with cached rows still on
+                  screen (placeholderData). Dimming beats a skeleton here: it keeps scroll
+                  position instead of collapsing the grid height. */}
+              <div className={cn('transition-opacity', isFetching && 'opacity-60')}>
+                <ProductGrid priorityCount={4} products={items} />
+              </div>
 
-export function ProductDetailScreen({ slug }: { slug: string }) {
-  const product = findProduct(slug) ?? products[0];
-  const displayName = product.id === 'prd-001' ? 'Pure Honey (500g)' : product.name;
-  const compareAtPrice = product.id === 'prd-001' ? 749 : product.mrp;
-  const discount = Math.round((1 - product.price / compareAtPrice) * 100);
-  const gallery = [
-    product.images[0],
-    ...product.images.slice(1),
-    {
-      id: 'honeycomb',
-      url: 'https://images.unsplash.com/photo-1587049352851-8d4e89133924?auto=format&fit=crop&w=900&q=80',
-      alt: 'Honeycomb frame with raw honey',
-    },
-    {
-      id: 'lab-flask',
-      url: 'https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?auto=format&fit=crop&w=900&q=80',
-      alt: 'Honey sample prepared for verification',
-    },
-    {
-      id: 'packaging',
-      url: 'https://images.unsplash.com/photo-1584646774031-2dd8915e2dc3?auto=format&fit=crop&w=900&q=80',
-      alt: 'Honey jar packaging detail',
-    },
-  ].slice(0, 5);
-
-  const [selectedImage, setSelectedImage] = useState(gallery[0]);
-  const [quantity, setQuantity] = useState(1);
-  const [tab, setTab] = useState('Product Details');
-  const addItem = useCartStore((state) => state.addItem);
-  const addToast = useUiStore((state) => state.addToast);
-  const toggleWishlist = useWishlistStore((state) => state.toggle);
-  const wishlistIds = useWishlistStore((state) => state.ids);
-  const isInWishlist = wishlistIds.includes(product.id);
-  const report = labReports.find((item) => item.id === product.labReportId);
-
-  const similar = [
-    {
-      name: 'Organic Cinnamon (100g)',
-      image:
-        'https://images.unsplash.com/photo-1622798337764-259682f03741?auto=format&fit=crop&w=600&q=80',
-      price: 249,
-      rating: '4.8 (210)',
-    },
-    {
-      name: 'Premium Saffron (1g)',
-      image:
-        'https://images.unsplash.com/photo-1600984218389-8f56de3f4f42?auto=format&fit=crop&w=600&q=80',
-      price: 399,
-      rating: '4.9 (540)',
-    },
-  ];
-
-  const addToCart = () => {
-    addItem(product, quantity);
-    addToast({
-      type: 'success',
-      title: 'Added to cart',
-      message: product.name,
-      actionLabel: 'View cart',
-      actionHref: '/cart',
-    });
-  };
-
-  return (
-    <div className="bg-background font-body text-on-surface">
-      <div className="mx-auto max-w-[1440px] px-5 py-8 lg:px-6 lg:py-16">
-        <div className="grid gap-8 lg:grid-cols-[5fr_4fr_3fr] lg:items-start">
-          <section className="grid gap-2">
-            <div className="relative aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white">
-              <Image
-                alt={selectedImage.alt}
-                className="object-cover"
-                fill
-                priority
-                sizes="(min-width: 1024px) 40vw, 100vw"
-                src={selectedImage.url}
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {gallery.slice(1, 5).map((image, index) => (
-                <button
-                  key={image.id}
-                  aria-label={`View product image ${index + 2}`}
-                  className={`relative aspect-square overflow-hidden rounded-lg border bg-white ${
-                    selectedImage.id === image.id
-                      ? 'border-2 border-primary'
-                      : 'border-outline-variant'
-                  }`}
-                  onClick={() => setSelectedImage(image)}
-                  type="button"
+              {lastPage > 1 ? (
+                <nav
+                  aria-label="Product pages"
+                  className="mt-8 flex items-center justify-center gap-4"
                 >
-                  <Image
-                    alt={image.alt}
-                    className="object-cover"
-                    fill
-                    sizes="12vw"
-                    src={image.url}
-                  />
-                  {index === 3 ? (
-                    <span className="absolute inset-0 grid place-items-center bg-black/45 text-sm font-bold text-white">
-                      +3
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="grid gap-4">
-            <nav className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
-              <Link href="/products">Marketplace</Link>
-              <ChevronRight aria-hidden="true" className="h-3 w-3" />
-              <Link href={`/category/${product.category}`}>Health & Superfoods</Link>
-              <ChevronRight aria-hidden="true" className="h-3 w-3" />
-              <span className="font-medium text-primary">{displayName.replace(' (500g)', '')}</span>
-            </nav>
-
-            <div>
-              <h1 className="font-body text-[32px] font-bold leading-tight text-on-surface">
-                {displayName}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Rating count={product.reviewCount} rating={product.rating} />
-                <span className="text-sm text-on-surface-variant">
-                  ({product.reviewCount.toLocaleString('en-IN')} Verified Reviews)
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-[32px] font-bold leading-none text-on-surface">
-                {formatCurrency(product.price)}
-              </span>
-              <span className="text-base text-on-surface-variant line-through">
-                {formatCurrency(compareAtPrice)}
-              </span>
-              <span className="rounded bg-error-container px-2 py-0.5 text-sm font-medium text-on-error-container">
-                {discount}% OFF
-              </span>
-            </div>
-
-            <div className="flex gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary text-on-primary">
-                <BadgeCheck aria-hidden="true" className="h-6 w-6" />
-              </span>
-              <div>
-                <p className="flex items-center gap-1 font-semibold text-primary">
-                  Lab Verified Authentic
-                  <Info aria-hidden="true" className="h-4 w-4" />
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">
-                  Independently tested for 99.8% purity, 100% pesticide-free. Traceable to the
-                  Himalayan foothills.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-2 flex gap-8 overflow-x-auto border-b border-outline-variant">
-              {['Product Details', 'Lab Report', 'Reviews'].map((item) => (
-                <button
-                  key={item}
-                  className={`whitespace-nowrap pb-2 text-base font-medium ${
-                    tab === item
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                  onClick={() => setTab(item)}
-                  type="button"
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid gap-4 py-2">
-              {tab === 'Product Details' ? (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
-                      <p className="text-sm font-medium uppercase tracking-normal text-on-surface-variant">
-                        Ingredients
-                      </p>
-                      <p className="mt-2 font-medium">
-                        {product.ingredients?.[0] ?? '100% Raw Honey'}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
-                      <p className="text-sm font-medium uppercase tracking-normal text-on-surface-variant">
-                        Certifications
-                      </p>
-                      <p className="mt-2 font-medium">
-                        {product.id === 'prd-001'
-                          ? 'FSSAI, ISO 22000'
-                          : product.certifications.join(', ')}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-outline-variant bg-white p-4 shadow-sm">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h2 className="flex items-center gap-2 font-body text-base font-semibold">
-                        <Microscope aria-hidden="true" className="h-5 w-5 text-primary" />
-                        Verification Summary
-                      </h2>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-status-successBg px-2 py-0.5 text-sm font-medium text-text-success">
-                        <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
-                        Passed
-                      </span>
-                    </div>
-                    <div className="grid gap-1">
-                      {[
-                        ['Heavy Metals', 'ND (Not Detected)'],
-                        ['Pesticide Residue', 'ND (Not Detected)'],
-                        ['Antibiotics', 'Absent'],
-                      ].map(([label, value]) => (
-                        <div
-                          key={label}
-                          className="flex items-center justify-between border-b border-surface-container py-1.5 last:border-0"
-                        >
-                          <span className="text-on-surface-variant">{label}</span>
-                          <span className="font-medium text-primary">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      className="mt-4 flex w-full items-center justify-center gap-3 rounded-lg bg-surface-container-highest p-3 font-semibold transition hover:bg-surface-container-high"
-                      type="button"
-                    >
-                      <span className="grid h-7 w-7 place-items-center rounded bg-on-surface-variant text-white">
-                        <FileText aria-hidden="true" className="h-4 w-4" />
-                      </span>
-                      Download Full Lab Report (PDF)
-                    </button>
-                  </div>
-                </>
-              ) : null}
-
-              {tab === 'Lab Report' ? (
-                <div className="rounded-xl border border-outline-variant bg-white p-4">
-                  <p className="text-sm text-on-surface-variant">
-                    Batch #{product.batchId}.{' '}
-                    {report?.summary ?? 'Lab report will be available after testing.'}
-                  </p>
-                  <div className="mt-4 grid gap-3">
-                    {product.labMetrics.map((metric) => (
-                      <div
-                        key={metric.label}
-                        className="flex justify-between rounded-lg bg-surface-container-low p-3"
-                      >
-                        <span>{metric.label}</span>
-                        <strong className="text-primary">{metric.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {tab === 'Reviews' ? (
-                <div id="reviews" className="grid gap-3">
-                  {reviews.map((review) => (
-                    <article
-                      key={review.id}
-                      className="rounded-lg border border-outline-variant bg-white p-4"
-                    >
-                      <Rating rating={review.rating} />
-                      <h3 className="mt-2 font-body text-base font-semibold">{review.title}</h3>
-                      <p className="mt-1 text-sm text-on-surface-variant">{review.body}</p>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </section>
-
-          <aside className="grid gap-4 lg:sticky lg:top-36">
-            <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-md">
-              <p className="text-xl font-medium">{formatCurrency(product.price)}.00</p>
-              <p className="mt-2 flex items-center gap-1 text-sm font-medium text-text-success">
-                <span className="h-2 w-2 rounded-full bg-text-success" />
-                In stock. Ready to ship.
-              </p>
-
-              <div className="mt-5">
-                <label className="text-sm font-medium text-on-surface-variant" htmlFor="qty">
-                  Quantity
-                </label>
-                <div className="mt-2 flex w-fit overflow-hidden rounded-lg border border-outline-variant">
-                  <button
-                    className="h-10 w-10 bg-surface-container-highest text-lg transition hover:bg-surface-container-high"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    type="button"
-                  >
-                    -
-                  </button>
-                  <input
-                    id="qty"
-                    className="h-10 w-12 border-0 text-center font-medium outline-none"
-                    readOnly
-                    value={quantity}
-                  />
-                  <button
-                    className="h-10 w-10 bg-surface-container-highest text-lg transition hover:bg-surface-container-high"
-                    onClick={() => setQuantity(Math.min(product.stockCount || 1, quantity + 1))}
-                    type="button"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-3">
-                <Button
-                  className="h-12 w-full rounded-full bg-primary text-base text-on-primary hover:bg-primary/90"
-                  disabled={!product.inStock}
-                  onClick={addToCart}
-                >
-                  <ShoppingCart aria-hidden="true" className="h-5 w-5" />
-                  Add to Cart
-                </Button>
-                <Link href="/checkout/address">
                   <Button
-                    className="h-12 w-full rounded-full border-primary bg-surface-container text-base text-primary hover:bg-surface-container-high"
-                    disabled={!product.inStock}
+                    disabled={page <= 1 || isFetching}
                     variant="outline"
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
                   >
-                    <Zap aria-hidden="true" className="h-5 w-5" />
-                    Buy Now
+                    Previous
                   </Button>
-                </Link>
-                <div className="mt-2 grid grid-cols-2 gap-4">
-                  <Button
-                    className={cn(
-                      'h-auto rounded-lg border-primary/20 py-2 hover:bg-primary/5',
-                      isInWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'text-primary'
-                    )}
-                    variant="outline"
-                    onClick={() => toggleWishlist(product.id)}
-                  >
-                    <Heart
-                      aria-hidden="true"
-                      className={cn('h-4 w-4', isInWishlist && 'fill-current')}
-                    />
-                    <span className="leading-tight">
-                      {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
-                    </span>
-                  </Button>
-                  <Button
-                    className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
-                    variant="outline"
-                  >
-                    <Share2 aria-hidden="true" className="h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 border-t border-surface-container pt-5">
-                <div className="flex gap-4">
-                  <Truck aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Delivery by Thu, Oct 24</p>
-                    <p className="text-xs text-on-surface-variant">
-                      Free delivery on orders over Rs 999
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Authenticity Guaranteed</p>
-                    <p className="text-xs text-on-surface-variant">
-                      Full refund if lab test fails verification
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-outline-variant bg-surface-container p-4">
-              <p className="flex items-center gap-2 font-medium">
-                <Store aria-hidden="true" className="h-5 w-5 text-accent-link" />
-                Sold by {product.sellerName}
-              </p>
-              <p className="mt-1 text-xs text-on-surface-variant">4.9/5 Rating &bull; 2k+ Sales</p>
-            </div>
-          </aside>
-        </div>
-
-        <section className="mt-16 lg:mt-24">
-          <div className="mb-8 flex items-end justify-between border-b border-outline-variant pb-2">
-            <div>
-              <h2 className="font-body text-2xl font-bold">Similar Verified Products</h2>
-              <p className="text-on-surface-variant">
-                Other lab-tested health staples from verified vendors.
-              </p>
-            </div>
-            <Link className="text-sm font-medium text-accent-link hover:underline" href="/products">
-              View All
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
-            {similar.map((item) => (
-              <article
-                key={item.name}
-                className="overflow-hidden rounded-xl border border-outline-variant bg-white transition hover:shadow-md"
-              >
-                <div className="relative aspect-square">
-                  <Image
-                    alt={item.name}
-                    className="object-cover"
-                    fill
-                    sizes="(min-width: 1280px) 180px, (min-width: 768px) 22vw, 45vw"
-                    src={item.image}
-                  />
-                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">
-                    <BadgeCheck aria-hidden="true" className="h-3 w-3" />
-                    Verified
+                  <span aria-live="polite" className="text-sm text-text-secondary">
+                    Page {page} of {lastPage}
                   </span>
-                </div>
-                <div className="p-4">
-                  <h3 className="truncate font-body text-base font-medium">{item.name}</h3>
-                  <p className="mt-1 flex items-center gap-1 text-sm text-on-surface-variant">
-                    <Star
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 fill-brand-accent text-brand-accent"
-                    />
-                    {item.rating}
-                  </p>
-                  <p className="mt-2 font-semibold">{formatCurrency(item.price)}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+                  <Button
+                    disabled={page >= lastPage || isFetching}
+                    variant="outline"
+                    onClick={() => setPage((current) => Math.min(lastPage, current + 1))}
+                  >
+                    Next
+                  </Button>
+                </nav>
+              ) : null}
+            </>
+          ) : (
+            <EmptyState
+              action="Clear Filters"
+              href="/products"
+              icon={Search}
+              message="No products found matching your filters."
+              title="No matching products"
+            />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -958,57 +686,59 @@ export function AccountSidebar({ userName }: { userName: string }) {
   );
 }
 
-const genderOptions = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
-
 export function AccountScreen() {
-  const { user, updateProfile } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+  const isSaving = useAuthStore((state) => state.isLoading);
+  const saveError = useAuthStore((state) => state.error);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    gender: '',
-    dateOfBirth: '',
-    location: '',
-  });
+  /**
+   * Only the four fields `PATCH /users/me` accepts.
+   *
+   * Gender, date of birth and location used to be here. No product DTO or request body has a
+   * home for them, so they were removed rather than left as inputs that accept typing and throw
+   * it away on save — which is what the previous local-only `updateProfile` did (plan §6.1).
+   * `avatarUrl` is accepted by the endpoint but there is no upload flow, so it is not exposed.
+   */
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
 
   const displayName = user?.name || 'Guest';
-  const currentGenderOption =
-    form.gender && !genderOptions.includes(form.gender as (typeof genderOptions)[number])
-      ? form.gender
-      : null;
 
   function startEdit() {
     setForm({
       name: user?.name ?? '',
       email: user?.email ?? '',
       phone: user?.phone ?? '',
-      gender: user?.gender ?? '',
-      dateOfBirth: user?.dateOfBirth ?? '',
-      location: user?.location ?? '',
     });
     setEditing(true);
   }
 
-  function saveEdit() {
-    updateProfile({
-      name: form.name,
-      email: form.email,
-      phone: form.phone || undefined,
-      gender: form.gender || undefined,
-      dateOfBirth: form.dateOfBirth || undefined,
-      location: form.location || undefined,
-    });
-    setEditing(false);
+  async function saveEdit() {
+    try {
+      await updateProfile({
+        name: form.name.trim(),
+        // Sent only when non-empty. The backend validates these when present, so passing '' for
+        // an unset optional field is a validation error rather than a no-op.
+        email: form.email.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+      });
+      setEditing(false);
+    } catch {
+      // Kept in edit mode on failure so the user's input is not lost. The message is rendered
+      // from the store below.
+    }
   }
 
   const profileRows = [
     { label: 'Full Name', value: user?.name || '—' },
-    { label: 'Mobile Number', value: user?.phone || '— not added —' },
-    { label: 'Email ID', value: user?.email || '—' },
-    { label: 'Gender', value: user?.gender || 'Not set' },
-    { label: 'Date of Birth', value: user?.dateOfBirth || '— not added —' },
-    { label: 'Location', value: user?.location || '— not added —' },
+    {
+      label: 'Mobile Number',
+      value: user?.phone || '— not added —',
+      // Surfaced because it is not cosmetic: an unverified phone blocks checkout with a
+      // 403 PHONE_NOT_VERIFIED, so the user needs to see it before they hit that wall.
+      verified: user?.phone ? user.phoneVerified : undefined,
+    },
+    { label: 'Email ID', value: user?.email || '— not added —', verified: user?.email ? user.emailVerified : undefined },
   ];
 
   return (
@@ -1036,53 +766,23 @@ export function AccountScreen() {
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
             />
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <label
-                className="grid gap-1.5 text-sm font-medium text-text-secondary"
-                htmlFor="gender"
-              >
-                Gender
-                <select
-                  id="gender"
-                  name="gender"
-                  className="h-11 rounded-sm border border-surface-border bg-surface-base px-3 text-base text-text-primary shadow-xs outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-light"
-                  value={form.gender}
-                  onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-                >
-                  <option disabled value="">
-                    Select gender
-                  </option>
-                  {currentGenderOption ? (
-                    <option value={currentGenderOption}>{currentGenderOption} (current)</option>
-                  ) : null}
-                  {genderOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Input
-                label="Date of Birth"
-                name="dateOfBirth"
-                type="date"
-                value={form.dateOfBirth}
-                onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
-              />
-              <div className="md:col-span-2">
-                <Input
-                  label="Location"
-                  name="location"
-                  value={form.location}
-                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                />
-              </div>
-            </div>
+            {/* Changing either channel clears its verification server-side, so the user is told
+                before they save rather than discovering it at checkout. */}
+            <p className="text-xs text-text-secondary">
+              Changing your email or mobile number means that channel has to be verified again.
+            </p>
+            {saveError ? (
+              <p className="rounded-md border border-text-danger/30 bg-status-dangerBg p-3 text-sm text-text-danger">
+                {saveError}
+              </p>
+            ) : null}
             <div className="flex gap-3 pt-2">
               <Button
                 className="px-10 uppercase tracking-wider"
+                disabled={isSaving}
+                loading={isSaving}
                 variant="primary"
-                onClick={saveEdit}
+                onClick={() => void saveEdit()}
               >
                 Save
               </Button>
@@ -1098,10 +798,14 @@ export function AccountScreen() {
         ) : (
           <>
             <dl className="grid gap-y-5">
-              {profileRows.map(({ label, value }) => (
+              {profileRows.map(({ label, value, verified }) => (
                 <div key={label} className="grid grid-cols-[180px_1fr] items-start gap-4">
                   <dt className="text-sm text-text-secondary">{label}</dt>
-                  <dd className="text-sm font-medium text-text-primary">{value}</dd>
+                  <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-text-primary">
+                    {value}
+                    {verified === true ? <Badge variant="success">Verified</Badge> : null}
+                    {verified === false ? <Badge variant="info">Not verified</Badge> : null}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -1122,83 +826,257 @@ export function AccountScreen() {
 }
 
 export function OrdersScreen() {
-  const storeOrders = useOrdersStore((state) => state.orders);
-  const displayOrders = storeOrders.length > 0 ? storeOrders : orders;
+  const [page, setPage] = useState(1);
+  const { data, isLoading, isError, error, isFetching, refetch } = useOrders(page);
+
+  const orders = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const limit = data?.limit ?? ORDER_PAGE_LIMIT;
+  const lastPage = Math.max(1, Math.ceil(total / limit));
 
   return (
     <div className="mx-auto max-w-4xl">
       <AccountPanel title="Orders & Returns">
-        <div className="grid gap-4">
-          {displayOrders.map((order) => (
-            <article
-              key={order.id}
-              className="rounded-lg border border-surface-border bg-surface-raised p-5"
-            >
-              <div className="flex flex-wrap justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold">{order.id}</h3>
-                  <p className="text-sm text-text-secondary">
-                    {new Date(order.createdAt).toLocaleDateString('en-IN')}
-                  </p>
-                </div>
-                <Badge variant="info">{order.status}</Badge>
-              </div>
-              <div className="mt-4 flex items-center justify-between gap-4">
-                <p className="text-sm text-text-secondary">
-                  {order.items.map((item) => item.product.name).join(', ')}
-                </p>
-                <Link
-                  className="font-semibold text-brand-primary"
-                  href={`/account/orders/${order.id}`}
+        {isLoading ? (
+          <OrdersScreenSkeleton />
+        ) : isError ? (
+          <ErrorState
+            error={error}
+            title="We could not load your orders"
+            onRetry={() => void refetch()}
+          />
+        ) : orders.length === 0 ? (
+          // No fixture fallback. The old screen showed `orders` from fixtures whenever the local
+          // store was empty, so a brand-new customer saw two orders that were not theirs.
+          <EmptyState
+            action="Start Shopping"
+            href="/products"
+            icon={PackageCheck}
+            message="Orders you place will appear here with their delivery and payment status."
+            title="No orders yet"
+          />
+        ) : (
+          <>
+            <div className={cn('grid gap-4', isFetching && 'opacity-60')}>
+              {orders.map((order) => (
+                <article
+                  key={order.id}
+                  className="rounded-lg border border-surface-border bg-surface-raised p-5"
                 >
-                  View Order
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
+                  <div className="flex flex-wrap justify-between gap-3">
+                    <div>
+                      {/* orderNumber for display, id for links — they are different fields. */}
+                      <h3 className="font-semibold">{order.orderNumber}</h3>
+                      <p className="text-sm text-text-secondary">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-start gap-2">
+                      <Badge variant="info">{order.status}</Badge>
+                      {/* Payment status is separate from fulfilment status and matters to the
+                          customer, so both are shown rather than collapsed into one. */}
+                      <Badge variant={order.paymentStatus === 'paid' ? 'success' : 'info'}>
+                        {order.paymentStatus}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-4">
+                    {/* OrderSummaryDto has only `itemCount`, not the item names — those need the
+                        detail endpoint, so the count is what an honest summary can show. */}
+                    <p className="text-sm text-text-secondary">
+                      {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'} &middot;{' '}
+                      {formatCurrency(order.totalAmount)}
+                    </p>
+                    <Link
+                      className="font-semibold text-brand-primary"
+                      href={`/account/orders/${order.id}`}
+                    >
+                      View Order
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            {lastPage > 1 ? (
+              <nav aria-label="Order pages" className="mt-6 flex items-center justify-center gap-4">
+                <Button
+                  disabled={page <= 1 || isFetching}
+                  variant="outline"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  Previous
+                </Button>
+                <span aria-live="polite" className="text-sm text-text-secondary">
+                  Page {page} of {lastPage}
+                </span>
+                <Button
+                  disabled={page >= lastPage || isFetching}
+                  variant="outline"
+                  onClick={() => setPage((current) => Math.min(lastPage, current + 1))}
+                >
+                  Next
+                </Button>
+              </nav>
+            ) : null}
+          </>
+        )}
       </AccountPanel>
     </div>
   );
 }
 
+/** The documented fulfilment sequence. `cancelled` and `returned` are terminal, not steps. */
+const ORDER_TIMELINE: OrderStatus[] = ['pending', 'confirmed', 'packed', 'shipped', 'delivered'];
+
 export function OrderDetailScreen({ id }: { id: string }) {
-  const order = findOrder(id);
+  const { data: order, isLoading, isError, error, refetch } = useOrder(id);
+  const cancelOrder = useCancelOrder();
+
+  if (isLoading) {
+    return (
+      <AccountPanel title="Order">
+        <OrderDetailScreenSkeleton />
+      </AccountPanel>
+    );
+  }
+
+  if (isApiError(error) && error.code === ERROR_CODES.RESOURCE_NOT_FOUND) {
+    // A real not-found instead of the old `findOrder(id)`, which fell back to `orders[0]` and so
+    // showed a DIFFERENT order's contents and total for any unknown id.
+    return (
+      <AccountPanel title="Order">
+        <EmptyState
+          action="Back to orders"
+          href="/account/orders"
+          icon={PackageCheck}
+          message="We could not find that order on your account."
+          title="Order not found"
+        />
+      </AccountPanel>
+    );
+  }
+
+  if (isError || !order) {
+    return (
+      <AccountPanel title="Order">
+        <ErrorState
+          error={error}
+          title="We could not load this order"
+          onRetry={() => void refetch()}
+        />
+      </AccountPanel>
+    );
+  }
+
+  const currentStep = ORDER_TIMELINE.indexOf(order.status);
+  const isTerminal = order.status === 'cancelled' || order.status === 'returned';
+  /**
+   * Customers may cancel only before fulfilment; anything later is a 409 invalid transition. The
+   * button is hidden rather than shown-and-refused, so the UI never offers an action the server
+   * will reject.
+   */
+  const canCancel = order.status === 'pending' || order.status === 'confirmed';
 
   return (
     <AccountPanel
-      title={`Order ${order.id}`}
-      titleAction={<Badge variant="info">{order.status}</Badge>}
+      title={`Order ${order.orderNumber}`}
+      titleAction={
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="info">{order.status}</Badge>
+          <Badge variant={order.paymentStatus === 'paid' ? 'success' : 'info'}>
+            {order.paymentStatus}
+          </Badge>
+        </div>
+      }
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="grid gap-4">
           {order.items.map((item) => (
-            <CartItemRow key={`${item.product.id}-${item.variantId ?? 'base'}`} item={item} />
+            <OrderItemRow key={item.id} item={item} />
           ))}
+
           <div className="rounded-2xl border border-surface-border bg-surface-base p-5">
             <h2 className="font-semibold">Timeline</h2>
-            <div className="mt-4 grid gap-3 text-sm text-text-secondary">
-              {['Confirmed', 'Processing', 'Shipped', 'Delivered'].map((step, index) => (
-                <div key={step} className="flex items-center gap-3">
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-light text-brand-primary">
-                    {index + 1}
-                  </span>
-                  {step}
-                </div>
-              ))}
-            </div>
+            {isTerminal ? (
+              <p className="mt-3 text-sm text-text-secondary">
+                This order was {order.status}
+                {order.updatedAt
+                  ? ` on ${new Date(order.updatedAt).toLocaleDateString('en-IN')}`
+                  : ''}
+                .
+              </p>
+            ) : (
+              // Driven by the real status. The old version was a hardcoded four-step list including
+              // "Processing", which is not a status this API has.
+              <ol className="mt-4 grid gap-3 text-sm">
+                {ORDER_TIMELINE.map((step, index) => {
+                  const done = index <= currentStep;
+
+                  return (
+                    <li key={step} className="flex items-center gap-3">
+                      <span
+                        className={cn(
+                          'grid h-7 w-7 place-items-center rounded-full',
+                          done
+                            ? 'bg-brand-primary text-text-inverse'
+                            : 'bg-brand-light text-brand-primary'
+                        )}
+                      >
+                        {index + 1}
+                      </span>
+                      <span
+                        className={cn(
+                          'capitalize',
+                          done ? 'font-semibold text-text-primary' : 'text-text-secondary'
+                        )}
+                      >
+                        {step}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
           </div>
         </section>
+
         <aside className="rounded-2xl border border-surface-border bg-surface-base p-5">
-          <p className="text-sm text-text-secondary">Delivering to</p>
-          <p className="font-semibold">{order.address.fullName}</p>
-          <p className="text-sm text-text-secondary">
-            {order.address.addressLine1}, {order.address.city}
+          {/*
+            "Delivering to" is gone: OrderDto has no address field, so there is nothing to render
+            here without inventing it (plan §T5). Money below is entirely the server's.
+          */}
+          <div className="grid gap-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-text-secondary">Subtotal</span>
+              <span>{formatCurrency(order.subtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-text-secondary">Delivery</span>
+              <span>
+                {order.deliveryFee === 0 ? 'Free' : formatCurrency(order.deliveryFee)}
+              </span>
+            </div>
+          </div>
+          <p className="mt-4 border-t border-surface-border pt-4 text-2xl font-semibold">
+            {formatCurrency(order.totalAmount)}
           </p>
-          <p className="mt-4 text-2xl font-semibold">{formatCurrency(order.total)}</p>
-          <Button className="mt-5 w-full" variant="outline">
-            Download Invoice
-          </Button>
+          <p className="mt-2 text-xs text-text-secondary">
+            Placed {new Date(order.createdAt).toLocaleDateString('en-IN')}
+          </p>
+
+          {/* "Download Invoice" removed — there is no invoice endpoint (plan §6.1). */}
+          {canCancel ? (
+            <Button
+              className="mt-5 w-full"
+              disabled={cancelOrder.isPending}
+              loading={cancelOrder.isPending}
+              variant="outline"
+              onClick={() => cancelOrder.mutate({ orderId: order.id })}
+            >
+              Cancel Order
+            </Button>
+          ) : null}
         </aside>
       </div>
     </AccountPanel>
@@ -1206,42 +1084,39 @@ export function OrderDetailScreen({ id }: { id: string }) {
 }
 
 export function AddressesScreen() {
-  const addresses = useAddressStore((state) => state.addresses);
-  const deleteAddress = useAddressStore((state) => state.deleteAddress);
-  const setDefault = useAddressStore((state) => state.setDefault);
+  const { addresses, isLoading, isError, error, refetch } = useAddresses();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<Address | undefined>();
-
-  const openAddModal = () => {
-    setEditingAddress(undefined);
-    setModalOpen(true);
-  };
-
-  const openEditModal = (address: Address) => {
-    setEditingAddress(address);
-    setModalOpen(true);
-  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <AccountPanel
         title="Saved Addresses"
         titleAction={
-          <Button variant="outline" onClick={openAddModal}>
+          <Button variant="outline" onClick={() => setModalOpen(true)}>
             <Plus aria-hidden="true" className="mr-2 h-4 w-4" />
             Add New Address
           </Button>
         }
       >
-        <div className="grid gap-4 md:grid-cols-2 items-stretch">
-          {addresses.map((address) => {
-            const addressLines = [address.addressLine1, address.addressLine2].filter(Boolean);
-            const compactAddress = [
-              ...addressLines,
-              `${address.city}, ${address.state} - ${address.pincode}`,
-            ].join(' • ');
-
-            return (
+        {isLoading ? (
+          <AddressesScreenSkeleton />
+        ) : isError ? (
+          <ErrorState
+            error={error}
+            title="We could not load your addresses"
+            onRetry={() => void refetch()}
+          />
+        ) : addresses.length === 0 ? (
+          <EmptyState
+            action="Browse Products"
+            href="/products"
+            icon={MapPin}
+            message="Add a delivery address and it will be available at checkout."
+            title="No saved addresses"
+          />
+        ) : (
+          <div className="grid items-stretch gap-4 md:grid-cols-2">
+            {addresses.map((address) => (
               <article
                 key={address.id}
                 className="flex h-full flex-col rounded-xl border border-surface-border bg-surface-base p-5 shadow-sm"
@@ -1249,54 +1124,51 @@ export function AddressesScreen() {
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-2">
-                      <MapPin aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary" />
+                      <MapPin
+                        aria-hidden="true"
+                        className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary"
+                      />
                       <div className="min-w-0">
-                        <h2 className="font-semibold text-text-primary">{address.fullName}</h2>
-                        <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
-                          <Phone aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-primary" />
-                          <span>{address.phone}</span>
-                        </p>
+                        <h2 className="font-semibold text-text-primary">
+                          {address.fullName ?? address.label ?? 'Saved address'}
+                        </h2>
+                        {/* Every field except line1 is optional on AddressDto, and the backend
+                            omits nulls entirely, so each one is rendered conditionally. */}
+                        {address.phone ? (
+                          <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
+                            <Phone
+                              aria-hidden="true"
+                              className="h-4 w-4 shrink-0 text-brand-primary"
+                            />
+                            <span>{address.phone}</span>
+                          </p>
+                        ) : null}
                       </div>
                     </div>
-                    {address.isDefault ? (
-                      <Badge variant="success">Default</Badge>
-                    ) : null}
+                    {address.isDefault ? <Badge variant="success">Default</Badge> : null}
                   </div>
 
-                  <div className="mt-4 space-y-2 text-sm text-text-secondary">
-                    <div className="min-w-0">
-                      <p className="font-medium text-text-primary">Address</p>
-                      <p className="mt-1 truncate" title={compactAddress}>
-                        {compactAddress}
-                      </p>
-                    </div>
+                  <div className="mt-4 text-sm text-text-secondary">
+                    <p className="font-medium text-text-primary">Address</p>
+                    <p className="mt-1">{formatAddress(address)}</p>
                   </div>
                 </div>
 
-                <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                  {!address.isDefault ? (
-                    <Button size="sm" variant="ghost" onClick={() => setDefault(address.id)}>
-                      Set as Default
-                    </Button>
-                  ) : null}
-                  <Button size="sm" variant="ghost" onClick={() => openEditModal(address)}>
-                    <Pencil aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
-                    Edit
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => deleteAddress(address.id)}>
-                    Delete
-                  </Button>
-                </div>
+                {/*
+                  Set as Default / Edit / Delete removed. Only GET and POST exist for addresses
+                  (plan §T6) — those buttons previously mutated local Zustand state, so the change
+                  looked applied and then silently reverted on the next load.
+                */}
               </article>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <AddressFormModal
-          open={modalOpen}
-          address={editingAddress}
-          onClose={() => setModalOpen(false)}
-        />
+        <p className="mt-5 rounded-2xl border border-dashed border-surface-border bg-surface-raised/50 p-4 text-sm text-text-secondary">
+          Addresses cannot be edited or removed yet. Add a new address and select it at checkout.
+        </p>
+
+        <AddressFormModal open={modalOpen} onClose={() => setModalOpen(false)} />
       </AccountPanel>
     </div>
   );
@@ -1339,10 +1211,37 @@ export function SettingsScreen() {
 }
 
 export function WishlistScreen() {
-  const ids = useWishlistStore((state) => state.ids);
-  const wishlistProducts = products.filter((product) => ids.includes(product.id));
+  const { items, isLoading, isError, error, refetch } = useWishlist();
 
-  if (!wishlistProducts.length) {
+  // WishlistItemDto carries a productId but its display fields are not documented, so the full
+  // summaries are resolved in one batch call. That also means the saved items render through the
+  // same ProductCard as everywhere else — working heart, working add-to-cart, consistent badges
+  // — instead of a second, thinner card implementation.
+  const productIds = useMemo(() => items.map((item) => item.productId), [items]);
+  const productsQuery = useProductsByIds(productIds);
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <h1 className="mb-6 font-heading text-4xl">Wishlist</h1>
+        <ProductGrid loading products={[]} skeletonCount={4} />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-12">
+        <ErrorState
+          error={error}
+          title="We could not load your wishlist"
+          onRetry={() => void refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (!items.length) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12">
         <EmptyState
@@ -1359,7 +1258,15 @@ export function WishlistScreen() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="mb-6 font-heading text-4xl">Wishlist</h1>
-      <ProductGrid products={wishlistProducts} />
+      {/* The wishlist itself loaded; only the product details are still in flight. Showing
+          skeletons for that second hop keeps the count visible without a blank screen. */}
+      {productsQuery.isLoading ? (
+        <ProductGrid loading products={[]} skeletonCount={items.length} />
+      ) : productsQuery.isError ? (
+        <InlineError error={productsQuery.error} onRetry={() => void productsQuery.refetch()} />
+      ) : (
+        <ProductGrid products={productsQuery.data ?? []} />
+      )}
     </div>
   );
 }
@@ -1394,47 +1301,151 @@ export function TrustHowItWorksScreen() {
 }
 
 export function LabReportsScreen() {
+  const [page, setPage] = useState(1);
+  const { data, isLoading, isError, error, isFetching, refetch } = useLabReports(page);
+
+  // Memoised so the `productIds` useMemo below has a stable dependency. Without it, `?? []`
+  // creates a new array identity on every render and the batch lookup recomputes each time.
+  const reports = useMemo(() => data?.items ?? [], [data?.items]);
+
+  // Reports reference a product by id but carry no product name, so the names are resolved in
+  // ONE batch call for the whole page. The previous version did `products.find(...) as Product`
+  // against a fixture array — an unchecked cast that would throw the moment a report referenced
+  // a product not in the list.
+  const productIds = useMemo(() => reports.map((report) => report.productId), [reports]);
+  const { data: linkedProducts } = useProductsByIds(productIds);
+
+  const productById = useMemo(() => {
+    const map = new Map<string, { name: string; slug: string }>();
+    for (const product of linkedProducts ?? []) {
+      map.set(product.id, { name: product.name, slug: product.slug });
+    }
+    return map;
+  }, [linkedProducts]);
+
+  const total = data?.total ?? 0;
+  const limit = data?.limit ?? 20;
+  const lastPage = Math.max(1, Math.ceil(total / limit));
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
       <h1 className="font-heading text-5xl">Lab Reports</h1>
       <p className="mt-3 text-text-secondary">
-        Customer-facing excerpts from every available batch report.
+        Customer-facing excerpts from every published batch report.
       </p>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        {labReports.map((report) => {
-          const product = products.find((item) => item.id === report.productId) as Product;
 
-          return (
-            <article
-              key={report.id}
-              className="rounded-lg border border-surface-border bg-surface-base p-5"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="font-heading text-2xl">{product.name}</h2>
-                  <p className="text-sm text-text-secondary">
-                    Batch #{report.batchId} - {report.labName}
-                  </p>
-                </div>
-                <Badge variant={report.status === 'pass' ? 'success' : 'info'}>
-                  {report.status}
-                </Badge>
-              </div>
-              <div className="mt-5 grid gap-3">
-                {report.metrics.map((metric) => (
-                  <div
-                    key={metric.label}
-                    className="flex justify-between rounded-md bg-surface-raised p-3 text-sm"
-                  >
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
+      {isLoading ? (
+        <div className="mt-8">
+          <LabReportsScreenSkeleton />
+        </div>
+      ) : isError ? (
+        <div className="mt-8">
+          <ErrorState
+            error={error}
+            title="We could not load the lab reports"
+            onRetry={() => void refetch()}
+          />
+        </div>
+      ) : reports.length === 0 ? (
+        <div className="mt-8">
+          <EmptyState
+            action="Browse Products"
+            href="/products"
+            icon={FileText}
+            message="No batch reports have been published yet. They appear here once a lab result passes review."
+            title="No reports published yet"
+          />
+        </div>
+      ) : (
+        <>
+          <div className={cn('mt-8 grid gap-4 md:grid-cols-2', isFetching && 'opacity-60')}>
+            {reports.map((report) => {
+              // A report whose product has not resolved still renders — the batch id and lab
+              // name are the useful identifiers, and the product may simply be unpublished.
+              const product = productById.get(report.productId);
+
+              return (
+                <article
+                  key={report.id}
+                  className="rounded-lg border border-surface-border bg-surface-base p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h2 className="font-heading text-2xl">
+                        {product ? (
+                          <Link className="hover:text-brand-primary" href={`/products/${product.slug}`}>
+                            {product.name}
+                          </Link>
+                        ) : (
+                          `Batch ${report.batchId}`
+                        )}
+                      </h2>
+                      <p className="text-sm text-text-secondary">
+                        Batch #{report.batchId} - {report.labName}
+                      </p>
+                    </div>
+                    <Badge variant={report.status === 'pass' ? 'success' : 'info'}>
+                      {report.status}
+                    </Badge>
                   </div>
-                ))}
-              </div>
-            </article>
-          );
-        })}
-      </div>
+
+                  {report.summary ? (
+                    <p className="mt-3 text-sm text-text-secondary">{report.summary}</p>
+                  ) : null}
+
+                  <div className="mt-5 grid gap-3">
+                    {report.metrics.map((metric) => (
+                      <div
+                        key={metric.label}
+                        className="flex justify-between rounded-md bg-surface-raised p-3 text-sm"
+                      >
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* `pdfUrl` is optional and omitted when absent, so the link is conditional
+                      rather than rendered as a dead anchor. */}
+                  {report.pdfUrl ? (
+                    <a
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-primary hover:underline"
+                      href={report.pdfUrl}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <FileText aria-hidden="true" className="h-4 w-4" />
+                      Download full report (PDF)
+                    </a>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+
+          {lastPage > 1 ? (
+            <nav aria-label="Report pages" className="mt-8 flex items-center justify-center gap-4">
+              <Button
+                disabled={page <= 1 || isFetching}
+                variant="outline"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                Previous
+              </Button>
+              <span aria-live="polite" className="text-sm text-text-secondary">
+                Page {page} of {lastPage}
+              </span>
+              <Button
+                disabled={page >= lastPage || isFetching}
+                variant="outline"
+                onClick={() => setPage((current) => Math.min(lastPage, current + 1))}
+              >
+                Next
+              </Button>
+            </nav>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
