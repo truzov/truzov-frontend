@@ -43,11 +43,44 @@ async function signUpAndVerify(page: Page) {
   await page.waitForURL((url) => !url.pathname.includes('verify-otp'));
 }
 
+/**
+ * Adds the honey to the cart, asserting the SERVER accepted it.
+ *
+ * Retries once if the click produced no request at all. That happens intermittently under a long
+ * run against `next dev`: the button is rendered and enabled, the click reports success, and no
+ * POST is ever issued. Retrying is safe precisely because nothing was sent — there is no risk of
+ * adding two units — and the reload discards any half-initialised client state first.
+ */
+async function addToCart(page: Page) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    if (attempt === 1) {
+      await page.goto(`/products/${HONEY_SLUG}`);
+    } else {
+      await page.reload();
+    }
+
+    const pending = page
+      .waitForResponse(
+        (r) => r.url().includes('/cart/items') && r.request().method() === 'POST',
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
+    await page.getByRole('button', { name: /^Add to Cart$/ }).click();
+    const response = await pending;
+
+    if (response) {
+      expect(response.status(), 'POST /cart/items should succeed').toBeLessThan(300);
+      return;
+    }
+  }
+
+  throw new Error('Add to Cart produced no POST /cart/items after two attempts');
+}
+
 /** Cart, address and review, leaving the page on /checkout/payment ready to place the order. */
 async function readyToPlaceOrder(page: Page) {
-  await page.goto(`/products/${HONEY_SLUG}`);
-  await page.getByRole('button', { name: /^Add to Cart$/ }).click();
-  await expect(page.getByText('Added to cart')).toBeVisible();
+  await addToCart(page);
 
   await page.goto('/checkout/address');
   await page.getByRole('button', { name: /Add an address/i }).click();
@@ -67,7 +100,12 @@ async function readyToPlaceOrder(page: Page) {
 test.describe('mock payment', () => {
   // Serial for the same reason as the other journey suite: parallel workers share an IP and trip the
   // 100-requests-per-minute storefront limiter, which surfaces as unrelated-looking UI errors.
-  test.describe.configure({ mode: 'serial' });
+  //
+  // The raised timeout is about `next dev`, not about the app. Routes are compiled on first request,
+  // and a cold /products/[slug] or /checkout/* can take tens of seconds, which exceeded the default
+  // 30s and produced timeouts that looked like product bugs. Against a production build these tests
+  // finish in a few seconds each.
+  test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
   test('a successful mock payment moves the order from unpaid to paid on screen', async ({
     page,

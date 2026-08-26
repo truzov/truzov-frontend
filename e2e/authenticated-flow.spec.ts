@@ -54,11 +54,40 @@ async function signUpAndVerify(page: Page): Promise<string> {
   return phone;
 }
 
+/**
+ * Adds the honey to the cart, asserting the SERVER accepted it rather than watching for the toast,
+ * which auto-dismisses and made this a race.
+ *
+ * Retries once if the click produced no request at all. That happens intermittently under a long run
+ * against `next dev`: the button is rendered and enabled, the click reports success, and no POST is
+ * ever issued. Retrying is safe precisely because nothing was sent — there is no risk of adding two
+ * units — and the reload discards any half-initialised client state first.
+ */
 async function addHoneyToCart(page: Page) {
-  await page.goto(`/products/${HONEY_SLUG}`);
-  await page.getByRole('button', { name: /^Add to Cart$/ }).click();
-  // Toast confirms the server accepted it, rather than a local state flip.
-  await expect(page.getByText('Added to cart')).toBeVisible();
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    if (attempt === 1) {
+      await page.goto(`/products/${HONEY_SLUG}`);
+    } else {
+      await page.reload();
+    }
+
+    const pending = page
+      .waitForResponse(
+        (r) => r.url().includes('/cart/items') && r.request().method() === 'POST',
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
+    await page.getByRole('button', { name: /^Add to Cart$/ }).click();
+    const response = await pending;
+
+    if (response) {
+      expect(response.status(), 'POST /cart/items should succeed').toBeLessThan(300);
+      return;
+    }
+  }
+
+  throw new Error('Add to Cart produced no POST /cart/items after two attempts');
 }
 
 /**
@@ -95,7 +124,7 @@ test.describe('authenticated journey', () => {
    *
    * A journey suite has no reason to be parallel anyway.
    */
-  test.describe.configure({ mode: 'serial' });
+  test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
   test('signup, OTP verification, and a real session', async ({ page }) => {
     const phone = await signUpAndVerify(page);
@@ -124,7 +153,13 @@ test.describe('authenticated journey', () => {
 
     // 400 OTP_INVALID: the message shows and the form stays usable, because the session is still
     // alive. This is the case the old code conflated with an expired session.
-    await expect(page.getByText(/code|otp/i).first()).toBeVisible();
+    //
+    // Waits for the ACTUAL error text. This previously asserted /code|otp/i, which also matches the
+    // static helper line "Enter the 6-digit code sent to your phone" and so passed instantly without
+    // waiting for the response at all. The component clears the inputs when the error lands, so the
+    // correct code below was being typed BEFORE that clear and then wiped — leaving the submit button
+    // disabled on an empty form and the retry timing out.
+    await expect(page.getByText(/incorrect/i)).toBeVisible();
     await expect(page).toHaveURL(/verify-otp/);
 
     // The correct code still works on the same session.

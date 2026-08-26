@@ -44,8 +44,16 @@ export function OTPVerification({ onVerified }: { onVerified?: () => void } = {}
       : null;
 
   const channelLabel = otpChannel === 'email' ? 'email' : 'phone';
-  // 410 means the session is spent; the store also clears otpSessionId, so the only way forward
-  // is a fresh code.
+  // True in two situations the client CANNOT tell apart, plus one it can:
+  //   - 410 OTP_EXPIRED: the session really is expired or already used;
+  //   - 410 OTP_EXPIRED: the identifier has no account, so the session was never able to
+  //     authenticate anyone. The backend returns the identical status and code on purpose, so
+  //     that otp/verify is not an account-existence oracle (AuthService, control H-3);
+  //   - no session id at all, e.g. this screen was opened directly or after a reload, since the
+  //     auth store is in-memory.
+  // All three mean "typing a code here cannot succeed", which is why the inputs are disabled.
+  // The recovery UI below therefore offers a resend AND a signup link, because it does not know
+  // which of the first two applies and only the user does.
   const sessionExpired = errorCode === ERROR_CODES.OTP_EXPIRED || !otpSessionId;
 
   useEffect(() => {
@@ -186,15 +194,36 @@ export function OTPVerification({ onVerified }: { onVerified?: () => void } = {}
       ) : null}
 
       {sessionExpired ? (
-        <button
-          className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={isLoading || !pendingIdentifier}
-          type="button"
-          onClick={() => void handleResend()}
-        >
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-          Send a new code
-        </button>
+        <>
+          <button
+            className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isLoading || !pendingIdentifier}
+            type="button"
+            onClick={() => void handleResend()}
+          >
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+            Send a new code
+          </button>
+
+          {/*
+            Both routes out are offered because the client genuinely cannot tell which of two
+            causes it is looking at. The backend returns the SAME 410 OTP_EXPIRED for a session
+            that really has expired AND for one opened against an identifier with no account —
+            deliberately, so that otp/verify cannot be used to discover which phone numbers and
+            email addresses are registered (see AuthService, control H-3).
+
+            Offering only "send a new code" therefore strands anyone who has not signed up: every
+            new code they request fails identically, with the screen insisting the session is
+            invalid when the real answer is that there is no account. Naming both possibilities
+            costs nothing and leaks nothing, because the user is the one who knows which applies.
+          */}
+          <p className="text-center text-caption text-on-surface-variant">
+            Not signed up with this {channelLabel} yet?{' '}
+            <Link className="font-semibold text-primary hover:underline" href="/signup">
+              Create an account
+            </Link>
+          </p>
+        </>
       ) : (
         <button
           className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
