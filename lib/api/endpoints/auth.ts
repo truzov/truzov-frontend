@@ -3,6 +3,7 @@ import type {
   ChangePasswordRequest,
   LoginRequest,
   LogoutRequest,
+  OAuthLoginRequest,
   OtpSendRequest,
   OtpSendResponse,
   OtpVerifyRequest,
@@ -48,6 +49,22 @@ export function verifyOtp(body: OtpVerifyRequest): Promise<TokenResponse> {
 
 export function login(body: LoginRequest): Promise<TokenResponse> {
   return apiRequest<TokenResponse>('/auth/login', { method: 'POST', body });
+}
+
+/**
+ * Redeems a Google authorization code for our own tokens.
+ *
+ * Returns the same `TokenResponse` as `login`, so callers treat the resulting session
+ * identically — nothing downstream needs to know how it began.
+ *
+ * Failures worth handling separately: 409 OAUTH_IDENTITY_MISMATCH (this account is connected to
+ * a different Google account), 403 OAUTH_LINK_REQUIRED (an account holds this email but never
+ * confirmed it, so the user must sign in their original way first), 403
+ * OAUTH_EMAIL_NOT_VERIFIED (Google does not vouch for the address), 401 (the code was rejected —
+ * expired or already redeemed), 503 (Google unreachable, or sign-in not configured server-side).
+ */
+export function loginWithGoogle(body: OAuthLoginRequest): Promise<TokenResponse> {
+  return apiRequest<TokenResponse>('/auth/oauth/google', { method: 'POST', body });
 }
 
 export function getCurrentUser(signal?: AbortSignal): Promise<UserProfileDto> {

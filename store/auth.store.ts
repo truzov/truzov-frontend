@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import {
   getCurrentUser,
   login as loginRequest,
+  loginWithGoogle as loginWithGoogleRequest,
   logout as logoutRequest,
   sendOtp as sendOtpRequest,
   signup as signupRequest,
@@ -77,6 +78,8 @@ interface AuthState {
   sendOtp: (identifier: string, purpose?: 'login' | 'verify') => Promise<void>;
   verifyOtp: (code: string) => Promise<void>;
   loginWithPassword: (identifier: string, password: string) => Promise<void>;
+  /** Second half of the Google redirect: exchanges the returned code for a session. */
+  loginWithGoogle: (code: string, codeVerifier: string) => Promise<void>;
   updateProfile: (updates: UpdateProfileRequest) => Promise<void>;
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
@@ -260,8 +263,33 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
 
-  updateProfile: async (updates) => {
+  /**
+   * Completes a Google redirect. The code and verifier come from the callback route; the server
+   * does the exchange, so there is nothing to validate here beyond what the API returns.
+   *
+   * Sets the same authenticated state as a password login — deliberately, so no screen has to
+   * care which path produced the session.
+   */
+  loginWithGoogle: async (code, codeVerifier) => {
     set({ isLoading: true, error: null, errorCode: null });
+
+    try {
+      const tokens = await loginWithGoogleRequest({ code, codeVerifier });
+      setSession(tokens);
+      set({
+        status: 'authenticated',
+        user: tokens.user,
+        isLoggedIn: true,
+        isLoading: false,
+        ...CLEARED_OTP,
+      });
+    } catch (error) {
+      set(toErrorState(error));
+      throw error;
+    }
+  },
+
+  updateProfile: async (updates) => {    set({ isLoading: true, error: null, errorCode: null });
 
     try {
       const user = await updateProfileRequest(updates);

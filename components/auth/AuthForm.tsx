@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { LoginForm } from './LoginForm';
 import { OTPVerification } from './OTPVerification';
 import { SignupForm } from './SignupForm';
@@ -28,6 +29,9 @@ interface AuthFormProps {
  * 2. The "Google" and "Vendor ID" buttons. They called `loginAs(role)`, which granted a session
  *    with no credentials and let the CLIENT choose its own role. There is no OAuth endpoint in
  *    the API, so there was nothing behind them to wire up (plan §6.5).
+ *
+ * Google sign-in is back as of `POST /auth/oauth/google`, but as a real redirect flow this time:
+ * see GoogleSignInButton. The "Vendor ID" button stays gone — the server decides roles.
  */
 export function AuthForm({
   mode,
@@ -89,6 +93,13 @@ export function AuthForm({
           onOtpSent={variant === 'modal' ? () => setStep('otp') : undefined}
         />
       )}
+
+      {/*
+        Shown for both modes because one Google flow serves both: the API creates an account or
+        links an existing one from the same call, so there is no separate "sign up with Google".
+        Renders nothing when NEXT_PUBLIC_GOOGLE_CLIENT_ID is unset.
+      */}
+      <GoogleSignInButton redirectTo={redirectTo} />
     </div>
   );
 }

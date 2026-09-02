@@ -129,6 +129,20 @@ export interface LoginRequest {
   password: string;
 }
 
+/**
+ * Body for `POST /auth/oauth/google`.
+ *
+ * There is no `redirectUri` field by design: the backend uses its own configured value when
+ * redeeming the code, so a caller cannot aim the exchange at an unregistered URI. Ours must
+ * match it exactly or Google rejects the exchange.
+ */
+export interface OAuthLoginRequest {
+  /** Single-use authorization code from Google's redirect. */
+  code: string;
+  /** PKCE verifier for the challenge that started the flow. 43-128 characters. */
+  codeVerifier: string;
+}
+
 export interface RefreshRequest {
   refreshToken: string;
 }
