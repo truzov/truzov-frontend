@@ -1,14 +1,20 @@
-import { DetailShell } from '@/components/screens/WorkspaceScreens';
-import { verificationSubmissions } from '@/lib/data/fixtures';
+import { DetailShell, NotAvailableYet } from '@/components/screens/WorkspaceScreens';
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const request = verificationSubmissions.find((item) => item.id === id) ?? verificationSubmissions[0];
-
+/**
+ * Gated. There is no verification-submission resource in the API. `verificationStatus` is a
+ * read-only string on a product, so a "sample request" has no entity behind it and no way to be
+ * fetched, assigned or transitioned.
+ */
+export default function Page() {
   return (
     <DetailShell role="lab" title="Sample Request">
-      <h2 className="font-heading text-2xl">{request.productName}</h2>
-      <p className="mt-2 text-text-secondary">{request.vendorName} - {request.labPartner}</p>
+      <NotAvailableYet
+        backHref="/lab/requests"
+        backLabel="Back to requests"
+        needs="A verification submission resource. Only a product's read-only verificationStatus exists today."
+        ticket="§6.4 / §T2"
+        title="Sample request"
+      />
     </DetailShell>
   );
 }

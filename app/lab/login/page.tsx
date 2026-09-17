@@ -1,7 +1,6 @@
-import { AuthScreen } from '@/components/screens/AuthScreens';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-
+/** One real login endpoint for every role; the role arrives in the token response. See /login. */
 export default function Page() {
-  return <AuthScreen mode="login" role="lab" />;
+  redirect('/login?redirect=%2Flab');
 }

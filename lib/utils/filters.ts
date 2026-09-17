@@ -1,84 +1,126 @@
-import type { Product } from '@/types';
+import type { ProductListParams, ProductSort } from '@/lib/api/endpoints/catalog';
 
+/**
+ * Adapter between the URL the user sees and the query the API expects.
+ *
+ * `filterProducts` used to live here and sorted/filtered a fixture array in the browser. It is
+ * gone: filtering, sorting and pagination are the server's job now, and a client-side pass over
+ * one page of results would silently disagree with `total`.
+ */
+
+/**
+ * Filter state as the UI thinks about it.
+ *
+ * Two deliberate differences from `ProductListParams`: prices are in RUPEES here because that
+ * is what the URL and the price inputs show, and the text query is `query` rather than `q`
+ * because that is the existing prop name across the screens. `toProductListParams` reconciles
+ * both.
+ */
 export interface ProductFilterState {
   category?: string;
   brand?: string;
   sort?: string;
+  /** RUPEES. Converted to paise on the way out. */
   minPrice?: number;
   maxPrice?: number;
   tags?: string[];
   inStock?: boolean;
   labVerified?: boolean;
   query?: string;
+  page?: number;
 }
 
+const SORTS: readonly ProductSort[] = [
+  'relevance',
+  'price_asc',
+  'price_desc',
+  'best_rated',
+  'best_selling',
+  'newest',
+];
+
 export function parseFilters(params: URLSearchParams): ProductFilterState {
-  const minPrice = params.get('minPrice');
-  const maxPrice = params.get('maxPrice');
   return {
     category: params.get('category') ?? undefined,
     brand: params.get('brand') ?? undefined,
     sort: params.get('sort') ?? 'relevance',
-    minPrice: minPrice ? Number(minPrice) : undefined,
-    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    minPrice: parseNumber(params.get('minPrice')),
+    maxPrice: parseNumber(params.get('maxPrice')),
     tags: params.get('tags')?.split(',').filter(Boolean),
+    // Only `true` is meaningful: these are "narrow the results" switches, and sending
+    // `inStock=false` would ask the server for out-of-stock items only.
     inStock: params.get('inStock') === 'true' ? true : undefined,
     labVerified: params.get('labVerified') === 'true' ? true : undefined,
     query: params.get('q') ?? undefined,
+    page: parseNumber(params.get('page')),
   };
 }
 
-export function filterProducts(products: Product[], filters: ProductFilterState) {
-  const query = filters.query?.toLowerCase().trim();
+/**
+ * UI filter state -> documented API query parameters.
+ *
+ * THE ONE PLACE rupees become paise. The API reference is explicit and easy to miss: every
+ * price on a product DTO is in integer rupees, but the `minPrice`/`maxPrice` *query
+ * parameters* are in paise. Getting this wrong does not error — it silently filters by a
+ * hundredth of the intended amount, so a "under 500" filter returns nothing at all.
+ */
+export function toProductListParams(
+  filters: ProductFilterState,
+  overrides?: { page?: number; limit?: number }
+): ProductListParams {
+  return {
+    category: filters.category,
+    brand: filters.brand,
+    sort: normaliseSort(filters.sort),
+    minPrice: rupeesToPaise(filters.minPrice),
+    maxPrice: rupeesToPaise(filters.maxPrice),
+    tags: filters.tags,
+    inStock: filters.inStock,
+    labVerified: filters.labVerified,
+    q: filters.query?.trim() || undefined,
+    page: overrides?.page ?? filters.page,
+    limit: overrides?.limit,
+  };
+}
 
-  const filtered = products.filter((product) => {
-    if (filters.category && product.category !== filters.category && !product.tags.includes(filters.category)) {
-      return false;
-    }
-    if (filters.brand && product.brand !== filters.brand) {
-      return false;
-    }
-    if (filters.minPrice && product.price < filters.minPrice) {
-      return false;
-    }
-    if (filters.maxPrice && product.price > filters.maxPrice) {
-      return false;
-    }
-    if (filters.inStock && !product.inStock) {
-      return false;
-    }
-    if (filters.labVerified && !product.isLabVerified) {
-      return false;
-    }
-    if (filters.tags?.length && !filters.tags.some((tag) => product.tags.includes(tag))) {
-      return false;
-    }
-    if (
-      query &&
-      ![product.name, product.brand, product.category, ...product.tags].some((value) =>
-        value.toLowerCase().includes(query)
-      )
-    ) {
-      return false;
-    }
+function rupeesToPaise(rupees: number | undefined): number | undefined {
+  if (rupees === undefined || !Number.isFinite(rupees)) {
+    return undefined;
+  }
 
-    return true;
-  });
+  return Math.round(rupees * 100);
+}
 
-  return [...filtered].sort((a, b) => {
-    switch (filters.sort) {
-      case 'price_asc':
-        return a.price - b.price;
-      case 'price_desc':
-        return b.price - a.price;
-      case 'best_rated':
-        return b.rating - a.rating;
-      case 'best_selling':
-        return Number(b.isBestseller) - Number(a.isBestseller);
-      case 'newest':
-        return Number(b.isNewArrival) - Number(a.isNewArrival);
-      default:
-        return Number(b.isFeatured) - Number(a.isFeatured);
-    }
-  });
+/** Drops an unrecognised `?sort=` rather than passing it through to a 400. */
+function normaliseSort(sort: string | undefined): ProductSort | undefined {
+  if (!sort) {
+    return undefined;
+  }
+
+  return SORTS.includes(sort as ProductSort) ? (sort as ProductSort) : undefined;
+}
+
+function parseNumber(raw: string | null): number | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  const value = Number(raw);
+  // A hand-edited `?minPrice=abc` becomes NaN; treat it as absent instead of forwarding it.
+  return Number.isFinite(value) ? value : undefined;
+}
+
+/** Filter chips shown above the grid. Excludes paging, which is not a filter. */
+export function activeFilterEntries(filters: ProductFilterState): Array<[string, string]> {
+  const entries: Array<[string, string]> = [];
+
+  if (filters.category) entries.push(['category', filters.category]);
+  if (filters.brand) entries.push(['brand', filters.brand]);
+  if (filters.minPrice !== undefined) entries.push(['min price', `₹${filters.minPrice}`]);
+  if (filters.maxPrice !== undefined) entries.push(['max price', `₹${filters.maxPrice}`]);
+  if (filters.inStock) entries.push(['in stock', 'yes']);
+  if (filters.labVerified) entries.push(['lab verified', 'yes']);
+  if (filters.tags?.length) entries.push(['tags', filters.tags.join(', ')]);
+
+  return entries;
 }
