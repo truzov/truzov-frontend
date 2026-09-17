@@ -4,31 +4,46 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { InlineError } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
-import { useAddresses, useCreateAddress } from '@/hooks/api/useCommerce';
+import { useAddresses, useCreateAddress, useUpdateAddress } from '@/hooks/api/useCommerce';
 import { fieldError } from '@/lib/api/errors';
 import { addressSchema } from '@/lib/validations/checkout';
+import type { AddressDto } from '@/types/api';
 
 /**
- * Create a delivery address via `POST /users/me/addresses`.
+ * Create or edit a delivery address (`POST` / `PATCH /users/me/addresses`).
  *
- * Create-only, deliberately. There is no PATCH, DELETE or set-default endpoint (plan §T6), so the
- * edit path this component used to support has been removed rather than left writing to local state
- * that vanishes on reload — which is what it did before, and which looked like data loss.
+ * The edit path is a full replace — the PATCH endpoint takes the same shape as create, so the
+ * form always submits every field and there is no absent-vs-null distinction to interpret.
+ * Ownership is enforced server-side: a foreign address id answers 403 like a missing one.
  */
-export function AddressForm({ onComplete }: { onComplete: () => void }) {
+export function AddressForm({
+  address,
+  onComplete,
+}: {
+  /** When present the form edits this address instead of creating one. */
+  address?: AddressDto;
+  onComplete: () => void;
+}) {
   const { addresses } = useAddresses();
   const createAddress = useCreateAddress();
+  const updateAddress = useUpdateAddress();
 
   const [form, setForm] = useState({
-    label: '',
-    fullName: '',
-    phone: '',
-    pincode: '',
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
+    label: address?.label ?? '',
+    fullName: address?.fullName ?? '',
+    phone: address?.phone ?? '',
+    pincode: address?.pincode ?? '',
+    line1: address?.line1 ?? '',
+    line2: address?.line2 ?? '',
+    city: address?.city ?? '',
+    state: address?.state ?? '',
+    landmark: address?.landmark ?? '',
   });
+  // Defaults: keep the edited address's flag; a first-ever create starts as the default.
+  const [isDefault, setIsDefault] = useState(address?.isDefault ?? addresses.length === 0);
+
+  const isPending = createAddress.isPending || updateAddress.isPending;
+  const mutationError = updateAddress.isError ? updateAddress.error : createAddress.error;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -79,27 +94,33 @@ export function AddressForm({ onComplete }: { onComplete: () => void }) {
       return;
     }
 
-    createAddress.mutate(
-      {
-        label: result.data.label || undefined,
-        fullName: result.data.fullName,
-        phone: result.data.phone,
-        line1: result.data.line1,
-        // Omitted rather than sent empty: the server validates what it receives.
-        line2: result.data.line2 || undefined,
-        city: result.data.city,
-        state: result.data.state,
-        pincode: result.data.pincode,
-        // The first address becomes the default. There is no set-default endpoint, so this is the
-        // only moment a default can be chosen.
-        isDefault: addresses.length === 0,
-      },
-      { onSuccess: () => onComplete() }
-    );
+    const body = {
+      label: result.data.label || undefined,
+      fullName: result.data.fullName,
+      phone: result.data.phone,
+      line1: result.data.line1,
+      // Omitted rather than sent empty: the server validates what it receives.
+      line2: result.data.line2 || undefined,
+      city: result.data.city,
+      state: result.data.state,
+      pincode: result.data.pincode,
+      landmark: result.data.landmark || undefined,
+      isDefault,
+    };
+
+    if (address) {
+      updateAddress.mutate(
+        { addressId: address.id, body },
+        { onSuccess: () => onComplete() }
+      );
+      return;
+    }
+
+    createAddress.mutate(body, { onSuccess: () => onComplete() });
   };
 
   /** Server-side field errors take precedence: they reflect what was actually rejected. */
-  const errorFor = (field: string) => fieldError(createAddress.error, field) ?? errors[field];
+  const errorFor = (field: string) => fieldError(mutationError, field) ?? errors[field];
 
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
@@ -157,21 +178,37 @@ export function AddressForm({ onComplete }: { onComplete: () => void }) {
         error={errorFor('line2')}
         label="Address Line 2 (optional)"
         onChange={(event) => handleFieldChange('line2', event.target.value)}
-        placeholder="Area / landmark"
+        placeholder="Area"
         value={form.line2}
       />
+      <Input
+        error={errorFor('landmark')}
+        label="Landmark (optional)"
+        onChange={(event) => handleFieldChange('landmark', event.target.value)}
+        placeholder="Near the temple"
+        value={form.landmark}
+      />
+      {/* Only one default exists server-side: setting this demotes the others in one update. */}
+      <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-text-primary">
+        <input
+          checked={isDefault}
+          onChange={(event) => setIsDefault(event.target.checked)}
+          type="checkbox"
+        />
+        Set as default address
+      </label>
 
-      {createAddress.isError ? (
+      {mutationError ? (
         <div className="md:col-span-2">
-          <InlineError error={createAddress.error} />
+          <InlineError error={mutationError} />
         </div>
       ) : null}
 
       <div className="flex gap-3 md:col-span-2">
-        <Button disabled={!isFormValid || createAddress.isPending} loading={createAddress.isPending} type="submit">
-          Save Address
+        <Button disabled={!isFormValid || isPending} loading={isPending} type="submit">
+          {address ? 'Save Changes' : 'Save Address'}
         </Button>
-        <Button disabled={createAddress.isPending} type="button" variant="ghost" onClick={onComplete}>
+        <Button disabled={isPending} type="button" variant="ghost" onClick={onComplete}>
           Cancel
         </Button>
       </div>

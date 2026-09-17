@@ -11,6 +11,7 @@ import {
   Leaf,
   Microscope,
   PackageCheck,
+  Pencil,
   Phone,
   Plus,
   Search,
@@ -27,6 +28,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PhoneChangeModal } from '@/components/auth/PhoneChangeModal';
 import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Rating } from '@/components/ui/Rating';
@@ -54,6 +56,7 @@ import { useAddresses, useCancelOrder, useOrder, useOrders } from '@/hooks/api/u
 import { DEFAULT_PRODUCT_LIMIT } from '@/lib/api/endpoints/catalog';
 import { ORDER_PAGE_LIMIT } from '@/lib/api/endpoints/orders';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
+import type { AddressDto } from '@/types/api';
 import {
   activeFilterEntries,
   toProductListParams,
@@ -692,15 +695,18 @@ export function AccountScreen() {
   const isSaving = useAuthStore((state) => state.isLoading);
   const saveError = useAuthStore((state) => state.error);
   const [editing, setEditing] = useState(false);
+  const [phoneModalOpen, setPhoneModalOpen] = useState(false);
   /**
-   * Only the four fields `PATCH /users/me` accepts.
+   * Only the fields `PATCH /users/me` accepts. Phone is NOT among them anymore: a changed
+   * phone is an unverified write to the one identifier checkout gates on, so it moves only
+   * through the OTP flow in PhoneChangeModal (spec §6).
    *
    * Gender, date of birth and location used to be here. No product DTO or request body has a
    * home for them, so they were removed rather than left as inputs that accept typing and throw
    * it away on save — which is what the previous local-only `updateProfile` did (plan §6.1).
    * `avatarUrl` is accepted by the endpoint but there is no upload flow, so it is not exposed.
    */
-  const [form, setForm] = useState({ name: '', email: '', phone: '' });
+  const [form, setForm] = useState({ name: '', email: '' });
 
   const displayName = user?.name || 'Guest';
 
@@ -708,7 +714,6 @@ export function AccountScreen() {
     setForm({
       name: user?.name ?? '',
       email: user?.email ?? '',
-      phone: user?.phone ?? '',
     });
     setEditing(true);
   }
@@ -720,7 +725,6 @@ export function AccountScreen() {
         // Sent only when non-empty. The backend validates these when present, so passing '' for
         // an unset optional field is a validation error rather than a no-op.
         email: form.email.trim() || undefined,
-        phone: form.phone.trim() || undefined,
       });
       setEditing(false);
     } catch {
@@ -759,17 +763,28 @@ export function AccountScreen() {
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             />
-            <Input
-              label="Mobile Number"
-              name="phone"
-              type="tel"
-              value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            />
-            {/* Changing either channel clears its verification server-side, so the user is told
+            <div className="grid gap-1">
+              <span className="text-sm font-medium text-text-primary">Mobile Number</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-text-secondary">
+                  {user?.phone || '— not added —'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPhoneModalOpen(true)}
+                >
+                  Change
+                </Button>
+              </div>
+              <p className="text-xs text-text-secondary">
+                Changing your number requires a code sent to the new one, so it stays verified.
+              </p>
+            </div>
+            {/* Changing the email clears its verification server-side, so the user is told
                 before they save rather than discovering it at checkout. */}
             <p className="text-xs text-text-secondary">
-              Changing your email or mobile number means that channel has to be verified again.
+              Changing your email means it has to be verified again.
             </p>
             {saveError ? (
               <p className="rounded-md border border-text-danger/30 bg-status-dangerBg p-3 text-sm text-text-danger">
@@ -821,6 +836,7 @@ export function AccountScreen() {
           </>
         )}
       </AccountPanel>
+      <PhoneChangeModal open={phoneModalOpen} onClose={() => setPhoneModalOpen(false)} />
     </div>
   );
 }
@@ -1086,13 +1102,24 @@ export function OrderDetailScreen({ id }: { id: string }) {
 export function AddressesScreen() {
   const { addresses, isLoading, isError, error, refetch } = useAddresses();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<AddressDto | undefined>(undefined);
+
+  const openCreate = () => {
+    setEditing(undefined);
+    setModalOpen(true);
+  };
+
+  const openEdit = (address: AddressDto) => {
+    setEditing(address);
+    setModalOpen(true);
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <AccountPanel
         title="Saved Addresses"
         titleAction={
-          <Button variant="outline" onClick={() => setModalOpen(true)}>
+          <Button variant="outline" onClick={openCreate}>
             <Plus aria-hidden="true" className="mr-2 h-4 w-4" />
             Add New Address
           </Button>
@@ -1154,21 +1181,29 @@ export function AddressesScreen() {
                   </div>
                 </div>
 
-                {/*
-                  Set as Default / Edit / Delete removed. Only GET and POST exist for addresses
-                  (plan §T6) — those buttons previously mutated local Zustand state, so the change
-                  looked applied and then silently reverted on the next load.
-                */}
+                {/* PATCH /users/me/addresses/{id} — owner-checked server-side. A past order is
+                    unaffected: it snapshotted the address it shipped to. */}
+                <div className="mt-4 flex items-center gap-3 border-t border-surface-border pt-3">
+                  <Button size="sm" variant="outline" onClick={() => openEdit(address)}>
+                    <Pencil aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                </div>
               </article>
             ))}
           </div>
         )}
 
         <p className="mt-5 rounded-2xl border border-dashed border-surface-border bg-surface-raised/50 p-4 text-sm text-text-secondary">
-          Addresses cannot be edited or removed yet. Add a new address and select it at checkout.
+          Editing an address does not change past orders — each order keeps the address it was
+          placed with.
         </p>
 
-        <AddressFormModal open={modalOpen} onClose={() => setModalOpen(false)} />
+        <AddressFormModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          address={editing}
+        />
       </AccountPanel>
     </div>
   );

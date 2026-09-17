@@ -4,6 +4,7 @@ import {
   parseFilters,
   toProductListParams,
 } from '@/lib/utils/filters';
+import { isValidRedirect } from '@/lib/auth/redirect';
 import { calculateDiscount, formatCurrency } from '@/lib/utils/money';
 import { displayImages, humaniseSlug } from '@/lib/utils/product';
 
@@ -112,5 +113,38 @@ describe('product display helpers', () => {
 
   it('humanises a category slug', () => {
     expect(humaniseSlug('cold-pressed-oils')).toBe('Cold Pressed Oils');
+  });
+});
+
+
+/**
+ * The gate every post-login navigation goes through: `AuthModal.handleSuccess`,
+ * `LoginForm.resolveRedirect` (which also re-encodes the value into `/verify-otp?redirect=…`),
+ * and `AuthModalRedirect`. A curated adversarial table, not random strings — the interesting
+ * inputs here are few and known.
+ *
+ * Validates: Requirements 5.7, 5.8
+ */
+describe('post-login redirect gate', () => {
+  it('rejects anything that can leave the origin', () => {
+    for (const target of [
+      '//evil.com',
+      '/\\evil.com',
+      'https://evil.com',
+      'javascript:alert(1)',
+      'http://localhost:3000/x',
+      '\\\\evil.com',
+      '',
+      null,
+      undefined,
+    ]) {
+      expect(isValidRedirect(target)).toBe(false);
+    }
+  });
+
+  it('accepts same-origin relative application routes', () => {
+    for (const target of ['/cart', '/checkout/address', '/account/orders?page=2']) {
+      expect(isValidRedirect(target)).toBe(true);
+    }
   });
 });

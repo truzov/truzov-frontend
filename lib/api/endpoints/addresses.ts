@@ -4,9 +4,9 @@ import type { AddressDto, CreateAddressRequest } from '@/types/api';
 /**
  * Saved delivery addresses for the authenticated user.
  *
- * Note what is absent: there is no PATCH, no DELETE and no set-default endpoint. Only list and
- * create exist (plan §6.1, ticket §T6), which is why the UI offers no edit or remove action — a
- * button that changed local state and then vanished on reload would be worse than no button.
+ * List, create and edit. Delete remains absent server-side — an address referenced by a past
+ * order is snapshotted into `orders.delivery_address`, but the address book row itself is kept
+ * (no DELETE endpoint), so the UI offers no remove action.
  */
 
 export function getAddresses(signal?: AbortSignal): Promise<AddressDto[]> {
@@ -23,6 +23,24 @@ export function getAddresses(signal?: AbortSignal): Promise<AddressDto[]> {
 export function createAddress(body: CreateAddressRequest): Promise<AddressDto> {
   return apiRequest<AddressDto>('/users/me/addresses', {
     method: 'POST',
+    auth: true,
+    body,
+  });
+}
+
+/**
+ * Updates one of the caller's own addresses (full replace; same shape as create).
+ *
+ * A foreign or unknown address id answers 403 identically, so this cannot be used to probe
+ * which address ids exist. Returns the updated record so callers can refresh state without a
+ * follow-up GET.
+ */
+export function updateAddress(
+  addressId: string,
+  body: CreateAddressRequest
+): Promise<AddressDto> {
+  return apiRequest<AddressDto>(`/users/me/addresses/${encodeURIComponent(addressId)}`, {
+    method: 'PATCH',
     auth: true,
     body,
   });

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ERROR_CODES } from '@/lib/api/errors';
 import { useAuthStore } from '@/store/auth.store';
+import { isValidRedirect } from '@/lib/auth/redirect';
 
 /** This deployment issues 6-digit codes (`truzov.auth.otp.length`). */
 const CODE_LENGTH = 6;
@@ -22,7 +23,16 @@ const CODE_LENGTH = 6;
  *  - Copy follows the channel the server actually used. It used to be hardcoded to "email"
  *    while the default channel is phone.
  */
-export function OTPVerification({ onVerified }: { onVerified?: () => void } = {}) {
+export function OTPVerification({
+  onVerified,
+  variant = 'page',
+  onSwitchMode,
+}: {
+  onVerified?: () => void;
+  /** Modal renders links as mode switches; the page navigates. */
+  variant?: 'page' | 'modal';
+  onSwitchMode?: (mode: 'login' | 'signup') => void;
+} = {}) {
   const router = useRouter();
   const verifyOtp = useAuthStore((state) => state.verifyOtp);
   const sendOtp = useAuthStore((state) => state.sendOtp);
@@ -38,23 +48,28 @@ export function OTPVerification({ onVerified }: { onVerified?: () => void } = {}
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const redirectParam =
+
+  const rawRedirect =
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('redirect')
       : null;
+  const redirectParam = isValidRedirect(rawRedirect) ? rawRedirect : null;
 
   const channelLabel = otpChannel === 'email' ? 'email' : 'phone';
   // True in two situations the client CANNOT tell apart, plus one it can:
   //   - 410 OTP_EXPIRED: the session really is expired or already used;
-  //   - 410 OTP_EXPIRED: the identifier has no account, so the session was never able to
-  //     authenticate anyone. The backend returns the identical status and code on purpose, so
-  //     that otp/verify is not an account-existence oracle (AuthService, control H-3);
+  //   - 410 OTP_EXPIRED: the account's identifier moved after the code was issued, so the
+  //     session's premise stopped holding (AuthService target-binding guard);
   //   - no session id at all, e.g. this screen was opened directly or after a reload, since the
   //     auth store is in-memory.
   // All three mean "typing a code here cannot succeed", which is why the inputs are disabled.
   // The recovery UI below therefore offers a resend AND a signup link, because it does not know
   // which of the first two applies and only the user does.
   const sessionExpired = errorCode === ERROR_CODES.OTP_EXPIRED || !otpSessionId;
+  // NOT part of sessionExpired: the code was correct, the identifier simply has no account.
+  // Only the identifier's owner can reach this (they received the code), so the screen can say
+  // so outright and route to signup — no enumeration concern, the user proved control.
+  const accountNotFound = errorCode === ERROR_CODES.ACCOUNT_NOT_FOUND;
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
@@ -245,7 +260,7 @@ export function OTPVerification({ onVerified }: { onVerified?: () => void } = {}
       )}
 
       <div className="mt-lg flex flex-col items-center gap-md">
-        {!sessionExpired ? (
+        {!sessionExpired && !accountNotFound ? (
           <button
             className="cursor-pointer border-none bg-transparent text-body-md font-body text-primary transition-colors hover:text-primary-container disabled:cursor-not-allowed disabled:opacity-50"
             disabled={resendCooldown > 0 || isLoading || !pendingIdentifier}
@@ -257,13 +272,24 @@ export function OTPVerification({ onVerified }: { onVerified?: () => void } = {}
               : "Didn't receive the code? Resend"}
           </button>
         ) : null}
-        <Link
-          className="flex items-center gap-xs text-body-md font-body text-on-surface-variant transition-colors hover:text-on-surface"
-          href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Login
-        </Link>
+        {variant === 'modal' && onSwitchMode ? (
+          <button
+            className="flex items-center gap-xs text-body-md font-body text-on-surface-variant transition-colors hover:text-on-surface"
+            type="button"
+            onClick={() => onSwitchMode('login')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Login
+          </button>
+        ) : (
+          <Link
+            className="flex items-center gap-xs text-body-md font-body text-on-surface-variant transition-colors hover:text-on-surface"
+            href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Login
+          </Link>
+        )}
       </div>
     </form>
   );

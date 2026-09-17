@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { onAuthEvent } from '@/lib/api/auth-events';
 import { useAuthStore } from '@/store/auth.store';
+import { useOtpModalStore } from '@/store/otp-modal.store';
 
 /**
  * The auth runtime: restores the session on load, and turns the fetch layer's auth events into
@@ -24,6 +25,7 @@ export function AuthEventBridge() {
   const queryClient = useQueryClient();
   const reset = useAuthStore((state) => state.resetSession);
   const restoreSession = useAuthStore((state) => state.restoreSession);
+  const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
 
   // Runs once per page load. The access token is intentionally memory-only, so after any reload
   // it is gone and the stored refresh token has to be exchanged for a live pair before
@@ -61,15 +63,12 @@ export function AuthEventBridge() {
 
       if (event.type === 'otp-required') {
         // 403 PHONE_NOT_VERIFIED / ACCOUNT_NOT_VERIFIED. The user is signed in; they just have
-        // an unverified channel, so this is verification rather than a fresh login.
-        if (pathname === '/verify-otp') {
-          return;
-        }
-
-        router.push(`/verify-otp?redirect=${encodeURIComponent(pathname)}`);
+        // an unverified phone, so this opens the verification popup in place instead of routing
+        // to a full page. `pathname` is carried so a successful verify returns them here.
+        openOtpModal({ redirectTo: pathname });
       }
     });
-  }, [pathname, queryClient, reset, router]);
+  }, [openOtpModal, pathname, queryClient, reset, router]);
 
   return null;
 }
@@ -78,7 +77,6 @@ function isAuthRoute(pathname: string): boolean {
   return (
     pathname === '/login' ||
     pathname === '/signup' ||
-    pathname === '/register' ||
-    pathname === '/verify-otp'
+    pathname === '/register'
   );
 }

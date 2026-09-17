@@ -1,10 +1,9 @@
-import { AuthForm } from '@/components/auth/AuthForm';
-import { AuthLayout } from '@/components/auth/AuthLayout';
+import { AuthModalRedirect } from '@/components/auth/AuthModalRedirect';
 
+/**
+ * Signup is a popup, not a page. This route only opens the modal (and carries any `?redirect=`)
+ * so old links and `/register` (which redirects here) keep working.
+ */
 export default function SignupPage() {
-  return (
-    <AuthLayout title="Create Account" subtitle="Start your journey with verified health solutions.">
-      <AuthForm mode="signup" />
-    </AuthLayout>
-  );
+  return <AuthModalRedirect mode="signup" />;
 }

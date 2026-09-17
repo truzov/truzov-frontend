@@ -2,15 +2,21 @@
 
 import { Modal } from '@/components/ui/Modal';
 import { AddressForm } from './AddressForm';
+import type { AddressDto } from '@/types/api';
 
-/**
- * Create-only. The `address` prop (edit mode) is gone because there is no address update endpoint —
- * see AddressForm and plan §T6.
- */
-export function AddressFormModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** Add or edit a saved address. Pass `address` for edit mode. */
+export function AddressFormModal({
+  open,
+  onClose,
+  address,
+}: {
+  open: boolean;
+  onClose: () => void;
+  address?: AddressDto;
+}) {
   return (
-    <Modal open={open} title="Add New Address" onClose={onClose}>
-      <AddressForm onComplete={onClose} />
+    <Modal open={open} title={address ? 'Edit Address' : 'Add New Address'} onClose={onClose}>
+      <AddressForm address={address} onComplete={onClose} />
     </Modal>
   );
 }

@@ -7,8 +7,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
+import { isValidRedirect } from '@/lib/auth/redirect';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/auth.store';
+import { useOtpModalStore } from '@/store/otp-modal.store';
 
 export interface AuthFormProps {
   variant?: 'page' | 'modal';
@@ -35,6 +37,7 @@ export function LoginForm({
   const isLoading = useAuthStore((state) => state.isLoading);
   const error = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
+  const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
 
   /**
    * Both documented sign-in paths are offered because they suit different accounts.
@@ -54,12 +57,21 @@ export function LoginForm({
     resolver: zodResolver(loginSchema),
   });
 
-  /** Redirect target: explicit prop first, then the `?redirect=` the guard added. */
-  const resolveRedirect = () =>
-    redirectTo ??
-    (typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('redirect')
-      : null);
+  /**
+   * Redirect target: explicit prop first, then the `?redirect=` the guard added.
+   * Both are untrusted (the prop comes from `openAuthModal`, the query string from the URL), so
+   * the candidate is gated to a same-origin relative path before it is pushed or re-encoded into
+   * `/verify-otp?redirect=…`. An unsafe candidate becomes `null`, which both call sites below
+   * already treat as "go to the default landing route".
+   */
+  const resolveRedirect = () => {
+    const candidate =
+      redirectTo ??
+      (typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('redirect')
+        : null);
+    return isValidRedirect(candidate) ? candidate : null;
+  };
 
   const onSubmit = async (data: LoginInput) => {
     try {
@@ -81,10 +93,9 @@ export function LoginForm({
         return;
       }
 
-      const redirect = resolveRedirect();
-      // Navigate immediately. The previous version waited 500ms via setTimeout, which only
-      // delayed the screen the user was already waiting for.
-      router.push(redirect ? `/verify-otp?redirect=${encodeURIComponent(redirect)}` : '/verify-otp');
+      // The standalone /login page redirects into the modal, so this page branch is rarely hit;
+      // when it is, verification happens in the popup rather than on a deleted /verify-otp page.
+      openOtpModal({ redirectTo: resolveRedirect() ?? undefined });
     } catch {
       // Rendered from the store below.
     }

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +9,8 @@ import { Input } from '@/components/ui/Input';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/auth.store';
 import type { AuthFormProps } from './LoginForm';
+import { isValidRedirect } from '@/lib/auth/redirect';
+import { useOtpModalStore } from '@/store/otp-modal.store';
 
 interface SignupFormProps extends AuthFormProps {
   /** Lets the modal swap to its own OTP step instead of navigating to /verify-otp. */
@@ -27,14 +28,28 @@ interface SignupFormProps extends AuthFormProps {
 export function SignupForm({
   variant = 'page',
   redirectTo,
+  onSuccess,
   onModeChange,
   onOtpSent,
 }: SignupFormProps) {
-  const router = useRouter();
   const signup = useAuthStore((state) => state.signup);
   const isLoading = useAuthStore((state) => state.isLoading);
   const error = useAuthStore((state) => state.error);
+  const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
+  // The ACCOUNT_NOT_FOUND login flow: the identifier was proven by a consumed OTP
+  // session the store is holding, so pre-fill it and let signup carry the voucher.
+  const verifiedOtpSessionId = useAuthStore((state) => state.verifiedOtpSessionId);
+  const pendingIdentifier = useAuthStore((state) => state.pendingIdentifier);
+  const pendingChannel = useAuthStore((state) => state.otpChannel);
   const [passwordStrength, setPasswordStrength] = useState(0);
+
+  const carryingForward = verifiedOtpSessionId != null;
+  const carriedEmail =
+    carryingForward && pendingIdentifier?.includes('@') ? pendingIdentifier : '';
+  const carriedPhone =
+    carryingForward && pendingIdentifier && !pendingIdentifier.includes('@')
+      ? pendingIdentifier
+      : '';
 
   const {
     register,
@@ -43,7 +58,11 @@ export function SignupForm({
     formState: { errors },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { otpChannel: 'phone' },
+    defaultValues: {
+      otpChannel: carryingForward ? (pendingChannel ?? 'phone') : 'phone',
+      phone: carriedPhone,
+      email: carriedEmail || undefined,
+    },
   });
 
   const password = watch('password');
@@ -65,6 +84,9 @@ export function SignupForm({
 
   const onSubmit = async (data: SignupInput) => {
     try {
+      // Always returns an OTP session and NO tokens: signup never logs the user in, and the
+      // account is unusable until the code is verified on the next step — even when the user
+      // arrived from the ACCOUNT_NOT_FOUND flow, they still verify here.
       await signup({
         fullName: data.fullName,
         phone: data.phone,
@@ -78,16 +100,16 @@ export function SignupForm({
         return;
       }
 
-      const redirect =
+      const rawRedirect =
         redirectTo ??
         (typeof window !== 'undefined'
           ? new URLSearchParams(window.location.search).get('redirect')
           : null);
+      const redirect = isValidRedirect(rawRedirect) ? rawRedirect : null;
 
-      // To verification, not to the destination: there are no tokens yet.
-      router.push(
-        redirect ? `/verify-otp?redirect=${encodeURIComponent(redirect)}` : '/verify-otp'
-      );
+      // Verification happens in the popup, not on a full page. Note signup returns no tokens,
+      // so the phone must still be verified before the account is usable.
+      openOtpModal({ redirectTo: redirect ?? undefined });
     } catch {
       // Rendered from the store below.
     }

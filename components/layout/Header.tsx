@@ -32,11 +32,17 @@ export function Header() {
 
   const [policiesOpen, setPoliciesOpen] = useState(false);
   const policiesRef = useRef<HTMLDivElement>(null);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const supportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
-      if (!policiesRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!policiesRef.current?.contains(target)) {
         setPoliciesOpen(false);
+      }
+      if (!supportRef.current?.contains(target)) {
+        setSupportOpen(false);
       }
     };
     document.addEventListener('pointerdown', onPointerDown);
@@ -198,10 +204,35 @@ export function Header() {
                 </div>
               )}
             </div>
-            <Link className="flex items-center gap-1 hover:text-primary" href="/trust/lab-reports">
-              Support
-              <ChevronDown aria-hidden="true" className="h-4 w-4" />
-            </Link>
+            <div ref={supportRef} className="relative">
+              <button
+                onClick={() => setSupportOpen(!supportOpen)}
+                className="flex items-center gap-1 hover:text-primary font-semibold transition"
+                aria-expanded={supportOpen}
+                type="button"
+              >
+                Support
+                <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              </button>
+              {supportOpen && (
+                <div className="absolute left-0 top-[calc(100%+12px)] z-50 w-48 rounded-lg border border-outline-variant bg-white p-1.5 shadow-md">
+                  <Link
+                    href="/support/customer"
+                    onClick={() => setSupportOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Customer Support
+                  </Link>
+                  <Link
+                    href="/support/seller"
+                    onClick={() => setSupportOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Seller Support
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link
               className="ml-auto rounded-lg bg-primary px-8 py-3 text-sm font-bold text-on-primary transition hover:bg-primary/90"
               href="/products?labVerified=true"

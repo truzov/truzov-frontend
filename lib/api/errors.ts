@@ -21,6 +21,11 @@ export const ERROR_CODES = {
   CONFLICT: 'CONFLICT',
   ACCOUNT_DISABLED: 'ACCOUNT_DISABLED',
   ACCOUNT_NOT_VERIFIED: 'ACCOUNT_NOT_VERIFIED',
+  /**
+   * A correct OTP was submitted for an identifier with no account. Only the identifier's owner
+   * can reach it (they had to receive the code), so the UI may offer signup prefilled with it.
+   */
+  ACCOUNT_NOT_FOUND: 'ACCOUNT_NOT_FOUND',
   PHONE_NOT_VERIFIED: 'PHONE_NOT_VERIFIED',
   REFRESH_TOKEN_INVALID: 'REFRESH_TOKEN_INVALID',
   OTP_INVALID: 'OTP_INVALID',

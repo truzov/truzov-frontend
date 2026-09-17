@@ -9,6 +9,7 @@ import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { CartScreenSkeleton } from '@/components/ui/Skeleton';
 import { useCompleteMockPayment, useOrder } from '@/hooks/api/useCommerce';
 import { formatCurrency } from '@/lib/utils/money';
+import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useAuthStore } from '@/store/auth.store';
 
 /**
@@ -22,10 +23,10 @@ import { useAuthStore } from '@/store/auth.store';
  *    scope, and a real gateway collects them on its own page precisely so this one never does.
  *    A test screen that grows a fake card form is how that boundary quietly gets crossed.
  *
- * 2. Nothing here decides whether the order is paid. Both buttons ask the backend to deliver a
- *    signed webhook to itself; the webhook writes the outcome, and the confirmation screen then
- *    re-reads it. This screen never guesses, which is why it navigates away instead of rendering
- *    a success message of its own.
+ * 2. Nothing here decides whether the order is paid. Both buttons call the mock provider's
+ *    settle endpoint, which runs the SAME conditional order transition a captured webhook
+ *    event runs; the confirmation screen then re-reads the order. This screen never guesses,
+ *    which is why it navigates away instead of rendering a success message of its own.
  */
 export function MockPaymentScreen() {
   const params = useParams<{ sessionId: string }>();
@@ -37,6 +38,7 @@ export function MockPaymentScreen() {
 
   const authStatus = useAuthStore((state) => state.status);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
 
   const { data: order, isLoading, isError, error, refetch } = useOrder(orderId);
   const complete = useCompleteMockPayment();
@@ -49,10 +51,12 @@ export function MockPaymentScreen() {
     return (
       <EmptyState
         action="Sign in"
-        href="/login"
         icon={LogIn}
         message="Sign in to complete this payment. The order is already placed and is not lost."
         title="You are signed out"
+        // Modal so the user stays on this payment page: signing in re-renders it
+        // authenticated, with the session id still in the URL.
+        onAction={() => openAuthModal()}
       />
     );
   }

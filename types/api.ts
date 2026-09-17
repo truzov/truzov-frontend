@@ -98,13 +98,14 @@ export interface SignupRequest {
 
 export interface SignupResponse {
   userId: string;
-  otpSessionId: string;
+  /** Null when a carried-forward verified session skipped the signup OTP. */
+  otpSessionId: string | null;
   otpRequired: boolean;
   otpChannel: OtpChannel;
   expiresInSeconds: number;
 }
 
-export type OtpPurpose = 'login' | 'verify';
+export type OtpPurpose = 'login' | 'verify' | 'phone_change';
 
 export interface OtpSendRequest {
   identifier: string;
@@ -263,6 +264,14 @@ export interface ProductSummaryDto {
   isNewArrival: boolean;
   tags: string[];
   images: ProductImageDto[];
+  /**
+   * Optional and additive: today's backend does NOT send variants on listing responses
+   * (product list, search, home blocks). Card-level variant selection is therefore
+   * opt-in on the data — a card renders a variant selector only when this collection
+   * arrives with 2 or more entries, and degrades to a simple-product card otherwise.
+   * `ProductDetailDto` re-declares it as required, which stays type-compatible.
+   */
+  variants?: ProductVariantDto[];
 }
 
 /**
@@ -362,6 +371,7 @@ export interface AddressDto {
   city?: string;
   state?: string;
   pincode?: string;
+  landmark?: string;
   isDefault: boolean;
 }
 
@@ -376,6 +386,7 @@ export interface CreateAddressRequest {
   state?: string;
   /** Six digits when supplied. */
   pincode?: string;
+  landmark?: string;
   isDefault?: boolean;
 }
 

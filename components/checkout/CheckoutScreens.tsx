@@ -1,6 +1,8 @@
 'use client';
 
-import { AlertCircle, MapPin, Phone, Plus, ShieldCheck } from 'lucide-react';
+import { AlertCircle, MapPin, Minus, Phone, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
@@ -19,11 +21,13 @@ import {
   useOrder,
 } from '@/hooks/api/useCommerce';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
+import { useGuestCartStore, type GuestCartItem } from '@/lib/cart/guest-cart.store';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency } from '@/lib/utils/money';
 import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useCheckoutStore } from '@/store/checkout.store';
+import { useOtpModalStore } from '@/store/otp-modal.store';
 import type { AddressDto } from '@/types/api';
 
 /**
@@ -56,19 +60,11 @@ export function BagScreen() {
     return <CartScreenSkeleton />;
   }
 
-  // The cart is bearer-only, so a guest has no cart to show rather than an empty one.
+  // Guests see their local bag instead of a login wall. Checkout still requires an account
+  // (orders are user-owned server-side), so the CTA signs in first; the merge-on-login replays
+  // these lines into the server cart and this same page then shows the merged result.
   if (!isLoggedIn) {
-    return (
-      <div className="mx-auto max-w-4xl py-10">
-        <EmptyState
-          action="Sign In"
-          href="/login?redirect=%2Fcart"
-          icon={ShieldCheck}
-          message="Your bag is saved to your account, so sign in to see it."
-          title="Sign in to view your bag"
-        />
-      </div>
-    );
+    return <GuestBagScreen />;
   }
 
   if (isLoading) {
@@ -142,6 +138,172 @@ export function BagScreen() {
 }
 
 /* -------------------------------------------------------------- address step */
+
+/**
+ * The anonymous bag: localStorage lines with a display snapshot.
+ *
+ * Prices here are the snapshot's, not the server's — the login-time merge re-prices and
+ * stock-checks every line through `POST /cart/items`, so what the user sees is an estimate and
+ * the CTA deliberately says so rather than implying a total the server never confirmed.
+ */
+function GuestBagScreen() {
+  const items = useGuestCartStore((state) => state.items);
+  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
+
+  // Hydrate from localStorage once on the client; SSR renders an empty frame either way.
+  useEffect(() => {
+    useGuestCartStore.getState().hydrate();
+  }, []);
+
+  if (items.length === 0) {
+    return (
+      <div className="mx-auto max-w-5xl">
+        <EmptyState
+          action="Start Shopping"
+          href="/products"
+          icon={AlertCircle}
+          message="Your bag feels light. Browse verified staples and add a few favorites."
+          title="Your bag is empty"
+        />
+      </div>
+    );
+  }
+
+  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+  const subtotal = items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
+
+  return (
+    <div className="bg-surface-raised">
+      <div className="mx-auto max-w-7xl px-4 py-6 lg:py-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <main className="grid gap-4">
+            <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
+              <h1 className="font-heading text-2xl">
+                {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag
+              </h1>
+            </section>
+
+            <div className="grid gap-3">
+              {items.map((item) => (
+                <GuestBagItemRow key={`${item.productId}:${item.variantId ?? ''}`} item={item} />
+              ))}
+            </div>
+          </main>
+
+          <aside className="h-fit rounded-md border border-surface-border bg-surface-base p-5 shadow-xs">
+            <h2 className="text-lg font-bold">Price Details</h2>
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-text-secondary">
+                  Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})
+                </span>
+                <span className="font-semibold">{formatCurrency(subtotal)}</span>
+              </div>
+              <p className="text-xs text-text-secondary">
+                Prices shown are from when you added each item; the total is confirmed at
+                sign-in.
+              </p>
+            </div>
+            <Button
+              className="mt-6 w-full"
+              variant="primary"
+              onClick={() => openAuthModal({ mode: 'login', redirectTo: '/cart' })}
+            >
+              Sign In to Continue
+            </Button>
+            <p className="mt-3 text-center text-xs text-text-secondary">
+              Your bag is saved to this device and merges into your account when you sign in.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A guest line: same layout as the server row, local mutations, no stock/line id. */
+function GuestBagItemRow({ item }: { item: GuestCartItem }) {
+  const setQuantity = useGuestCartStore((state) => state.setQuantity);
+  const remove = useGuestCartStore((state) => state.remove);
+
+  return (
+    <article className="grid grid-cols-[96px_1fr] gap-3 rounded-md border border-surface-border bg-surface-base p-3 shadow-xs sm:grid-cols-[132px_1fr] sm:p-4">
+      <Link
+        className="relative aspect-[4/5] overflow-hidden rounded-md bg-surface-raised"
+        href={`/products/${item.slug}`}
+      >
+        {item.imageUrl ? (
+          <Image
+            alt={item.name}
+            className="object-cover"
+            fill
+            sizes="132px"
+            src={item.imageUrl}
+          />
+        ) : null}
+      </Link>
+
+      <div className="min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <Link className="font-bold hover:text-brand-primary" href={`/products/${item.slug}`}>
+            {item.name}
+          </Link>
+          <Button
+            aria-label={`Remove ${item.name}`}
+            size="icon"
+            variant="ghost"
+            onClick={() => remove(item.productId, item.variantId)}
+          >
+            <Trash2 aria-hidden="true" className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="inline-flex items-center rounded-sm border border-surface-border bg-surface-raised">
+            <Button
+              aria-label="Decrease quantity"
+              disabled={item.quantity <= 1}
+              size="icon"
+              variant="ghost"
+              onClick={() => setQuantity(item.productId, item.variantId, item.quantity - 1)}
+            >
+              <Minus aria-hidden="true" className="h-4 w-4" />
+            </Button>
+            <span className="w-14 text-center text-sm font-bold">Qty: {item.quantity}</span>
+            <Button
+              aria-label="Increase quantity"
+              size="icon"
+              variant="ghost"
+              onClick={() => setQuantity(item.productId, item.variantId, item.quantity + 1)}
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+            </Button>
+          </div>
+          <span className="text-xs font-semibold text-text-secondary">
+            {formatCurrency(item.unitPrice)} each
+          </span>
+        </div>
+
+        {/* Local arithmetic on the snapshot price — the only total the guest flow can show. */}
+        <div className="mt-4">
+          <span className="text-lg font-bold">
+            {formatCurrency(item.unitPrice * item.quantity)}
+          </span>
+        </div>
+
+        <div className="mt-3">
+          <button
+            className="text-sm font-semibold text-text-secondary hover:text-brand-primary"
+            type="button"
+            onClick={() => remove(item.productId, item.variantId)}
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export function AddressScreen() {
   const router = useRouter();
@@ -264,6 +426,7 @@ export function PaymentScreen() {
   const user = useAuthStore((state) => state.user);
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
+  const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
   const { addresses } = useAddresses();
   const placeOrder = useCheckout();
   const openPayment = useCreatePaymentSession();
@@ -316,7 +479,7 @@ export function PaymentScreen() {
   /**
    * The documented precondition: checkout requires a VERIFIED phone. Checked here so the user is
    * told before they press the button — otherwise the API client's 403 handler bounces them to
-   * /verify-otp mid-action, which feels like a crash.
+   * a verification popup mid-action, which feels like a crash.
    */
   const phoneUnverified = user ? !user.phoneVerified : false;
 
@@ -397,7 +560,7 @@ export function PaymentScreen() {
               className="mt-3"
               size="sm"
               variant="outline"
-              onClick={() => router.push('/verify-otp?redirect=%2Fcheckout%2Fpayment')}
+              onClick={() => openOtpModal({ redirectTo: '/checkout/payment' })}
             >
               Verify now
             </Button>
@@ -679,14 +842,18 @@ function BlockedCheckoutEmptyState() {
 }
 
 function BlockedCheckoutAuthState() {
+  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
+
   return (
     <div className="mx-auto max-w-4xl py-10">
       <EmptyState
         action="Sign In"
-        href="/login?redirect=%2Fcart"
         icon={ShieldCheck}
         message="Sign in to continue to secure checkout."
         title="Authentication required"
+        // Modal, not a /login navigation: the user keeps their place in the flow
+        // (and their guest bag, which merges on sign-in) instead of a page change.
+        onAction={() => openAuthModal({ redirectTo: '/cart' })}
       />
     </div>
   );

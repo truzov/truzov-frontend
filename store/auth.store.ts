@@ -18,7 +18,11 @@ import {
   getRefreshToken,
   setSession,
 } from '@/lib/api/token-store';
-import type { OtpChannel, UpdateProfileRequest, UserProfileDto } from '@/types/api';
+import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
+import { useAuthModalStore } from '@/store/auth-modal.store';
+import { useCheckoutStore } from '@/store/checkout.store';
+import { useUiStore, type ToastMessage } from '@/store/ui.store';
+import type { OtpChannel, SignupResponse, UpdateProfileRequest, UserProfileDto } from '@/types/api';
 
 /**
  * Authentication state, backed entirely by the real API.
@@ -66,6 +70,13 @@ interface AuthState {
   pendingIdentifier: string | null;
   /** Server-provided lifetime; drives the resend cooldown instead of a hardcoded 30s. */
   otpExpiresInSeconds: number | null;
+  /**
+   * A CONSUMED session whose code was verified against an identifier that has no
+   * account (404 ACCOUNT_NOT_FOUND). It vouches for that identifier at signup for
+   * 15 minutes server-side, so the signup form that follows is born verified with
+   * no second code. Cleared on signup, login, or logout.
+   */
+  verifiedOtpSessionId: string | null;
 
   restoreSession: () => Promise<void>;
   signup: (input: {
@@ -74,7 +85,7 @@ interface AuthState {
     password: string;
     email?: string;
     otpChannel?: OtpChannel;
-  }) => Promise<void>;
+  }) => Promise<SignupResponse>;
   sendOtp: (identifier: string, purpose?: 'login' | 'verify') => Promise<void>;
   verifyOtp: (code: string) => Promise<void>;
   loginWithPassword: (identifier: string, password: string) => Promise<void>;
@@ -97,11 +108,42 @@ function toErrorState(error: unknown): Pick<AuthState, 'error' | 'errorCode' | '
   };
 }
 
+/**
+ * The toast for a failed login attempt.
+ *
+ * The title always carries the fixed wording and the server's words go in the toast's `message`
+ * slot, which is why "show the backend message" and "read 'Login failed'" do not fight each
+ * other — both are present. `status === 0` is the client-side marker for a request that never
+ * reached the server (NETWORK_ERROR / TIMEOUT from `lib/api/client.ts`).
+ *
+ * Nothing local is interpolated: the output text is only ever one of the two fixed titles plus a
+ * prefix of the error's own message, so no access token, password or OTP code can reach a toast.
+ * The 200-character cap is a display bound, not a sanitiser — `Toaster` renders it as JSX text.
+ *
+ * Exported so the property test can reach it directly.
+ */
+export function loginFailureToast(error: unknown): Omit<ToastMessage, 'id'> {
+  const api = isApiError(error) ? error : null;
+
+  if (api?.status === 0) {
+    return { type: 'error', title: 'Network error, please try again' };
+  }
+
+  const message = api?.message?.trim();
+
+  return {
+    type: 'error',
+    title: 'Login failed',
+    message: message ? message.slice(0, 200) : undefined,
+  };
+}
+
 const CLEARED_OTP = {
   otpSessionId: null,
   otpChannel: null,
   pendingIdentifier: null,
   otpExpiresInSeconds: null,
+  verifiedOtpSessionId: null,
 } as const;
 
 /**
@@ -167,15 +209,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         otpChannel,
       });
 
-      // Signup returns NO tokens. The account exists but is unusable until the OTP is
-      // verified, so this must not set an authenticated state.
+      // Signup returns NO tokens and ALWAYS requires OTP verification: the account is created
+      // unverified and stays unusable (login refuses it with ACCOUNT_NOT_VERIFIED) until the
+      // code sent to the chosen channel is entered on the next step. Even when the user came
+      // from the ACCOUNT_NOT_FOUND flow, they still verify here — no code is skipped.
       set({
         isLoading: false,
         otpSessionId: response.otpSessionId,
         otpChannel: response.otpChannel,
         pendingIdentifier: otpChannel === 'email' ? (email?.trim() ?? phone) : phone,
         otpExpiresInSeconds: response.expiresInSeconds,
+        verifiedOtpSessionId: null,
       });
+      return response;
     } catch (error) {
       set(toErrorState(error));
       throw error;
@@ -230,12 +276,25 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         isLoading: false,
         ...CLEARED_OTP,
       });
+      useUiStore.getState().addToast({ type: 'success', title: 'Login successful' });
     } catch (error) {
+      useUiStore.getState().addToast(loginFailureToast(error));
+
       // OTP_EXPIRED (410) means the session is spent, so drop it — leaving it in place would
       // let the user keep submitting codes against a session that can never succeed. A wrong
       // code (400 OTP_INVALID) keeps the session so they can simply try again.
       if (isApiError(error) && error.code === 'OTP_EXPIRED') {
         set({ ...toErrorState(error), otpSessionId: null });
+      } else if (isApiError(error) && error.code === 'ACCOUNT_NOT_FOUND') {
+        // The code was CORRECT but the identifier has no account. The consumed session
+        // becomes a signup voucher: keep it and the identifier so the signup form the
+        // client switches to is pre-filled and born verified. The session itself can no
+        // longer verify anything, so otpSessionId goes.
+        set({
+          ...toErrorState(error),
+          otpSessionId: null,
+          verifiedOtpSessionId: otpSessionId,
+        });
       } else {
         set(toErrorState(error));
       }
@@ -257,7 +316,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         isLoading: false,
         ...CLEARED_OTP,
       });
+      useUiStore.getState().addToast({ type: 'success', title: 'Login successful' });
     } catch (error) {
+      useUiStore.getState().addToast(loginFailureToast(error));
       set(toErrorState(error));
       throw error;
     }
@@ -283,7 +344,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         isLoading: false,
         ...CLEARED_OTP,
       });
+      useUiStore.getState().addToast({ type: 'success', title: 'Login successful' });
     } catch (error) {
+      useUiStore.getState().addToast(loginFailureToast(error));
       set(toErrorState(error));
       throw error;
     }
@@ -323,9 +386,16 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // Deliberately ignored. A network failure must never leave the user stuck in a
       // logged-in UI; local teardown below is what they asked for.
     } finally {
-      // `silent` because the caller navigates itself — emitting session-cleared here would
-      // race with that and could redirect to /login?redirect=... instead of home.
-      clearSession('logout', { silent: true });
+      // NOT `silent`: `session-cleared` is the only thing that makes AuthEventBridge run
+      // `queryClient.clear()`, and without it an explicit logout left the previous user's cart,
+      // orders, addresses and wishlist readable in the React Query cache. The bridge clears the
+      // cache BEFORE its `if (event.reason === 'logout') return;`, so emitting here adds no
+      // competing navigation.
+      clearSession('logout');
+      // The rest of the user-visible state that survives a token clear on its own.
+      useGuestCartStore.getState().clear();
+      useCheckoutStore.getState().resetCheckout();
+      useAuthModalStore.getState().closeAuthModal(); // drops any retained Buy_Now_Intent (R5.9)
       set({
         status: 'anonymous',
         user: null,
@@ -335,6 +405,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         errorCode: null,
         ...CLEARED_OTP,
       });
+      useUiStore.getState().addToast({ type: 'success', title: 'Logged out' });
     }
   },
 

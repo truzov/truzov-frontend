@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ERROR_CODES } from '@/lib/api/errors';
 import { useAuthStore } from '@/store/auth.store';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { LoginForm } from './LoginForm';
@@ -41,6 +42,7 @@ export function AuthForm({
   onModeChange,
 }: AuthFormProps) {
   const clearError = useAuthStore((state) => state.clearError);
+  const errorCode = useAuthStore((state) => state.errorCode);
   const [step, setStep] = useState<AuthStep>('form');
 
   // Switching between login and signup resets the flow, so a stale OTP step or a previous
@@ -50,10 +52,28 @@ export function AuthForm({
     clearError();
   }, [clearError, mode]);
 
+  // A verified code for an identifier that has no account: the server answered 404
+  // ACCOUNT_NOT_FOUND, and the store kept the consumed session as a signup voucher.
+  // Switch to signup (the modal re-renders in that mode; the mode effect above resets
+  // the step and the error) — the signup form pre-fills the verified identifier and
+  // carries the session, so the account is born verified with no second code.
+  const accountNotFound = errorCode === ERROR_CODES.ACCOUNT_NOT_FOUND;
+
+  useEffect(() => {
+    if (accountNotFound) {
+      setStep('form');
+      onModeChange?.('signup');
+    }
+  }, [accountNotFound, onModeChange]);
+
   if (step === 'otp') {
     return (
       <div className="grid gap-4">
-        <OTPVerification onVerified={onSuccess} />
+        <OTPVerification
+          onVerified={onSuccess}
+          variant={variant}
+          onSwitchMode={onModeChange}
+        />
         <button
           className="w-full text-center text-sm font-semibold text-accent-link hover:underline"
           type="button"
@@ -89,7 +109,10 @@ export function AuthForm({
           redirectTo={redirectTo}
           variant={variant}
           onModeChange={onModeChange}
-          // Signup returns no tokens, so success here means "code sent", not "signed in".
+          onSuccess={onSuccess}
+          // Signup returns no tokens, so success here means "code sent", not "signed in" —
+          // unless a carried-forward session already proved the identifier, in which case
+          // SignupForm signs in with the password it just collected.
           onOtpSent={variant === 'modal' ? () => setStep('otp') : undefined}
         />
       )}

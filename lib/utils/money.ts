@@ -1,3 +1,5 @@
+import type { ProductVariantDto } from '@/types/api';
+
 /**
  * Money formatting.
  *
@@ -34,4 +36,19 @@ export function calculateDiscount(price: number, mrp: number) {
   }
 
   return Math.round((1 - price / mrp) * 100);
+}
+
+
+/**
+ * Price to display for a product with a variant selected: base price plus the selected variant's
+ * `priceModifier`. An absent variant or an absent modifier both mean "no adjustment".
+ *
+ * One shared helper so the product card and the product detail page cannot arrive at different
+ * numbers for the same product and variant.
+ *
+ * Display only. This value is never sent in a request, and it never replaces the server's
+ * `discount`, `subtotal`, `lineTotal`, or any order total — those are read from the API response.
+ */
+export function effectivePrice(basePrice: number, variant?: ProductVariantDto | null) {
+  return basePrice + (variant?.priceModifier ?? 0);
 }

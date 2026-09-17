@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createAddress, getAddresses } from '@/lib/api/endpoints/addresses';
+import { createAddress, getAddresses, updateAddress } from '@/lib/api/endpoints/addresses';
 import { checkout, getOrder, listOrders, updateOrderStatus } from '@/lib/api/endpoints/orders';
 import { completeMockPayment, createPaymentSession } from '@/lib/api/endpoints/payments';
 import { errorMessage } from '@/lib/api/errors';
@@ -46,6 +46,26 @@ export function useCreateAddress() {
     },
     onError: (error) => {
       addToast({ type: 'error', title: 'Could not save address', message: errorMessage(error) });
+    },
+  });
+}
+
+/** Edits a saved address; the response updates the list cache in place. */
+export function useUpdateAddress() {
+  const queryClient = useQueryClient();
+  const addToast = useUiStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: ({ addressId, body }: { addressId: string; body: CreateAddressRequest }) =>
+      updateAddress(addressId, body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<AddressDto[]>(queryKeys.addresses(), (current) =>
+        (current ?? []).map((address) => (address.id === updated.id ? updated : address))
+      );
+      addToast({ type: 'success', title: 'Address updated' });
+    },
+    onError: (error) => {
+      addToast({ type: 'error', title: 'Could not update address', message: errorMessage(error) });
     },
   });
 }

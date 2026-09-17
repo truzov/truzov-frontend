@@ -47,6 +47,25 @@ export function verifyOtp(body: OtpVerifyRequest): Promise<TokenResponse> {
   return apiRequest<TokenResponse>('/auth/otp/verify', { method: 'POST', body });
 }
 
+/**
+ * Sends the code that authorises a phone-number change. Unlike `sendOtp`, this is an
+ * AUTHENTICATED call: purpose=phone_change acts on the caller's account, so the server
+ * needs to know who is asking (401 otherwise). The identifier must be a phone number
+ * that is not the caller's current one and not already registered (409).
+ */
+export function sendPhoneChangeOtp(body: OtpSendRequest): Promise<OtpSendResponse> {
+  return apiRequest<OtpSendResponse>('/auth/otp/send', { method: 'POST', auth: true, body });
+}
+
+/**
+ * Verifies the phone-change code. Also authenticated: the server applies the new
+ * number only when the caller is the same user who requested the change, and
+ * answers 410 for anyone else — a leaked session id is not a phone-change ticket.
+ */
+export function verifyPhoneChangeOtp(body: OtpVerifyRequest): Promise<TokenResponse> {
+  return apiRequest<TokenResponse>('/auth/otp/verify', { method: 'POST', auth: true, body });
+}
+
 export function login(body: LoginRequest): Promise<TokenResponse> {
   return apiRequest<TokenResponse>('/auth/login', { method: 'POST', body });
 }

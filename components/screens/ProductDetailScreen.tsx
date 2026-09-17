@@ -23,13 +23,14 @@ import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { Rating } from '@/components/ui/Rating';
 import { ProductDetailScreenSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { ProductGrid } from '@/components/product/ProductGrid';
+import { VariantPills } from '@/components/product/VariantPills';
 import { useCategories, useProduct, useProductReviews, useRelatedProducts } from '@/hooks/api/useCatalog';
-import { useAddToCart } from '@/hooks/api/useCart';
+import { useAddToCart, useBuyNow } from '@/hooks/api/useCart';
 import { useIsWishlisted, useToggleWishlist } from '@/hooks/api/useWishlist';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/utils/cn';
-import { formatCurrency } from '@/lib/utils/money';
-import { displayImages, humaniseSlug } from '@/lib/utils/product';
+import { effectivePrice, formatCurrency } from '@/lib/utils/money';
+import { defaultVariantId, displayImages, humaniseSlug } from '@/lib/utils/product';
 import type { LabMetricStatus } from '@/types/api';
 
 type Tab = 'Product Details' | 'Lab Report' | 'Reviews';
@@ -57,9 +58,12 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const [tab, setTab] = useState<Tab>('Product Details');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>();
+  // Only the user's explicit choice is stored; the effective selection is derived below, so
+  // there is nothing to reset when the product changes and no toggle-off on a second click.
+  const [chosenVariantId, setChosenVariantId] = useState<string>();
 
-  const { add, isPending: isAdding } = useAddToCart(`/products/${slug}`);
+  const { add, isPending: isAdding } = useAddToCart();
+  const { buyNow, isPending: isBuyingNow } = useBuyNow();
   const wishlist = useToggleWishlist(`/products/${slug}`);
   const isInWishlist = useIsWishlisted(product?.id ?? '');
 
@@ -110,16 +114,22 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
     categories?.find((category) => category.slug === product.categorySlug)?.name ??
     humaniseSlug(product.categorySlug);
 
+  // Falls back to the first in-stock variant (R3.5), so Add to Cart is never blocked on a
+  // product that has a selectable variant, and `undefined` when nothing is selectable.
+  const selectedVariantId = chosenVariantId ?? defaultVariantId(product.variants);
   const selectedVariant = product.variants?.find((variant) => variant.id === selectedVariantId);
   /**
-   * Indicative unit price for the chosen variant, from the product's own documented fields.
-   *
-   * This is product data (base price plus the variant's own modifier), NOT a checkout total —
-   * the cart and order always display the server's `unitPrice` / `lineTotal`. Showing the base
-   * price while a +₹700 variant is selected would be the more misleading option.
+   * A variant product with nothing selectable cannot be added: there is no variant id to send.
+   * The "Currently out of stock" line above already explains it.
    */
-  const unitPrice = product.price + (selectedVariant?.priceModifier ?? 0);
-  const hasSaving = product.mrp > product.price;
+  const noSelectableVariant = Boolean(product.variants?.length) && !selectedVariantId;
+  /**
+   * `mrp` and `discount` are not variant-adjusted server-side, so with a +₹700 variant selected
+   * the server's pair would render as a bogus "25% off" against the adjusted price. The saving
+   * block is therefore only shown while the modifier is zero. `discount` is still the server's
+   * number and is never recomputed here.
+   */
+  const hasSaving = (selectedVariant?.priceModifier ?? 0) === 0 && product.mrp > product.price;
   // Stock ceiling for the quantity stepper. The server enforces its own per-line cap
   // (max-item-quantity) regardless; this only stops the obvious case locally.
   const maxQuantity = Math.max(1, product.stockCount || 1);
@@ -200,7 +210,10 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
 
             <div className="flex flex-wrap items-baseline gap-2">
               <span className="text-[32px] font-bold leading-none text-on-surface">
-                {formatCurrency(unitPrice)}
+                {/* Indicative unit price for the selected variant, from the product's own
+                    documented fields. Display only — the cart and order always show the
+                    server's `unitPrice` / `lineTotal`. */}
+                {formatCurrency(effectivePrice(product.price, selectedVariant))}
               </span>
               {/* Only shown when there is a genuine saving. Seeded and real products can have
                   mrp === price, and a struck-through identical price with "0% OFF" reads as a
@@ -417,7 +430,9 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
 
           <aside className="grid gap-4 lg:sticky lg:top-36">
             <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-md">
-              <p className="text-xl font-medium">{formatCurrency(unitPrice)}</p>
+              <p className="text-xl font-medium">
+                {formatCurrency(effectivePrice(product.price, selectedVariant))}
+              </p>
               {/* Real stock state. This block previously read "In stock. Ready to ship."
                   unconditionally, including for products with stockCount 0. */}
               {product.inStock ? (
@@ -437,29 +452,12 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   <span className="text-sm font-medium text-on-surface-variant">
                     {product.variants[0]?.label ?? 'Option'}
                   </span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {product.variants.map((variant) => (
-                      <button
-                        key={variant.id}
-                        aria-pressed={selectedVariantId === variant.id}
-                        className={cn(
-                          'rounded-lg border px-3 py-2 text-sm font-medium transition',
-                          selectedVariantId === variant.id
-                            ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-outline-variant hover:border-primary/50'
-                        )}
-                        onClick={() =>
-                          // Second click clears the selection, so a user can get back to the
-                          // base product without reloading.
-                          setSelectedVariantId((current) =>
-                            current === variant.id ? undefined : variant.id
-                          )
-                        }
-                        type="button"
-                      >
-                        {variant.value}
-                      </button>
-                    ))}
+                  <div className="mt-2">
+                    <VariantPills
+                      onSelect={setChosenVariantId}
+                      selectedId={selectedVariantId}
+                      variants={product.variants}
+                    />
                   </div>
                 </div>
               ) : null}
@@ -497,7 +495,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               <div className="mt-6 grid gap-3">
                 <Button
                   className="h-12 w-full rounded-full bg-primary text-base text-on-primary hover:bg-primary/90"
-                  disabled={!product.inStock || isAdding}
+                  disabled={!product.inStock || isAdding || noSelectableVariant}
                   loading={isAdding}
                   onClick={() =>
                     add({
@@ -505,6 +503,9 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                       productName: product.name,
                       variantId: selectedVariantId,
                       quantity,
+                      slug: product.slug,
+                      imageUrl: gallery[0]?.url,
+                      unitPrice: product.price,
                     })
                   }
                 >
@@ -512,18 +513,19 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   Add to Cart
                 </Button>
                 {/*
-                  "Buy Now" adds to the cart and then goes to checkout. It used to be a bare
-                  Link straight to /checkout/address, which skipped adding the item — so the
-                  user arrived at checkout without the product they had just chosen.
+                  "Buy Now" adds to the cart and then goes to checkout, via useBuyNow(). It used
+                  to call add(...) without ever navigating, so the user stayed on this page
+                  after clicking it — that was the defect; useBuyNow() owns the add+navigate
+                  sequencing (and the auth-modal detour when logged out).
                 */}
                 <Button
                   className="h-12 w-full rounded-full border-primary bg-surface-container text-base text-primary hover:bg-surface-container-high"
-                  disabled={!product.inStock || isAdding}
+                  disabled={!product.inStock || isBuyingNow || noSelectableVariant}
+                  loading={isBuyingNow}
                   variant="outline"
                   onClick={() =>
-                    add({
+                    buyNow({
                       productId: product.id,
-                      productName: product.name,
                       variantId: selectedVariantId,
                       quantity,
                     })

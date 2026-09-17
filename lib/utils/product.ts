@@ -1,4 +1,4 @@
-import type { ProductImageDto, ProductSummaryDto } from '@/types/api';
+import type { ProductImageDto, ProductSummaryDto, ProductVariantDto } from '@/types/api';
 
 /**
  * Presentation helpers for product DTOs. This is the adapter boundary the DTO types refuse to
@@ -62,4 +62,16 @@ export function humaniseSlug(slug: string): string {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+/**
+ * The variant a product should start with: the first one in the backend-returned order that is
+ * not explicitly out of stock. `undefined` when there is nothing selectable.
+ *
+ * The test is `inStock !== false`, not `inStock === true`. `inStock` is optional on the wire, so
+ * an absent flag means available — otherwise a listing response that omits it would disable
+ * every pill on the card.
+ */
+export function defaultVariantId(variants: ProductVariantDto[] | undefined): string | undefined {
+  return variants?.find((variant) => variant.inStock !== false)?.id;
 }

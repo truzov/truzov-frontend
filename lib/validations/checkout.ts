@@ -34,6 +34,8 @@ export const addressSchema = z.object({
   state: z.string().trim().min(2, 'Enter a state'),
   /** Optional free-text tag, e.g. "Home". Rendered on the address card. */
   label: z.string().trim().max(50).optional(),
+  /** Optional nearby landmark, mirrors the server's 200-char column. */
+  landmark: z.string().trim().max(200, 'Landmark must be at most 200 characters').optional(),
 });
 
 export type AddressInput = z.infer<typeof addressSchema>;

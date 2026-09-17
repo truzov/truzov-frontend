@@ -4,8 +4,30 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AuthEventBridge } from '@/components/auth/AuthEventBridge';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { VerifyPhoneModal } from '@/components/auth/VerifyPhoneModal';
 import { Toaster } from '@/components/ui/Toaster';
 import { isRetryableError } from '@/lib/api/errors';
+import { useGuestCartMerge } from '@/hooks/api/useCart';
+import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
+import { useEffect } from 'react';
+
+/**
+ * Mounted once, inside the query provider, above every page. Two jobs:
+ *
+ * 1. Hydrate the guest cart from localStorage (client-only; the store is empty during SSR).
+ * 2. After sign-in, replay the guest bag into the server cart (see `useGuestCartMerge`).
+ */
+function GuestCartSync() {
+  const hydrate = useGuestCartStore((state) => state.hydrate);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  useGuestCartMerge();
+
+  return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -40,8 +62,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       {/* Restores the session and owns auth-driven redirects. Must sit inside the query
           provider, since it clears the cache when a session dies. */}
       <AuthEventBridge />
+      <GuestCartSync />
       {children}
       <AuthModal />
+      <VerifyPhoneModal />
       <Toaster />
     </QueryClientProvider>
   );
