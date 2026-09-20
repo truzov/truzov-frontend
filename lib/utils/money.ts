@@ -1,8 +1,20 @@
-import type { CartItem } from '@/types';
+import type { ProductVariantDto } from '@/types/api';
 
-export const FREE_SHIPPING_THRESHOLD = 499;
-export const STANDARD_SHIPPING = 49;
+/**
+ * Money formatting.
+ *
+ * `calculateCartTotals`, `FREE_SHIPPING_THRESHOLD` and `STANDARD_SHIPPING` used to live here and are
+ * gone deliberately. They computed a subtotal, a coupon discount, a shipping fee and a total in the
+ * browser from hardcoded policy (10% capped at Rs 150; free over Rs 499, otherwise Rs 49) — none of
+ * which is the server's pricing. The API reference is explicit that checkout totals must not be
+ * calculated client-side, and the delivery fee is backend configuration
+ * (`truzov.commerce.delivery-fee`) surfaced on the order.
+ *
+ * Displayed money now comes from `CartDto.subtotal`, `CartItemDto.lineTotal`, and
+ * `OrderDto.subtotal` / `deliveryFee` / `totalAmount`.
+ */
 
+/** All product and order amounts from this API are integer RUPEES, so no minor-unit division. */
 export function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -11,6 +23,13 @@ export function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+/**
+ * Percentage off, for the rare place that needs it locally.
+ *
+ * Prefer `ProductSummaryDto.discount`, which the server computes — a product card must show the
+ * server's number so it cannot disagree with the price the server charges. This helper exists for
+ * display of arbitrary price pairs, not to second-guess the API.
+ */
 export function calculateDiscount(price: number, mrp: number) {
   if (mrp <= 0 || price >= mrp) {
     return 0;
@@ -19,11 +38,17 @@ export function calculateDiscount(price: number, mrp: number) {
   return Math.round((1 - price / mrp) * 100);
 }
 
-export function calculateCartTotals(items: CartItem[], coupon?: string) {
-  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const discount = coupon ? Math.min(150, Math.round(subtotal * 0.1)) : 0;
-  const shipping = subtotal - discount >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : STANDARD_SHIPPING;
-  const total = Math.max(0, subtotal - discount + shipping);
 
-  return { subtotal, discount, shipping, total };
+/**
+ * Price to display for a product with a variant selected: base price plus the selected variant's
+ * `priceModifier`. An absent variant or an absent modifier both mean "no adjustment".
+ *
+ * One shared helper so the product card and the product detail page cannot arrive at different
+ * numbers for the same product and variant.
+ *
+ * Display only. This value is never sent in a request, and it never replaces the server's
+ * `discount`, `subtotal`, `lineTotal`, or any order total — those are read from the API response.
+ */
+export function effectivePrice(basePrice: number, variant?: ProductVariantDto | null) {
+  return basePrice + (variant?.priceModifier ?? 0);
 }

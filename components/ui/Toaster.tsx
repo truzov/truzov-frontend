@@ -26,14 +26,14 @@ export function Toaster() {
   }, [removeToast, toasts]);
 
   return (
-    <div className="fixed right-4 top-4 z-[60] grid w-[calc(100%-2rem)] max-w-sm gap-3 sm:right-6">
+    <div className="pointer-events-none fixed right-4 top-4 z-[90] grid w-[calc(100%-2rem)] max-w-sm gap-3 sm:right-6">
       {toasts.map((toast) => {
         const Icon = icons[toast.type];
 
         return (
           <div
             key={toast.id}
-            className="rounded-md border border-surface-border bg-surface-base p-4 shadow-md"
+            className="pointer-events-auto rounded-md border border-surface-border bg-surface-base p-4 shadow-md"
           >
             <div className="flex gap-3">
               <Icon aria-hidden="true" className="mt-0.5 h-5 w-5 text-brand-primary" />

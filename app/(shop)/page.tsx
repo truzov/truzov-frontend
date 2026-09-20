@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
 import { HomeScreen } from '@/components/screens/CustomerScreens';
 
-export const revalidate = 60;
-
+/**
+ * No `revalidate` here any more. HomeScreen is a client component that fetches `GET /home`
+ * through React Query, so an ISR window on this server component would only have controlled how
+ * often the static shell regenerated — implying a caching behaviour that no longer exists.
+ * Freshness is now governed by the query's staleTime.
+ */
 export const metadata: Metadata = {
   title: 'Verified Organic Marketplace',
   description: 'Shop lab-verified organic products with transparent reports.',

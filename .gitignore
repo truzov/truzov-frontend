@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+# Playwright run output: traces, screenshots and videos of the last run. Regenerated on every
+# `playwright test`, machine-specific, and large — it is a build artefact, not a deliverable.
+/test-results/
+/playwright-report/
 
 # next.js
 /.next/
