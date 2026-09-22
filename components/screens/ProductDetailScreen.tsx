@@ -23,6 +23,7 @@ import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { Rating } from '@/components/ui/Rating';
 import { ProductDetailScreenSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { ProductGrid } from '@/components/product/ProductGrid';
+import { ProductImageLightbox } from '@/components/product/ProductImageLightbox';
 import { VariantPills } from '@/components/product/VariantPills';
 import { useCategories, useProduct, useProductReviews, useRelatedProducts } from '@/hooks/api/useCatalog';
 import { useAddToCart, useBuyNow } from '@/hooks/api/useCart';
@@ -58,6 +59,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const [tab, setTab] = useState<Tab>('Product Details');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   // Only the user's explicit choice is stored; the effective selection is derived below, so
   // there is nothing to reset when the product changes and no toggle-off on a second click.
   const [chosenVariantId, setChosenVariantId] = useState<string>();
@@ -141,14 +143,21 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
           <section className="grid gap-2">
             <div className="relative aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white">
               {selectedImage ? (
-                <Image
-                  alt={selectedImage.alt}
-                  className="object-cover"
-                  fill
-                  priority
-                  sizes="(min-width: 1024px) 40vw, 100vw"
-                  src={selectedImage.url}
-                />
+                <button
+                  aria-label={`View full image: ${selectedImage.alt}`}
+                  className="relative block h-full w-full"
+                  type="button"
+                  onClick={() => setLightboxOpen(true)}
+                >
+                  <Image
+                    alt={selectedImage.alt}
+                    className="object-cover"
+                    fill
+                    priority
+                    sizes="(min-width: 1024px) 40vw, 100vw"
+                    src={selectedImage.url}
+                  />
+                </button>
               ) : (
                 <span className="grid h-full w-full place-items-center text-sm text-on-surface-variant">
                   No image available
@@ -171,7 +180,10 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                         ? 'border-2 border-primary'
                         : 'border-outline-variant'
                     )}
-                    onClick={() => setSelectedImageIndex(index)}
+                    onClick={() => {
+                      setSelectedImageIndex(index);
+                      setLightboxOpen(true);
+                    }}
                     type="button"
                   >
                     <Image alt={image.alt} className="object-cover" fill sizes="12vw" src={image.url} />
@@ -624,6 +636,15 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
           </section>
         ) : null}
       </div>
+
+      {lightboxOpen ? (
+        <ProductImageLightbox
+          images={gallery}
+          index={selectedImageIndex}
+          onClose={() => setLightboxOpen(false)}
+          onIndexChange={setSelectedImageIndex}
+        />
+      ) : null}
     </div>
   );
 }
