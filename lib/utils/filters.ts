@@ -124,3 +124,32 @@ export function activeFilterEntries(filters: ProductFilterState): Array<[string,
 
   return entries;
 }
+
+/**
+ * Inverse of `parseFilters`: turns filter state back into a query string, preserving every
+ * field `parseFilters` reads (not just the ones a given caller happens to set). Existing
+ * `<Link href="?sort=...">`-style controls only ever wrote a single param and relied on Next.js
+ * merging the rest in from the current URL for *relative* links — which breaks the moment two
+ * controls need to compose (e.g. sort + category), because a relative href still replaces the
+ * whole query string, not just the key it names. This serializer is the fix: build the full
+ * query from filter state, not from one param at a time.
+ *
+ * `query` (the `q` param) is intentionally excluded — the filter sheet does not edit search
+ * text, and carrying `q` through here would let a category click on `/search` silently start
+ * dropping the in-flight query. Callers on `/search` should read `q` from the current URL
+ * separately and append it themselves.
+ */
+export function filtersToSearchParams(filters: ProductFilterState): URLSearchParams {
+  const search = new URLSearchParams();
+
+  if (filters.category) search.set('category', filters.category);
+  if (filters.brand) search.set('brand', filters.brand);
+  if (filters.sort && filters.sort !== 'relevance') search.set('sort', filters.sort);
+  if (filters.minPrice !== undefined) search.set('minPrice', String(filters.minPrice));
+  if (filters.maxPrice !== undefined) search.set('maxPrice', String(filters.maxPrice));
+  if (filters.tags?.length) search.set('tags', filters.tags.join(','));
+  if (filters.inStock) search.set('inStock', 'true');
+  if (filters.labVerified) search.set('labVerified', 'true');
+
+  return search;
+}

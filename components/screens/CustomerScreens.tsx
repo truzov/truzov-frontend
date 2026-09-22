@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/Skeleton';
 import { OrderItemRow } from '@/components/commerce/OrderItemRow';
 import { ProductGrid } from '@/components/product/ProductGrid';
+import { MobileFilterSheet } from '@/components/product/MobileFilterSheet';
 import { formatAddress } from '@/components/checkout/CheckoutScreens';
 import {
   useBanners,
@@ -59,6 +60,7 @@ import { ERROR_CODES, isApiError } from '@/lib/api/errors';
 import type { AddressDto } from '@/types/api';
 import {
   activeFilterEntries,
+  filtersToSearchParams,
   toProductListParams,
   type ProductFilterState,
 } from '@/lib/utils/filters';
@@ -399,16 +401,81 @@ export function HomeScreen() {
   );
 }
 
-function FilterPanel({ filters }: { filters: ProductFilterState }) {
+const SORT_OPTIONS: Array<[string, string]> = [
+  ['price_asc', 'Price: Low to High'],
+  ['price_desc', 'Price: High to Low'],
+  ['best_rated', 'Best Rated'],
+  ['best_selling', 'Best Selling'],
+];
+
+/**
+ * Desktop sidebar filter controls. Also reused inside the mobile filter sheet (see
+ * `MobileFilterSheet` below) via the `draft`/`onDraftChange` props.
+ *
+ * Two modes:
+ *  - Uncontrolled (desktop, `draft`/`onDraftChange` omitted): every control commits immediately
+ *    by navigating to a new URL built from the *current* filters plus the one field being
+ *    changed, via `filtersToSearchParams`. This replaces the old per-control hrefs, which were
+ *    either absolute (`/products?labVerified=true`, wiping every other filter and navigating
+ *    away from `/search` or `/category/[slug]`) or relative (`?sort=price_asc`, which replaces
+ *    the whole query string in Next.js and silently drops sibling params).
+ *  - Controlled (mobile sheet, `draft`/`onDraftChange` provided): controls mutate the draft
+ *    object only; nothing navigates until the sheet's own Apply button commits it.
+ */
+function FilterPanel({
+  filters,
+  draft,
+  onDraftChange,
+}: {
+  filters: ProductFilterState;
+  draft?: ProductFilterState;
+  onDraftChange?: (next: ProductFilterState) => void;
+}) {
   const { data: categories, isLoading, isError } = useCategories();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const active = draft ?? filters;
+
+  const commit = (patch: Partial<ProductFilterState>) => {
+    const next: ProductFilterState = { ...active, ...patch };
+    const search = filtersToSearchParams(next);
+
+    // filtersToSearchParams deliberately excludes `q` (see its doc comment) — reattach it here
+    // so a category/sort click on /search does not silently drop the in-flight search text.
+    if (filters.query) {
+      search.set('q', filters.query);
+    }
+
+    if (onDraftChange) {
+      onDraftChange(next);
+      return;
+    }
+
+    router.push(`${pathname}?${search.toString()}`);
+  };
+
+  const clear = () => {
+    if (onDraftChange) {
+      onDraftChange({ sort: active.sort });
+      return;
+    }
+
+    if (filters.query) {
+      router.push(`${pathname}?q=${encodeURIComponent(filters.query)}`);
+      return;
+    }
+
+    router.push(pathname);
+  };
 
   return (
     <aside className="rounded-lg border border-surface-border bg-surface-base p-4 lg:sticky lg:top-36">
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-2xl">Filters</h2>
-        <Link className="text-sm font-semibold text-brand-primary" href="/products">
+        <button className="text-sm font-semibold text-brand-primary" type="button" onClick={clear}>
           Clear
-        </Link>
+        </button>
       </div>
       <div className="mt-5 grid gap-5 text-sm">
         <div>
@@ -428,38 +495,55 @@ function FilterPanel({ filters }: { filters: ProductFilterState }) {
               <p className="text-xs text-text-muted">Categories are unavailable right now.</p>
             ) : (
               categories?.map((category) => (
-                <Link
+                <button
                   key={category.slug}
-                  className={
-                    filters.category === category.slug
+                  className={cn(
+                    'text-left',
+                    active.category === category.slug
                       ? 'font-semibold text-brand-primary'
                       : 'text-text-secondary'
+                  )}
+                  type="button"
+                  onClick={() =>
+                    commit({ category: active.category === category.slug ? undefined : category.slug })
                   }
-                  href={`/products?category=${category.slug}`}
                 >
                   {category.name}
-                </Link>
+                </button>
               ))
             )}
           </div>
         </div>
         <div>
           <h3 className="font-semibold">Trust</h3>
-          <Link
-            className="mt-3 flex items-center justify-between rounded-md bg-brand-light p-3 font-semibold text-brand-primary"
-            href="/products?labVerified=true"
+          <button
+            className={cn(
+              'mt-3 flex w-full items-center justify-between rounded-md p-3 text-left font-semibold',
+              active.labVerified ? 'bg-brand-primary text-white' : 'bg-brand-light text-brand-primary'
+            )}
+            type="button"
+            onClick={() => commit({ labVerified: active.labVerified ? undefined : true })}
           >
             Lab Verified Only
             <ShieldCheck aria-hidden="true" className="h-4 w-4" />
-          </Link>
+          </button>
         </div>
         <div>
           <h3 className="font-semibold">Sort</h3>
           <div className="mt-3 grid gap-2 text-text-secondary">
-            <Link href="?sort=price_asc">Price: Low to High</Link>
-            <Link href="?sort=price_desc">Price: High to Low</Link>
-            <Link href="?sort=best_rated">Best Rated</Link>
-            <Link href="?sort=best_selling">Best Selling</Link>
+            {SORT_OPTIONS.map(([value, label]) => (
+              <button
+                key={value}
+                className={cn(
+                  'text-left',
+                  active.sort === value ? 'font-semibold text-brand-primary' : undefined
+                )}
+                type="button"
+                onClick={() => commit({ sort: value })}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -475,6 +559,7 @@ export function ProductListingScreen({
   filters: ProductFilterState;
 }) {
   const [page, setPage] = useState(filters.page ?? 1);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   // Filtering, sorting and paging are the server's job now. `filterProducts` used to run over a
   // fixture array in the browser; doing that over one page of API results would silently
@@ -518,12 +603,16 @@ export function ProductListingScreen({
             {isLoading ? 'Loading products...' : `Showing ${items.length} of ${total} products`}
           </p>
         </div>
-        <Link
-          className="inline-flex h-10 items-center rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary lg:hidden"
-          href="/products?labVerified=true"
+        <button
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary lg:hidden"
+          type="button"
+          onClick={() => setFilterSheetOpen(true)}
         >
           Filters
-        </Link>
+          {activeFilters.length ? (
+            <Badge variant="info">{activeFilters.length}</Badge>
+          ) : null}
+        </button>
       </div>
       {activeFilters.length ? (
         <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
@@ -592,6 +681,15 @@ export function ProductListingScreen({
           )}
         </div>
       </div>
+
+      <MobileFilterSheet
+        filters={filters}
+        open={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        renderControls={(draft, setDraft) => (
+          <FilterPanel draft={draft} filters={filters} onDraftChange={setDraft} />
+        )}
+      />
     </div>
   );
 }

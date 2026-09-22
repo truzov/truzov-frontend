@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   activeFilterEntries,
+  filtersToSearchParams,
   parseFilters,
   toProductListParams,
 } from '@/lib/utils/filters';
@@ -70,6 +71,37 @@ describe('filter URL <-> API query adapter', () => {
       ['category', 'honey'],
       ['lab verified', 'yes'],
     ]);
+  });
+
+  it('serialises filter state back into a query string preserving multiple fields at once', () => {
+    // The bug this replaces: `<Link href="/products?category=honey">`-style controls were
+    // absolute and wiped every other filter; relative `<Link href="?sort=price_asc">` controls
+    // replaced the whole query string in Next.js. Composing filters must not lose siblings.
+    const search = filtersToSearchParams({
+      category: 'honey',
+      labVerified: true,
+      sort: 'price_asc',
+    });
+
+    expect(search.get('category')).toBe('honey');
+    expect(search.get('labVerified')).toBe('true');
+    expect(search.get('sort')).toBe('price_asc');
+  });
+
+  it('omits the default sort and unset fields from the serialised query', () => {
+    const search = filtersToSearchParams({ sort: 'relevance' });
+
+    expect(search.toString()).toBe('');
+  });
+
+  it('excludes q from the serialised query even when present on the filter state', () => {
+    // The filter sheet does not edit search text; carrying `q` through here would let a
+    // category click on /search silently start dropping the in-flight query. Callers that need
+    // to keep `q` reattach it themselves after calling this.
+    const search = filtersToSearchParams({ category: 'honey', query: 'ghee' });
+
+    expect(search.has('q')).toBe(false);
+    expect(search.get('category')).toBe('honey');
   });
 });
 
