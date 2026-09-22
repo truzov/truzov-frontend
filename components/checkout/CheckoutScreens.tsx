@@ -351,10 +351,12 @@ export function AddressScreen() {
             <p className="text-sm font-bold uppercase tracking-wide text-text-secondary">Address</p>
             <h1 className="font-heading text-3xl">Select Delivery Address</h1>
           </div>
-          <Button variant="outline" onClick={() => setModalOpen(true)}>
-            <Plus aria-hidden="true" className="h-4 w-4" />
-            Add New Address
-          </Button>
+          {(isLoading || isError || addresses.length > 0) && (
+            <Button variant="outline" onClick={() => setModalOpen(true)}>
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              Add New Address
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
