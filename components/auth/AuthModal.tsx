@@ -97,11 +97,11 @@ export function AuthModal() {
 
         <p className="mt-6 text-center text-xs leading-relaxed text-secondary/70">
           By continuing, you agree to truzov&apos;s{' '}
-          <Link className="underline" href="/trust/how-it-works">
+          <Link className="underline" href="/policies/terms-of-service" onClick={closeAuthModal}>
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link className="underline" href="/trust/lab-reports">
+          <Link className="underline" href="/policies/privacy-policy" onClick={closeAuthModal}>
             Privacy Policy
           </Link>
           .

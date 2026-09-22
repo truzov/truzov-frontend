@@ -7,14 +7,16 @@ import { ApiError } from '@/lib/api/errors';
  * the rest of the suite tests store logic (see tests/utils.test.ts for the equivalent pattern on
  * pure functions).
  */
-const { verifyOtpRequest } = vi.hoisted(() => ({
+const { verifyOtpRequest, checkAccountExistsRequest } = vi.hoisted(() => ({
   verifyOtpRequest: vi.fn(),
+  checkAccountExistsRequest: vi.fn(),
 }));
 
 vi.mock('@/lib/api/endpoints/auth', () => ({
   verifyOtp: verifyOtpRequest,
-  // Only verifyOtp is under test; the store module imports several sibling functions from this
-  // file, so they need to exist even though nothing here calls them.
+  checkAccountExists: checkAccountExistsRequest,
+  // Only verifyOtp/checkAccountExists are under test; the store module imports several sibling
+  // functions from this file, so they need to exist even though nothing here calls them.
   signup: vi.fn(),
   sendOtp: vi.fn(),
   login: vi.fn(),
@@ -131,5 +133,44 @@ describe('otp/verify: ACCOUNT_NOT_FOUND (404) on a correct code with no account'
     expect(state.errorCode).toBeNull();
     expect(state.otpSessionId).toBeNull();
     expect(state.verifiedOtpSessionId).toBeNull();
+  });
+});
+
+describe('auth/account/exists: gating an OTP send on account existence', () => {
+  beforeEach(() => {
+    checkAccountExistsRequest.mockReset();
+    useAuthStore.setState({ errorCode: null, error: null, isLoading: false });
+  });
+
+  it('returns true and clears errorCode for a registered identifier', async () => {
+    checkAccountExistsRequest.mockResolvedValueOnce({ exists: true });
+
+    const result = await useAuthStore.getState().checkAccountExists('real@example.com');
+
+    expect(result).toBe(true);
+    expect(useAuthStore.getState().errorCode).toBeNull();
+  });
+
+  it('returns false and sets errorCode to ACCOUNT_NOT_FOUND for an unregistered identifier', async () => {
+    checkAccountExistsRequest.mockResolvedValueOnce({ exists: false });
+
+    const result = await useAuthStore.getState().checkAccountExists('ghost@example.com');
+
+    expect(result).toBe(false);
+    // Same code verifyOtp sets on a correct-code-no-account result, so AuthForm's existing
+    // "switch to signup" effect fires identically for both entry points.
+    expect(useAuthStore.getState().errorCode).toBe('ACCOUNT_NOT_FOUND');
+  });
+
+  it('propagates a rate-limit failure instead of reporting false', async () => {
+    checkAccountExistsRequest.mockRejectedValueOnce(
+      new ApiError({ code: 'RATE_LIMITED', message: 'Too many attempts.', status: 429 })
+    );
+
+    await expect(useAuthStore.getState().checkAccountExists('anyone@example.com')).rejects.toThrow();
+
+    // Must not be confused with "no account" — a throttled caller gets no answer at all, not a
+    // false one, since a false answer here would (via LoginForm) route straight to signup.
+    expect(useAuthStore.getState().errorCode).toBe('RATE_LIMITED');
   });
 });

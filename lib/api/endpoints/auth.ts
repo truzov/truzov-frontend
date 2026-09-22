@@ -32,6 +32,21 @@ export function signup(body: SignupRequest): Promise<SignupResponse> {
 }
 
 /**
+ * Whether an identifier has an account. Rate-limited per account and per IP on the backend.
+ *
+ * Deliberately narrow use: call this ONLY right before sending a login OTP, to skip the send
+ * for an identifier that could never redeem a code — never expose it as a general-purpose
+ * "check if taken" lookup (a signup form, for instance, must keep using the 409 from `signup`
+ * itself, not this).
+ */
+export function checkAccountExists(identifier: string): Promise<{ exists: boolean }> {
+  return apiRequest<{ exists: boolean }>('/auth/account/exists', {
+    method: 'POST',
+    body: { identifier },
+  });
+}
+
+/**
  * Sends or resends a code.
  *
  * The response is deliberately identical for known and unknown identifiers so the endpoint

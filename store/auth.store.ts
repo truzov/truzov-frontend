@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import {
+  checkAccountExists as checkAccountExistsRequest,
   getCurrentUser,
   login as loginRequest,
   loginWithGoogle as loginWithGoogleRequest,
@@ -87,6 +88,12 @@ interface AuthState {
     otpChannel?: OtpChannel;
   }) => Promise<SignupResponse>;
   sendOtp: (identifier: string, purpose?: 'login' | 'verify') => Promise<void>;
+  /**
+   * Whether `identifier` has an account. Rate-limited on the backend per account and per IP.
+   * Deliberately scoped to gating an OTP send — see `checkAccountExists` in
+   * lib/api/endpoints/auth.ts for why this must not become a general-purpose lookup.
+   */
+  checkAccountExists: (identifier: string) => Promise<boolean>;
   verifyOtp: (code: string) => Promise<void>;
   loginWithPassword: (identifier: string, password: string) => Promise<void>;
   /** Second half of the Google redirect: exchanges the returned code for a session. */
@@ -245,6 +252,21 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         pendingIdentifier: normalised,
         otpExpiresInSeconds: response.expiresInSeconds,
       });
+    } catch (error) {
+      set(toErrorState(error));
+      throw error;
+    }
+  },
+
+  checkAccountExists: async (identifier) => {
+    set({ isLoading: true, error: null, errorCode: null });
+
+    try {
+      const { exists } = await checkAccountExistsRequest(identifier.trim());
+      // Mirrors verifyOtp's ACCOUNT_NOT_FOUND handling so AuthForm's existing
+      // "switch to signup" effect fires the same way for both entry points.
+      set({ isLoading: false, errorCode: exists ? null : 'ACCOUNT_NOT_FOUND' });
+      return exists;
     } catch (error) {
       set(toErrorState(error));
       throw error;

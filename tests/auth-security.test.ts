@@ -247,6 +247,7 @@ describe('LoginForm.resolveRedirect', () => {
     // component's own code and run for real.
     useAuthStore.setState({
       sendOtp: vi.fn(async () => {}),
+      checkAccountExists: vi.fn(async () => true),
       loginWithPassword: vi.fn(async () => {}),
       isLoading: false,
       error: null,

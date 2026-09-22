@@ -33,6 +33,7 @@ export function LoginForm({
 }: LoginFormProps) {
   const router = useRouter();
   const sendOtp = useAuthStore((state) => state.sendOtp);
+  const checkAccountExists = useAuthStore((state) => state.checkAccountExists);
   const loginWithPassword = useAuthStore((state) => state.loginWithPassword);
   const isLoading = useAuthStore((state) => state.isLoading);
   const error = useAuthStore((state) => state.error);
@@ -83,6 +84,25 @@ export function LoginForm({
           return;
         }
         router.push(resolveRedirect() || '/');
+        return;
+      }
+
+      // Gate the OTP send on account existence: an identifier with no account can never redeem
+      // a code, so sending one is a dead end the user has to sit through before reaching signup.
+      // This is a deliberate, scoped exception to the "otp/send never confirms existence" rule
+      // elsewhere in this flow — see checkAccountExists's doc comment and AuthService.accountExists
+      // on the backend for the rate-limiting that keeps this endpoint from becoming a general
+      // enumeration oracle.
+      // Gate the OTP send on account existence: an identifier with no account can never redeem
+      // a code, so sending one is a dead end the user has to sit through before reaching signup.
+      // This is a deliberate, scoped exception to the "otp/send never confirms existence" rule
+      // elsewhere in this flow — see checkAccountExists's doc comment (store and endpoint layers)
+      // and AuthService.accountExists on the backend for the rate-limiting that keeps this
+      // endpoint from becoming a general enumeration oracle.
+      const exists = await checkAccountExists(data.identifier);
+
+      if (!exists) {
+        onModeChange?.('signup');
         return;
       }
 
