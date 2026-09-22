@@ -16,8 +16,11 @@ import { useAuthStore } from '@/store/auth.store';
  *
  * `isLoading` here means "we do not know yet" — callers should render a skeleton for it, not
  * treat it as logged out.
+ *
+ * Pass `redirectTo={false}` to disable the redirect entirely (e.g. a route that renders its own
+ * guest-facing view instead of bouncing away). `isLoggedIn`/`isLoading` still resolve normally.
  */
-export function useProtectedRoute(redirectTo = '/login') {
+export function useProtectedRoute(redirectTo: string | false = '/login') {
   const router = useRouter();
   const pathname = usePathname();
   const status = useAuthStore((state) => state.status);
@@ -28,7 +31,7 @@ export function useProtectedRoute(redirectTo = '/login') {
   const isLoggedIn = status === 'authenticated';
 
   useEffect(() => {
-    if (isResolving || isLoggedIn) {
+    if (isResolving || isLoggedIn || redirectTo === false) {
       return;
     }
 

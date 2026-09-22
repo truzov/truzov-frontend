@@ -1,12 +1,21 @@
 'use client';
 
+import { UserRound } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { AccountSidebar } from '@/components/screens/CustomerScreens';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useAuthStore } from '@/store/auth.store';
 
 export function AccountShell({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn, isLoading } = useProtectedRoute('/login');
+  const pathname = usePathname();
+  // Only the bare /account index can render a guest-facing card in place of the redirect —
+  // child routes (orders, addresses, settings) have no guest view and must keep redirecting.
+  const isAccountIndex = pathname === '/account';
+  const { isLoggedIn, isLoading } = useProtectedRoute(isAccountIndex ? false : '/login');
+  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const user = useAuthStore((state) => state.user);
   const userName = user?.name ?? 'Account';
   const userEmail = user?.email;
@@ -39,7 +48,23 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!isLoggedIn) {
-    return null;
+    // Child routes have no `redirectTo`-less path here: useProtectedRoute('/login') above
+    // already redirected them. This branch is only reachable on the bare /account index.
+    if (!isAccountIndex) {
+      return null;
+    }
+
+    return (
+      <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-8 lg:px-6">
+        <EmptyState
+          action="Login / Signup"
+          icon={UserRound}
+          message="Sign in to view orders, saved addresses, and your profile."
+          title="You're not signed in"
+          onAction={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}
+        />
+      </div>
+    );
   }
 
   return (
