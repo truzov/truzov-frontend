@@ -56,19 +56,21 @@ export function OTPVerification({
   const redirectParam = isValidRedirect(rawRedirect) ? rawRedirect : null;
 
   const channelLabel = otpChannel === 'email' ? 'email' : 'phone';
-  // True in two situations the client CANNOT tell apart, plus one it can:
-  //   - 410 OTP_EXPIRED: the session really is expired or already used;
+  // True when nothing typed here can succeed, for reasons the client genuinely cannot
+  // distinguish among:
+  //   - 410 OTP_EXPIRED: the session really has expired or was already used;
   //   - 410 OTP_EXPIRED: the account's identifier moved after the code was issued, so the
   //     session's premise stopped holding (AuthService target-binding guard);
   //   - no session id at all, e.g. this screen was opened directly or after a reload, since the
   //     auth store is in-memory.
-  // All three mean "typing a code here cannot succeed", which is why the inputs are disabled.
-  // The recovery UI below therefore offers a resend AND a signup link, because it does not know
-  // which of the first two applies and only the user does.
+  // The recovery UI below offers a resend AND a signup link, because it does not know which of
+  // the first two applies and only the user does.
   const sessionExpired = errorCode === ERROR_CODES.OTP_EXPIRED || !otpSessionId;
-  // NOT part of sessionExpired: the code was correct, the identifier simply has no account.
-  // Only the identifier's owner can reach this (they received the code), so the screen can say
-  // so outright and route to signup — no enumeration concern, the user proved control.
+  // NOT part of sessionExpired, and answered with its own status (404, not 410): the code was
+  // CORRECT, so only whoever received it could have typed it, and the identifier simply has no
+  // account. AuthForm (the parent) reacts to this by switching straight to signup, so this
+  // screen typically unmounts before rendering anything for it — accountNotFound is read here
+  // only to keep the resend button (below) from flashing in the one render before that happens.
   const accountNotFound = errorCode === ERROR_CODES.ACCOUNT_NOT_FOUND;
 
   useEffect(() => {
@@ -193,7 +195,7 @@ export function OTPVerification({
               aria-label={`Digit ${index + 1}`}
               autoComplete={index === 0 ? 'one-time-code' : 'off'}
               className="h-14 w-12 rounded-lg border border-outline-variant bg-surface-container-lowest text-center text-h3 font-heading text-on-surface shadow-sm transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:h-16 md:w-14"
-              disabled={sessionExpired}
+              disabled={sessionExpired || accountNotFound}
               inputMode="numeric"
               onChange={(event) => handleChange(index, event.target.value)}
               onKeyDown={(event) => handleKeyDown(index, event)}
@@ -242,7 +244,7 @@ export function OTPVerification({
       ) : (
         <button
           className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!isComplete || isLoading}
+          disabled={!isComplete || isLoading || accountNotFound}
           type="submit"
         >
           {isLoading ? (
