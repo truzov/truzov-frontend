@@ -93,7 +93,10 @@ export function Header() {
             className="flex h-12 min-w-0 overflow-hidden rounded-lg border border-outline-variant bg-background lg:max-w-[800px]"
             onSubmit={(event) => {
               event.preventDefault();
-              router.push(`/search?q=${encodeURIComponent(query)}`);
+              const trimmed = query.trim();
+              if (trimmed) {
+                router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+              }
             }}
           >
             <button

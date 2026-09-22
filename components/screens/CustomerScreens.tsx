@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -597,10 +597,53 @@ export function ProductListingScreen({
 }
 
 export function SearchScreen({ query }: { query?: string }) {
+  const router = useRouter();
+  const [draft, setDraft] = useState(query ?? '');
+
+  const trimmed = query?.trim();
+
+  if (!trimmed) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10">
+        <form
+          className="flex h-12 overflow-hidden rounded-lg border border-outline-variant bg-background"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const next = draft.trim();
+            if (next) {
+              router.push(`/search?q=${encodeURIComponent(next)}`);
+            }
+          }}
+        >
+          <input
+            autoFocus
+            className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-on-surface outline-none placeholder:text-outline"
+            placeholder="Search verified products, brands, categories..."
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          <Button aria-label="Search" className="h-full w-16 rounded-none" size="icon" type="submit">
+            <Search aria-hidden="true" className="h-5 w-5" />
+          </Button>
+        </form>
+
+        <div className="mt-10">
+          <EmptyState
+            action="Browse Products"
+            href="/products"
+            icon={Search}
+            message="Search for a product name, brand, or category to see results."
+            title="Search verified products"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ProductListingScreen
       filters={{ query, sort: 'relevance' }}
-      title={query ? `Search results for "${query}"` : 'Search verified products'}
+      title={`Search results for "${query}"`}
     />
   );
 }
