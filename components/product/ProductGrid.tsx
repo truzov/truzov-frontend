@@ -1,20 +1,26 @@
-import type { Product } from '@/types';
-import { ProductCard } from './ProductCard';
 import { ProductCardSkeleton } from '@/components/ui/Skeleton';
+import type { ProductSummaryDto } from '@/types/api';
+import { ProductCard } from './ProductCard';
 
 export function ProductGrid({
   products,
   priorityCount = 0,
   loading = false,
+  skeletonCount = 8,
 }: {
-  products: Product[];
+  products: ProductSummaryDto[];
+  /** How many images to mark `priority`, for above-the-fold LCP. */
   priorityCount?: number;
   loading?: boolean;
+  skeletonCount?: number;
 }) {
+  const gridClass =
+    'grid self-start grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
+
   if (loading) {
     return (
-      <div className="grid self-start grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {Array.from({ length: 8 }).map((_, index) => (
+      <div aria-busy="true" className={gridClass} role="status">
+        {Array.from({ length: skeletonCount }).map((_, index) => (
           <ProductCardSkeleton key={index} />
         ))}
       </div>
@@ -22,7 +28,7 @@ export function ProductGrid({
   }
 
   return (
-    <div className="grid self-start grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <div className={gridClass}>
       {products.map((product, index) => (
         <ProductCard key={product.id} priority={index < priorityCount} product={product} />
       ))}

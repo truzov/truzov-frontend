@@ -15,15 +15,16 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { AccountMenu } from '@/components/auth/AccountMenu';
-import { useCartStore } from '@/store/cart.store';
+import { useCartItemCount } from '@/hooks/api/useCart';
 import { Logo } from './Logo';
 
 export function Header() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [isMounted, setIsMounted] = useState(false);
-  const items = useCartStore((state) => state.items);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  // Server-provided count from the same cache entry the cart page reads, so the badge cannot drift
+  // from the cart. Previously summed from a persisted local cart. Zero for guests, who have no cart.
+  const itemCount = useCartItemCount();
 
   useEffect(() => {
     setIsMounted(true);
@@ -31,11 +32,17 @@ export function Header() {
 
   const [policiesOpen, setPoliciesOpen] = useState(false);
   const policiesRef = useRef<HTMLDivElement>(null);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const supportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
-      if (!policiesRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!policiesRef.current?.contains(target)) {
         setPoliciesOpen(false);
+      }
+      if (!supportRef.current?.contains(target)) {
+        setSupportOpen(false);
       }
     };
     document.addEventListener('pointerdown', onPointerDown);
@@ -86,7 +93,10 @@ export function Header() {
             className="flex h-12 min-w-0 overflow-hidden rounded-lg border border-outline-variant bg-background lg:max-w-[800px]"
             onSubmit={(event) => {
               event.preventDefault();
-              router.push(`/search?q=${encodeURIComponent(query)}`);
+              const trimmed = query.trim();
+              if (trimmed) {
+                router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+              }
             }}
           >
             <button
@@ -197,10 +207,35 @@ export function Header() {
                 </div>
               )}
             </div>
-            <Link className="flex items-center gap-1 hover:text-primary" href="/trust/lab-reports">
-              Support
-              <ChevronDown aria-hidden="true" className="h-4 w-4" />
-            </Link>
+            <div ref={supportRef} className="relative">
+              <button
+                onClick={() => setSupportOpen(!supportOpen)}
+                className="flex items-center gap-1 hover:text-primary font-semibold transition"
+                aria-expanded={supportOpen}
+                type="button"
+              >
+                Support
+                <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              </button>
+              {supportOpen && (
+                <div className="absolute left-0 top-[calc(100%+12px)] z-50 w-48 rounded-lg border border-outline-variant bg-white p-1.5 shadow-md">
+                  <Link
+                    href="/support/customer"
+                    onClick={() => setSupportOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Customer Support
+                  </Link>
+                  <Link
+                    href="/support/seller"
+                    onClick={() => setSupportOpen(false)}
+                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
+                  >
+                    Seller Support
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link
               className="ml-auto rounded-lg bg-primary px-8 py-3 text-sm font-bold text-on-primary transition hover:bg-primary/90"
               href="/products?labVerified=true"

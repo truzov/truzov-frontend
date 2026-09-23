@@ -33,8 +33,8 @@ const groups: FooterGroup[] = [
   {
     title: 'Support',
     links: [
-      { label: 'Quality Support', href: '/trust/how-it-works' },
-      { label: 'Vendor Onboarding', href: '/trust/how-it-works' },
+      { label: 'Customer Support', href: '/support/customer' },
+      { label: 'Seller Support', href: '/support/seller' },
       { label: 'Shipping & Logistics', href: '/policies/shipping-policy' },
       { label: 'Refund Policy', href: '/policies/refund-policy' },
       { label: 'Health Knowledge Base', href: '/trust/how-it-works' },

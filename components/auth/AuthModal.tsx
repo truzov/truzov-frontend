@@ -5,7 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { useBuyNow } from '@/hooks/api/useCart';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { isValidRedirect } from '@/lib/auth/redirect';
 import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthForm } from './AuthForm';
@@ -13,8 +15,9 @@ import { AuthForm } from './AuthForm';
 export function AuthModal() {
   const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
-  const { isOpen, mode, redirectTo, closeAuthModal, setAuthModalMode } = useAuthModalStore();
+  const { isOpen, mode, redirectTo, buyNow, closeAuthModal, setAuthModalMode } = useAuthModalStore();
   const clearError = useAuthStore((state) => state.clearError);
+  const { checkout } = useBuyNow();
 
   useFocusTrap(modalRef, isOpen, closeAuthModal);
 
@@ -30,10 +33,21 @@ export function AuthModal() {
 
   const handleSuccess = () => {
     const nextPath = redirectTo;
+    const intent = buyNow;
     closeAuthModal();
 
+    if (intent) {
+      // Resume the Buy Now that opened this modal instead of the redirect target.
+      // Google sign-in is a full-page redirect, so an intent from that path cannot survive to
+      // reach here — accepted per Requirement 2.11 (memory-only, never persisted), not a bug.
+      void checkout(intent);
+      return;
+    }
+
     if (nextPath) {
-      router.push(nextPath);
+      // `openAuthModal` is callable from anywhere, so `redirectTo` is untrusted input:
+      // an off-origin or non-HTTP target is discarded for the default landing route.
+      router.push(isValidRedirect(nextPath) ? nextPath : '/');
     }
   };
 
@@ -83,11 +97,11 @@ export function AuthModal() {
 
         <p className="mt-6 text-center text-xs leading-relaxed text-secondary/70">
           By continuing, you agree to truzov&apos;s{' '}
-          <Link className="underline" href="/trust/how-it-works">
+          <Link className="underline" href="/policies/terms-of-service" onClick={closeAuthModal}>
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link className="underline" href="/trust/lab-reports">
+          <Link className="underline" href="/policies/privacy-policy" onClick={closeAuthModal}>
             Privacy Policy
           </Link>
           .

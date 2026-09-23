@@ -2,21 +2,20 @@
 
 import { Modal } from '@/components/ui/Modal';
 import { AddressForm } from './AddressForm';
-import type { Address } from '@/types';
+import type { AddressDto } from '@/types/api';
 
-interface AddressFormModalProps {
+/** Add or edit a saved address. Pass `address` for edit mode. */
+export function AddressFormModal({
+  open,
+  onClose,
+  address,
+}: {
   open: boolean;
-  address?: Address;
   onClose: () => void;
-}
-
-export function AddressFormModal({ open, address, onClose }: AddressFormModalProps) {
+  address?: AddressDto;
+}) {
   return (
-    <Modal
-      open={open}
-      title={address ? 'Edit Address' : 'Add New Address'}
-      onClose={onClose}
-    >
+    <Modal open={open} title={address ? 'Edit Address' : 'Add New Address'} onClose={onClose}>
       <AddressForm address={address} onComplete={onClose} />
     </Modal>
   );

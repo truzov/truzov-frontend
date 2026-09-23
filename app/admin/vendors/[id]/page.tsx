@@ -1,18 +1,23 @@
-import { DetailShell } from '@/components/screens/WorkspaceScreens';
-import { vendors } from '@/lib/data/fixtures';
+import { DetailShell, NotAvailableYet } from '@/components/screens/WorkspaceScreens';
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const vendor = vendors.find((item) => item.id === id) ?? vendors[0];
-
+/**
+ * Gated. There is no vendor resource in the API — no list, no detail, no approve/reject.
+ *
+ * The Approve and Reject buttons that used to be here were not wired to anything at all, and the
+ * vendor shown was a fixture that fell back to `vendors[0]` for any unknown id. The closest real
+ * capability is promoting a user to the vendor role via `PUT /admin/users/{id}/role`, which lives
+ * on the Roles screen.
+ */
+export default function Page() {
   return (
     <DetailShell role="admin" title="Vendor Detail">
-      <h2 className="font-heading text-2xl">{vendor.name}</h2>
-      <p className="mt-2 text-text-secondary">{vendor.ownerName} - {vendor.email}</p>
-      <div className="mt-5 flex gap-3">
-        <button className="rounded-md bg-brand-primary px-4 py-2 font-semibold text-text-inverse">Approve</button>
-        <button className="rounded-md border border-text-danger px-4 py-2 font-semibold text-text-danger">Reject</button>
-      </div>
+      <NotAvailableYet
+        backHref="/admin/roles"
+        backLabel="Change a user's role instead"
+        needs="A vendor resource (detail, documents, approve/reject). Promoting a user to the vendor role is possible today via PUT /admin/users/{id}/role."
+        ticket="§6.3 / §T2"
+        title="Vendor detail"
+      />
     </DetailShell>
   );
 }
