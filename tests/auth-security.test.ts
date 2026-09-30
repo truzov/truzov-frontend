@@ -258,14 +258,14 @@ describe('LoginForm.resolveRedirect', () => {
   /** Renders the page variant (no `onSuccess`), so the component performs the navigation itself. */
   function renderLoginForm(redirectTo?: string) {
     render(React.createElement(LoginForm, { redirectTo }));
-    fireEvent.change(screen.getByLabelText('Email or Phone Number'), {
+    fireEvent.change(screen.getByLabelText('Email or phone number'), {
       target: { value: 'shopper@example.com' },
     });
   }
 
   async function submitOtpLogin(redirectTo?: string) {
     renderLoginForm(redirectTo);
-    fireEvent.click(screen.getByRole('button', { name: /send otp/i }));
+    fireEvent.click(screen.getByRole('button', { name: /send code/i }));
     await waitFor(() => expect(openOtpModal).toHaveBeenCalledTimes(1));
   }
 

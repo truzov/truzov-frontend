@@ -106,11 +106,11 @@ export function MockPaymentScreen() {
   const alreadySettled = order.paymentStatus !== 'unpaid';
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-10">
-      <div className="rounded-md border-2 border-dashed border-amber-500 bg-amber-50 p-4 text-amber-900">
-        <p className="flex items-center gap-2 font-heading text-lg">
+    <div className="checkout-shell mx-auto max-w-xl px-4 py-8 text-[#04342c] sm:py-12">
+      <div className="rounded-2xl border border-dashed border-amber-500 bg-amber-50 p-5 text-amber-900">
+        <p className="flex items-center gap-2 text-lg font-medium tracking-tight">
           <FlaskConical aria-hidden="true" className="h-5 w-5" />
-          Test Mode — Simulate Payment
+          Test mode — simulate payment
         </p>
         <p className="mt-1 text-sm">
           No real payment is taken and no money moves. This page exists only until a real payment
@@ -118,13 +118,13 @@ export function MockPaymentScreen() {
         </p>
       </div>
 
-      <section className="mt-6 rounded-md border border-surface-border bg-surface-base p-5 shadow-xs">
-        <h1 className="font-heading text-2xl">Pay for order {order.orderNumber}</h1>
+      <section className="mt-6 rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6">
+        <h1 className="text-2xl font-medium leading-tight tracking-tight">Pay for order {order.orderNumber}</h1>
 
         <dl className="mt-4 grid gap-2 text-sm">
           <div className="flex items-baseline justify-between">
             <dt className="text-text-secondary">Amount due</dt>
-            <dd className="font-heading text-2xl">{formatCurrency(order.totalAmount)}</dd>
+            <dd className="text-2xl font-medium tabular-nums">{formatCurrency(order.totalAmount)}</dd>
           </div>
           <div className="flex items-center justify-between">
             <dt className="text-text-secondary">Current payment status</dt>
@@ -166,7 +166,7 @@ export function MockPaymentScreen() {
               disabled={complete.isPending}
               onClick={() => settle('success')}
             >
-              {complete.isPending ? 'Working…' : 'Simulate Success'}
+              {complete.isPending ? 'Working…' : 'Simulate success'}
             </Button>
             <Button
               data-testid="simulate-payment-failure"
@@ -174,7 +174,7 @@ export function MockPaymentScreen() {
               onClick={() => settle('failure')}
               variant="secondary"
             >
-              Simulate Failure
+              Simulate failure
             </Button>
           </div>
         )}

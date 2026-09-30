@@ -91,7 +91,7 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        'group flex h-full flex-col overflow-hidden rounded-md border border-surface-border bg-surface-base shadow-xs transition hover:shadow-sm',
+        'product-card group flex h-full flex-col overflow-hidden rounded-md border border-surface-border bg-surface-base shadow-xs transition hover:shadow-sm',
         compact && 'min-w-[180px]'
       )}
     >
@@ -99,7 +99,7 @@ export function ProductCard({
         className={cn('bg-surface-raised', variant === 'featured' ? 'aspect-[4/3]' : 'aspect-square')}
         style={{ position: 'relative' }}
       >
-        <Link href={`/products/${product.slug}`} aria-label={`View ${product.name}`}>
+        <Link className="absolute inset-0" href={`/products/${product.slug}`} aria-label={`View ${product.name}`}>
           {image ? (
             <Image
               alt={image.alt}
@@ -143,13 +143,13 @@ export function ProductCard({
           />
         </Button>
       </div>
-      <div className={cn('flex flex-1 flex-col gap-2 p-3', compact && 'p-2')}>
+      <div className={cn('product-card-body flex flex-1 flex-col gap-2 p-3', compact && 'p-2')}>
         {!compact ? (
-          <p className="text-xs font-semibold uppercase text-text-muted">{product.brand}</p>
+          <p className="text-xs font-medium text-text-muted">{product.brand}</p>
         ) : null}
         <Link
           className={cn(
-            'font-semibold leading-snug text-text-primary hover:text-brand-primary',
+            'product-card-title font-medium leading-snug text-text-primary hover:text-brand-primary',
             compact ? 'line-clamp-1 text-sm' : 'line-clamp-2 min-h-[42px] text-base'
           )}
           href={`/products/${product.slug}`}
@@ -160,7 +160,7 @@ export function ProductCard({
           <Rating count={product.reviewCount} rating={product.rating} />
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-brand-primary">{formatCurrency(displayPrice)}</span>
+          <span className="product-card-price font-medium text-brand-primary">{formatCurrency(displayPrice)}</span>
           {!compact ? (
             <>
               {/* Only show a struck-through MRP when there is a real saving; seeded products

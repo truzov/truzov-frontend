@@ -26,7 +26,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-xs px-2 py-1 text-xs font-semibold uppercase tracking-normal',
+        'ui-badge inline-flex items-center gap-1 rounded-xs px-2 py-1 text-xs font-semibold uppercase tracking-normal',
         styles[variant],
         className
       )}

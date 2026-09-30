@@ -72,10 +72,8 @@ interface AuthState {
   /** Server-provided lifetime; drives the resend cooldown instead of a hardcoded 30s. */
   otpExpiresInSeconds: number | null;
   /**
-   * A CONSUMED session whose code was verified against an identifier that has no
-   * account (404 ACCOUNT_NOT_FOUND). It vouches for that identifier at signup for
-   * 15 minutes server-side, so the signup form that follows is born verified with
-   * no second code. Cleared on signup, login, or logout.
+   * A consumed login session for an unknown identifier. Retained for flow recovery;
+   * never sent as a signup credential. Signup still requires its own OTP.
    */
   verifiedOtpSessionId: string | null;
 
@@ -89,7 +87,7 @@ interface AuthState {
   }) => Promise<SignupResponse>;
   sendOtp: (identifier: string, purpose?: 'login' | 'verify') => Promise<void>;
   /**
-   * Whether `identifier` has an account. Rate-limited on the backend per account and per IP.
+   * Whether `identifier` has an account. Rate-limited on the backend per IP.
    * Deliberately scoped to gating an OTP send — see `checkAccountExists` in
    * lib/api/endpoints/auth.ts for why this must not become a general-purpose lookup.
    */
@@ -260,12 +258,20 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   checkAccountExists: async (identifier) => {
     set({ isLoading: true, error: null, errorCode: null });
+    const trimmed = identifier.trim();
+    const normalised = trimmed.includes('@') ? trimmed : trimmed.replace(/[^\d+]/g, '');
 
     try {
-      const { exists } = await checkAccountExistsRequest(identifier.trim());
+      const { exists } = await checkAccountExistsRequest(normalised);
       // Mirrors verifyOtp's ACCOUNT_NOT_FOUND handling so AuthForm's existing
       // "switch to signup" effect fires the same way for both entry points.
-      set({ isLoading: false, errorCode: exists ? null : 'ACCOUNT_NOT_FOUND' });
+      set({
+        ...CLEARED_OTP,
+        isLoading: false,
+        errorCode: exists ? null : 'ACCOUNT_NOT_FOUND',
+        pendingIdentifier: normalised,
+        otpChannel: normalised.includes('@') ? 'email' : 'phone',
+      });
       return exists;
     } catch (error) {
       set(toErrorState(error));
@@ -308,10 +314,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       if (isApiError(error) && error.code === 'OTP_EXPIRED') {
         set({ ...toErrorState(error), otpSessionId: null });
       } else if (isApiError(error) && error.code === 'ACCOUNT_NOT_FOUND') {
-        // The code was CORRECT but the identifier has no account. The consumed session
-        // becomes a signup voucher: keep it and the identifier so the signup form the
-        // client switches to is pre-filled and born verified. The session itself can no
-        // longer verify anything, so otpSessionId goes.
+        // The code was correct but the identifier has no account. Keep the draft for
+        // signup; the consumed login session cannot verify a newly created account.
         set({
           ...toErrorState(error),
           otpSessionId: null,

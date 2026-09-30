@@ -98,13 +98,13 @@ export function BagScreen() {
   const blockedItems = cart.items.filter((item) => !item.inStock);
 
   return (
-    <div className="bg-surface-raised">
-      <div className="mx-auto max-w-7xl px-4 py-6 lg:py-8">
+    <div>
+      <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="grid gap-4">
-            <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
-              <h1 className="font-heading text-2xl">
-                {cart.itemCount} {cart.itemCount === 1 ? 'Item' : 'Items'} in Your Bag
+            <section className="rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6">
+              <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">
+                {cart.itemCount} {cart.itemCount === 1 ? 'item' : 'items'} in your bag
               </h1>
             </section>
 
@@ -173,13 +173,13 @@ function GuestBagScreen() {
   const subtotal = items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
 
   return (
-    <div className="bg-surface-raised">
-      <div className="mx-auto max-w-7xl px-4 py-6 lg:py-8">
+    <div>
+      <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <main className="grid gap-4">
-            <section className="rounded-md border border-surface-border bg-surface-base p-4 shadow-xs">
-              <h1 className="font-heading text-2xl">
-                {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in Your Bag
+            <section className="rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6">
+              <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">
+                {itemCount} {itemCount === 1 ? 'item' : 'items'} in your bag
               </h1>
             </section>
 
@@ -190,8 +190,8 @@ function GuestBagScreen() {
             </div>
           </main>
 
-          <aside className="h-fit rounded-md border border-surface-border bg-surface-base p-5 shadow-xs">
-            <h2 className="text-lg font-bold">Price Details</h2>
+          <aside className="h-fit rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6 lg:sticky lg:top-6">
+            <h2 className="text-xl font-medium tracking-tight text-[#04342c]">Price details</h2>
             <div className="mt-4 space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-text-secondary">
@@ -199,7 +199,7 @@ function GuestBagScreen() {
                 </span>
                 <span className="font-semibold">{formatCurrency(subtotal)}</span>
               </div>
-              <p className="text-xs text-text-secondary">
+              <p className="text-sm leading-6 text-text-secondary">
                 Prices shown are from when you added each item; the total is confirmed at
                 sign-in.
               </p>
@@ -209,9 +209,9 @@ function GuestBagScreen() {
               variant="primary"
               onClick={() => openAuthModal({ mode: 'login', redirectTo: '/cart' })}
             >
-              Sign In to Continue
+              Sign in to continue
             </Button>
-            <p className="mt-3 text-center text-xs text-text-secondary">
+            <p className="mt-3 text-center text-sm leading-6 text-text-secondary">
               Your bag is saved to this device and merges into your account when you sign in.
             </p>
           </aside>
@@ -227,9 +227,9 @@ function GuestBagItemRow({ item }: { item: GuestCartItem }) {
   const remove = useGuestCartStore((state) => state.remove);
 
   return (
-    <article className="grid grid-cols-[96px_1fr] gap-3 rounded-md border border-surface-border bg-surface-base p-3 shadow-xs sm:grid-cols-[132px_1fr] sm:p-4">
+    <article className="grid grid-cols-[80px_minmax(0,1fr)] gap-3 rounded-2xl border border-surface-border bg-surface-base p-4 shadow-xs sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-5 sm:p-5">
       <Link
-        className="relative aspect-[4/5] overflow-hidden rounded-md bg-surface-raised"
+        className="relative aspect-[4/5] self-start overflow-hidden rounded-xl bg-surface-raised"
         href={`/products/${item.slug}`}
       >
         {item.imageUrl ? (
@@ -245,7 +245,7 @@ function GuestBagItemRow({ item }: { item: GuestCartItem }) {
 
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
-          <Link className="font-bold hover:text-brand-primary" href={`/products/${item.slug}`}>
+          <Link className="text-base font-medium leading-snug hover:text-brand-primary sm:text-lg" href={`/products/${item.slug}`}>
             {item.name}
           </Link>
           <Button
@@ -259,7 +259,7 @@ function GuestBagItemRow({ item }: { item: GuestCartItem }) {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center rounded-sm border border-surface-border bg-surface-raised">
+          <div className="inline-flex items-center rounded-xl border border-surface-border bg-surface-raised">
             <Button
               aria-label="Decrease quantity"
               disabled={item.quantity <= 1}
@@ -269,7 +269,7 @@ function GuestBagItemRow({ item }: { item: GuestCartItem }) {
             >
               <Minus aria-hidden="true" className="h-4 w-4" />
             </Button>
-            <span className="w-14 text-center text-sm font-bold">Qty: {item.quantity}</span>
+            <span className="w-14 text-center text-sm font-medium">Qty: {item.quantity}</span>
             <Button
               aria-label="Increase quantity"
               size="icon"
@@ -279,21 +279,21 @@ function GuestBagItemRow({ item }: { item: GuestCartItem }) {
               <Plus aria-hidden="true" className="h-4 w-4" />
             </Button>
           </div>
-          <span className="text-xs font-semibold text-text-secondary">
+          <span className="text-sm text-text-secondary">
             {formatCurrency(item.unitPrice)} each
           </span>
         </div>
 
         {/* Local arithmetic on the snapshot price — the only total the guest flow can show. */}
         <div className="mt-4">
-          <span className="text-lg font-bold">
+          <span className="text-lg font-medium tabular-nums">
             {formatCurrency(item.unitPrice * item.quantity)}
           </span>
         </div>
 
         <div className="mt-3">
           <button
-            className="text-sm font-semibold text-text-secondary hover:text-brand-primary"
+            className="min-h-11 rounded-sm text-sm font-medium text-text-secondary hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             type="button"
             onClick={() => remove(item.productId, item.variantId)}
           >
@@ -348,13 +348,13 @@ export function AddressScreen() {
       <main className="flex flex-col gap-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-text-secondary">Address</p>
-            <h1 className="font-heading text-3xl">Select Delivery Address</h1>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-secondary">Address</p>
+            <h1 className="mt-2 text-2xl font-medium leading-tight tracking-tight sm:text-3xl">Select delivery address</h1>
           </div>
           {(isLoading || isError || addresses.length > 0) && (
             <Button variant="outline" onClick={() => setModalOpen(true)}>
               <Plus aria-hidden="true" className="h-4 w-4" />
-              Add New Address
+              Add new address
             </Button>
           )}
         </div>
@@ -371,9 +371,9 @@ export function AddressScreen() {
             onRetry={() => void refetch()}
           />
         ) : addresses.length === 0 ? (
-          <div className="rounded-md border border-dashed border-surface-border bg-surface-base p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-surface-border bg-surface-base p-6 text-center sm:p-8">
             <MapPin aria-hidden="true" className="mx-auto h-10 w-10 text-brand-primary" />
-            <h2 className="mt-4 font-heading text-2xl">No saved addresses</h2>
+            <h2 className="mt-4 text-2xl font-medium tracking-tight">No saved addresses</h2>
             <p className="mt-2 text-text-secondary">
               Checkout needs a delivery address. Add one to continue.
             </p>
@@ -465,14 +465,14 @@ export function PaymentScreen() {
 
   if (!selectedAddress) {
     return (
-      <div className="mx-auto max-w-3xl rounded-md border border-surface-border bg-surface-base p-6 text-center shadow-xs">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-surface-border bg-surface-base p-6 text-center shadow-xs sm:p-8">
         <MapPin aria-hidden="true" className="mx-auto h-10 w-10 text-brand-primary" />
-        <h1 className="mt-4 font-heading text-3xl">Select an address first</h1>
+        <h1 className="mt-4 text-2xl font-medium leading-tight tracking-tight sm:text-3xl">Select an address first</h1>
         <p className="mt-2 text-text-secondary">
           Your order cannot be placed until a delivery address is selected.
         </p>
         <Button className="mt-5" onClick={() => router.push('/checkout/address')}>
-          Go to Address
+          Go to address
         </Button>
       </div>
     );
@@ -527,8 +527,8 @@ export function PaymentScreen() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <main className="grid gap-5">
-        <section className="rounded-md border border-surface-border bg-surface-base p-5 shadow-xs">
-          <h1 className="font-heading text-3xl">Review your order</h1>
+        <section className="rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6">
+          <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">Review your order</h1>
           <p className="mt-2 text-sm text-text-secondary">
             Delivering to <strong>{selectedAddress.fullName ?? 'your saved address'}</strong>,{' '}
             {formatAddress(selectedAddress)}
@@ -539,10 +539,10 @@ export function PaymentScreen() {
           {cart.items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between gap-4 rounded-md border border-surface-border bg-surface-base p-4"
+              className="flex items-start justify-between gap-4 rounded-2xl border border-surface-border bg-surface-base p-4 sm:p-5"
             >
               <div className="min-w-0">
-                <p className="truncate font-semibold">{item.name}</p>
+                <p className="font-medium leading-snug">{item.name}</p>
                 <p className="text-sm text-text-secondary">
                   {formatCurrency(item.unitPrice)} × {item.quantity}
                 </p>
@@ -553,7 +553,7 @@ export function PaymentScreen() {
         </section>
 
         {phoneUnverified ? (
-          <div className="rounded-md border border-brand-accent bg-surface-base p-4 text-sm">
+          <div className="rounded-2xl border border-brand-accent bg-surface-base p-5 text-sm leading-6">
             <p className="font-semibold">Verify your phone number to place an order</p>
             <p className="mt-1 text-text-secondary">
               Orders require a verified phone number on your account.
@@ -578,14 +578,14 @@ export function PaymentScreen() {
           />
         ) : null}
 
-        <p className="text-xs leading-5 text-text-secondary">
+        <p className="text-sm leading-6 text-text-secondary">
           Payment is collected by our payment provider after the order is placed. Your order&apos;s
           payment status is shown on the order once confirmed.
         </p>
       </main>
 
       <CheckoutPriceDetails
-        ctaLabel="Place Order"
+        ctaLabel="Place order"
         disabled={phoneUnverified}
         loading={placeOrder.isPending}
         termsText="By placing the order, you agree to Truzov's Terms of Use and Privacy Policy."
@@ -648,13 +648,13 @@ export function ConfirmationScreen() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="rounded-md border border-surface-border bg-surface-base p-6 shadow-xs sm:p-8">
+      <div className="rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-8">
         <div className="border-b border-surface-border pb-6 text-center sm:pb-8">
           <ShieldCheck
             aria-hidden="true"
-            className="mx-auto h-14 w-14 fill-brand-primary text-brand-primary sm:h-16 sm:w-16"
+            className="mx-auto h-14 w-14 text-brand-primary sm:h-16 sm:w-16"
           />
-          <h1 className="mt-4 font-heading text-2xl text-brand-primary sm:text-3xl">
+          <h1 className="mt-4 text-2xl font-medium leading-tight tracking-tight text-brand-primary sm:text-3xl">
             Order confirmed
           </h1>
           <p className="mt-2 text-sm text-text-secondary sm:text-base">
@@ -666,7 +666,7 @@ export function ConfirmationScreen() {
           <div>
             {address ? (
               <>
-                <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-secondary">
                   Delivering to:
                 </p>
                 <div className="mt-3">
@@ -692,13 +692,13 @@ export function ConfirmationScreen() {
               variant="outline"
               onClick={() => router.push(`/account/orders/${order.id}`)}
             >
-              ORDER DETAILS
+              Order details
             </Button>
           </div>
 
           <div className="border-t border-surface-border pt-6 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
-              Order Summary
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-secondary">
+              Order summary
             </p>
             <div className="mt-4 space-y-2">
               <SummaryLine label="Items" value={String(order.items.length)} />
@@ -727,10 +727,10 @@ export function ConfirmationScreen() {
 
         <div className="mt-6 flex flex-col gap-3 border-t border-surface-border pt-6 sm:flex-row sm:justify-between">
           <Button className="flex-1" variant="outline" onClick={() => router.push('/')}>
-            Continue Shopping
+            Continue shopping
           </Button>
           <Button className="flex-1" onClick={() => router.push(`/account/orders/${order.id}`)}>
-            View Order
+            View order
           </Button>
         </div>
       </div>
@@ -772,7 +772,7 @@ function AddressCard({
   return (
     <div
       className={cn(
-        'rounded-md border bg-surface-base p-5 shadow-xs transition focus-within:ring-2 focus-within:ring-brand-light',
+        'rounded-2xl border bg-surface-base p-5 shadow-xs transition focus-within:ring-2 focus-within:ring-brand-light',
         selected ? 'border-brand-primary ring-2 ring-brand-light' : 'border-surface-border'
       )}
     >
@@ -784,7 +784,7 @@ function AddressCard({
         type="radio"
         onChange={onSelect}
       />
-      <label className="flex cursor-pointer items-start gap-4 rounded-md text-left" htmlFor={inputId}>
+      <label className="flex min-h-11 cursor-pointer items-start gap-4 rounded-xl text-left" htmlFor={inputId}>
         <span
           aria-hidden="true"
           className={cn(
@@ -802,10 +802,10 @@ function AddressCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <strong>{address.fullName ?? 'Saved address'}</strong>
+            <strong className="font-medium">{address.fullName ?? 'Saved address'}</strong>
             {/* From AddressDto.label. The old card hardcoded a "Home" pill on every address. */}
             {address.label ? (
-              <span className="rounded-full border border-brand-primary px-2 py-0.5 text-xs font-bold uppercase text-brand-primary">
+              <span className="rounded-full bg-brand-light px-2 py-1 text-xs font-medium text-brand-primary">
                 {address.label}
               </span>
             ) : null}

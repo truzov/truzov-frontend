@@ -22,7 +22,7 @@ export default async function Page({
       // === 'true'` produced `false` when the parameter was absent, and an explicit
       // `inStock=false` asks the server for out-of-stock items only.
       filters={parseFilters(toSearchParams(params))}
-      title="Verified Marketplace"
+      title="Shop the collection"
     />
   );
 }

@@ -203,7 +203,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
             </nav>
 
             <div>
-              <h1 className="font-body text-[32px] font-bold leading-tight text-on-surface">
+              <h1 className="font-body text-[clamp(28px,3vw,36px)] font-medium leading-tight text-on-surface">
                 {product.name}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -221,7 +221,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
             </div>
 
             <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-[32px] font-bold leading-none text-on-surface">
+              <span className="text-[28px] font-medium leading-none tabular-nums text-on-surface">
                 {/* Indicative unit price for the selected variant, from the product's own
                     documented fields. Display only — the cart and order always show the
                     server's `unitPrice` / `lineTotal`. */}
@@ -285,7 +285,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   key={item}
                   aria-selected={tab === item}
                   className={cn(
-                    'whitespace-nowrap pb-2 text-base font-medium',
+                    'min-h-11 whitespace-nowrap pb-2 text-base font-medium',
                     tab === item
                       ? 'border-b-2 border-primary text-primary'
                       : 'text-on-surface-variant hover:text-on-surface'
@@ -623,7 +623,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
           <section className="mt-16 lg:mt-24">
             <div className="mb-8 flex items-end justify-between border-b border-outline-variant pb-2">
               <div>
-                <h2 className="font-body text-2xl font-bold">Similar Verified Products</h2>
+                <h2 className="font-body text-2xl font-medium">Related products</h2>
                 <p className="text-on-surface-variant">
                   Other lab-tested staples from verified vendors.
                 </p>

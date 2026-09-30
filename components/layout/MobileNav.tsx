@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, Home, Search, Shapes, UserRound } from 'lucide-react';
+import { Heart, Home, LogIn, Search, LayoutGrid, CircleUserRound } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/auth.store';
 
 const tabs = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/products', label: 'Categories', icon: Shapes },
+  { href: '/products', label: 'Categories', icon: LayoutGrid },
   { href: '/search', label: 'Search', icon: Search },
   { href: '/wishlist', label: 'Wishlist', icon: Heart },
 ];
@@ -25,8 +25,39 @@ export function MobileNav() {
 
   const accountActive = pathname.startsWith('/account');
 
+  // Guests get a reduced bar: the full tab set (Home/Categories/Search/Wishlist) is only
+  // useful once there is an account behind it — Wishlist and Account both need one, and
+  // Home/Categories/Search work without login anyway but are one tap away via the header.
+  // Two clear paths forward beat five tabs where three lead to the same login prompt.
+  if (!isLoggedIn) {
+    return (
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white text-[#04342c] lg:hidden">
+        <div className="grid h-14 grid-cols-2">
+          <Link
+            className={cn(
+              'grid place-items-center gap-0.5 text-[11px] font-semibold',
+              accountActive ? 'text-brand-primary' : 'text-text-muted'
+            )}
+            href="/account"
+          >
+            <CircleUserRound aria-hidden="true" className="h-5 w-5" />
+            My Account
+          </Link>
+          <button
+            className="grid place-items-center gap-0.5 text-[11px] font-semibold text-text-muted"
+            type="button"
+            onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}
+          >
+            <LogIn aria-hidden="true" className="h-5 w-5" />
+            Login / Signup
+          </button>
+        </div>
+      </nav>
+    );
+  }
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-surface-border bg-surface-base lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white text-[#04342c] lg:hidden">
       <div className="grid h-14 grid-cols-5">
         {tabs.map((tab) => {
           const active = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href));
@@ -47,27 +78,16 @@ export function MobileNav() {
           );
         })}
 
-        {isLoggedIn ? (
-          <Link
-            className={cn(
-              'grid place-items-center gap-0.5 text-[11px] font-semibold',
-              accountActive ? 'text-brand-primary' : 'text-text-muted'
-            )}
-            href="/account"
-          >
-            <UserRound aria-hidden="true" className="h-5 w-5" />
-            Account
-          </Link>
-        ) : (
-          <button
-            className="grid place-items-center gap-0.5 text-[11px] font-semibold text-text-muted"
-            type="button"
-            onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}
-          >
-            <UserRound aria-hidden="true" className="h-5 w-5" />
-            Login
-          </button>
-        )}
+        <Link
+          className={cn(
+            'grid place-items-center gap-0.5 text-[11px] font-semibold',
+            accountActive ? 'text-brand-primary' : 'text-text-muted'
+          )}
+          href="/account"
+        >
+          <CircleUserRound aria-hidden="true" className="h-5 w-5" />
+          Account
+        </Link>
       </div>
     </nav>
   );
