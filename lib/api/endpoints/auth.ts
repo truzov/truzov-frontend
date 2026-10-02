@@ -32,7 +32,7 @@ export function signup(body: SignupRequest): Promise<SignupResponse> {
 }
 
 /**
- * Whether an identifier has an account. Rate-limited per account and per IP on the backend.
+ * Whether an identifier has an account. Rate-limited per IP on the backend.
  *
  * Deliberately narrow use: call this ONLY right before sending a login OTP, to skip the send
  * for an identifier that could never redeem a code — never expose it as a general-purpose

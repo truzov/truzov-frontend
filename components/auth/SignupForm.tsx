@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/auth.store';
 import type { AuthFormProps } from './LoginForm';
@@ -28,7 +29,6 @@ interface SignupFormProps extends AuthFormProps {
 export function SignupForm({
   variant = 'page',
   redirectTo,
-  onSuccess,
   onModeChange,
   onOtpSent,
 }: SignupFormProps) {
@@ -36,20 +36,14 @@ export function SignupForm({
   const isLoading = useAuthStore((state) => state.isLoading);
   const error = useAuthStore((state) => state.error);
   const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
-  // The ACCOUNT_NOT_FOUND login flow: the identifier was proven by a consumed OTP
-  // session the store is holding, so pre-fill it and let signup carry the voucher.
-  const verifiedOtpSessionId = useAuthStore((state) => state.verifiedOtpSessionId);
+  // This is a form draft only. Carrying an identifier never proves ownership.
   const pendingIdentifier = useAuthStore((state) => state.pendingIdentifier);
   const pendingChannel = useAuthStore((state) => state.otpChannel);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  const carryingForward = verifiedOtpSessionId != null;
-  const carriedEmail =
-    carryingForward && pendingIdentifier?.includes('@') ? pendingIdentifier : '';
+  const carriedEmail = pendingIdentifier?.includes('@') ? pendingIdentifier : '';
   const carriedPhone =
-    carryingForward && pendingIdentifier && !pendingIdentifier.includes('@')
-      ? pendingIdentifier
-      : '';
+    pendingIdentifier && !pendingIdentifier.includes('@') ? pendingIdentifier : '';
 
   const {
     register,
@@ -59,7 +53,7 @@ export function SignupForm({
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      otpChannel: carryingForward ? (pendingChannel ?? 'phone') : 'phone',
+      otpChannel: pendingChannel ?? 'phone',
       phone: carriedPhone,
       email: carriedEmail || undefined,
     },
@@ -116,11 +110,12 @@ export function SignupForm({
   };
 
   return (
-    <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
+    <form className="flex w-full flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
       <Input
         {...register('fullName')}
         error={errors.fullName?.message}
-        label="Full Name"
+        label="Full name"
+        autoComplete="name"
         placeholder="Asha Singh"
         type="text"
       />
@@ -131,7 +126,8 @@ export function SignupForm({
         {...register('phone')}
         error={errors.phone?.message}
         inputMode="tel"
-        label="Phone Number"
+        label="Phone number"
+        autoComplete="tel"
         placeholder="9876543210"
         type="tel"
       />
@@ -139,22 +135,33 @@ export function SignupForm({
       <Input
         {...register('email')}
         error={errors.email?.message}
-        label={otpChannel === 'email' ? 'Email Address' : 'Email Address (optional)'}
+        label={otpChannel === 'email' ? 'Email address' : 'Email address (optional)'}
+        autoComplete="email"
         placeholder="you@example.com"
         type="email"
       />
 
       <fieldset className="grid gap-2">
-        <legend className="text-caption font-body text-on-surface-variant">
+        <legend className="mb-2 text-sm text-on-surface-variant">
           Where should we send your verification code?
         </legend>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-body-md">
-            <input {...register('otpChannel')} type="radio" value="phone" />
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-outline-variant px-3 text-sm has-[:checked]:border-brand-primary has-[:checked]:bg-brand-light">
+            <input
+              {...register('otpChannel')}
+              className="accent-brand-primary"
+              type="radio"
+              value="phone"
+            />
             Text message
           </label>
-          <label className="flex items-center gap-2 text-body-md">
-            <input {...register('otpChannel')} type="radio" value="email" />
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-outline-variant px-3 text-sm has-[:checked]:border-brand-primary has-[:checked]:bg-brand-light">
+            <input
+              {...register('otpChannel')}
+              className="accent-brand-primary"
+              type="radio"
+              value="email"
+            />
             Email
           </label>
         </div>
@@ -167,9 +174,13 @@ export function SignupForm({
           })}
           error={errors.password?.message}
           label="Password"
-          placeholder="At least 8 characters, with a letter and a number"
+          autoComplete="new-password"
+          placeholder="Create a password"
           type="password"
         />
+        <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">
+          Use 8–128 characters, including a letter and a number.
+        </p>
         {password ? (
           <div className="mt-2 flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((level) => (
@@ -190,50 +201,49 @@ export function SignupForm({
       <Input
         {...register('confirmPassword')}
         error={errors.confirmPassword?.message}
-        label="Confirm Password"
+        label="Confirm password"
+        autoComplete="new-password"
         placeholder="Confirm password"
         type="password"
       />
 
       {error ? (
-        <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p>
+        <p role="alert" className="rounded-xl bg-error-container p-3 text-sm text-error">
+          {error}
+        </p>
       ) : null}
 
-      <button
-        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={isLoading}
-        type="submit"
-      >
+      <Button className="w-full" size="lg" disabled={isLoading} type="submit">
         {isLoading ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Creating Account...
+            <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
+            Creating account...
           </>
         ) : (
           <>
-            Create Account
-            <ArrowRight className="h-5 w-5" />
+            Create account
+            <ArrowRight aria-hidden="true" className="h-5 w-5" />
           </>
         )}
-      </button>
+      </Button>
 
       <div className="text-center">
-        <p className="text-body-md font-body text-on-surface-variant">
+        <p className="text-sm text-on-surface-variant">
           Already have an account?{' '}
           {variant === 'modal' && onModeChange ? (
             <button
-              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
+              className="inline-flex min-h-11 items-center rounded-lg px-2 font-medium text-primary underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
               type="button"
               onClick={() => onModeChange('login')}
             >
-              Log In
+              Sign in
             </button>
           ) : (
             <Link
-              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
+              className="inline-flex min-h-11 items-center rounded-lg px-2 font-medium text-primary underline underline-offset-4"
               href="/login"
             >
-              Log In
+              Sign in
             </Link>
           )}
         </p>

@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useId, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -9,22 +9,26 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, id, type = 'text', ...props }, ref) => {
-    const inputId = id ?? props.name;
+    const generatedId = useId();
+    const inputId = id ?? props.name ?? generatedId;
     const errorId = error ? `${inputId}-error` : undefined;
     const isPassword = type === 'password';
     const [revealed, setRevealed] = useState(false);
 
     const inputClassName = cn(
-      'h-11 rounded-sm border border-surface-border bg-surface-base px-3 text-base text-text-primary shadow-xs outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-light',
+      'h-11 min-w-0 w-full rounded-sm border border-surface-border bg-surface-base px-3 text-base text-text-primary shadow-xs outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-light',
       error && 'border-text-danger focus:border-text-danger focus:ring-status-dangerBg',
       className
     );
 
     return (
-      <label className="grid gap-1.5 text-sm font-medium text-text-secondary" htmlFor={inputId}>
+      <label
+        className="grid min-w-0 w-full gap-1.5 text-sm font-medium text-text-secondary"
+        htmlFor={inputId}
+      >
         {label}
         {isPassword ? (
-          <div className="relative grid">
+          <div className="relative grid min-w-0 w-full">
             <input
               id={inputId}
               ref={ref}
@@ -63,7 +67,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <span
           id={errorId}
-          className={cn('min-h-4 text-xs font-medium text-text-danger', !error && 'invisible')}
+          className={cn(
+            'min-h-4 break-words text-xs font-medium text-text-danger',
+            !error && 'invisible'
+          )}
           aria-live="polite"
         >
           {error ?? ''}

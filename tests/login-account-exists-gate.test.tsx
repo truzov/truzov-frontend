@@ -48,7 +48,7 @@ describe('LoginForm: account-existence gate before sending an OTP', () => {
     fireEvent.change(screen.getByLabelText(/email or phone number/i), {
       target: { value: identifier },
     });
-    fireEvent.click(screen.getByRole('button', { name: /send otp/i }));
+    fireEvent.click(screen.getByRole('button', { name: /send code/i }));
   }
 
   it('switches to signup without sending an OTP when the identifier has no account', async () => {

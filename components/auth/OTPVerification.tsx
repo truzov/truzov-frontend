@@ -48,7 +48,6 @@ export function OTPVerification({
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-
   const rawRedirect =
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('redirect')
@@ -168,9 +167,9 @@ export function OTPVerification({
   const isComplete = otp.every((digit) => digit !== '');
 
   return (
-    <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit}>
+    <form className="flex w-full flex-col gap-4" onSubmit={handleSubmit}>
       <div className="flex flex-col space-y-xs">
-        <span className="text-h6 font-bold font-body text-on-surface">
+        <span className="text-sm font-medium text-on-surface">
           {otpChannel === 'email' ? 'Email' : 'Phone number'}
         </span>
         <div className="flex items-center overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-md focus-within:ring-1 focus-within:ring-primary">
@@ -181,11 +180,11 @@ export function OTPVerification({
       </div>
 
       <div className="flex flex-col space-y-xs">
-        <span className="text-h6 font-bold font-body text-on-surface">Verification Code</span>
+        <span className="text-sm font-medium text-on-surface">Verification code</span>
         <p className="text-caption font-body text-on-surface-variant">
           Enter the {CODE_LENGTH}-digit code sent to your {channelLabel}
         </p>
-        <div className="flex justify-between gap-xs md:gap-sm">
+        <div className="grid grid-cols-6 gap-0.5 sm:gap-2">
           {otp.map((digit, index) => (
             <input
               key={index}
@@ -194,7 +193,7 @@ export function OTPVerification({
               }}
               aria-label={`Digit ${index + 1}`}
               autoComplete={index === 0 ? 'one-time-code' : 'off'}
-              className="h-14 w-12 rounded-lg border border-outline-variant bg-surface-container-lowest text-center text-h3 font-heading text-on-surface shadow-sm transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:h-16 md:w-14"
+              className="h-12 min-w-0 w-full rounded-xl border border-outline-variant bg-surface-container-lowest text-center text-2xl font-medium tabular-nums text-on-surface shadow-sm transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:h-14"
               disabled={sessionExpired || accountNotFound}
               inputMode="numeric"
               onChange={(event) => handleChange(index, event.target.value)}
@@ -207,13 +206,15 @@ export function OTPVerification({
       </div>
 
       {error ? (
-        <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p>
+        <p role="alert" className="rounded-xl bg-error-container p-3 text-sm text-error">
+          {error}
+        </p>
       ) : null}
 
       {sessionExpired ? (
         <>
           <button
-            className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-on-primary transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isLoading || !pendingIdentifier}
             type="button"
             onClick={() => void handleResend()}
@@ -243,7 +244,7 @@ export function OTPVerification({
         </>
       ) : (
         <button
-          className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h5 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-on-primary transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50"
           disabled={!isComplete || isLoading || accountNotFound}
           type="submit"
         >
@@ -264,7 +265,7 @@ export function OTPVerification({
       <div className="mt-lg flex flex-col items-center gap-md">
         {!sessionExpired && !accountNotFound ? (
           <button
-            className="cursor-pointer border-none bg-transparent text-body-md font-body text-primary transition-colors hover:text-primary-container disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-11 cursor-pointer rounded-lg bg-transparent px-3 text-sm font-medium text-primary hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-50"
             disabled={resendCooldown > 0 || isLoading || !pendingIdentifier}
             type="button"
             onClick={() => void handleResend()}
@@ -276,7 +277,7 @@ export function OTPVerification({
         ) : null}
         {variant === 'modal' && onSwitchMode ? (
           <button
-            className="flex items-center gap-xs text-body-md font-body text-on-surface-variant transition-colors hover:text-on-surface"
+            className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-on-surface-variant hover:text-on-surface"
             type="button"
             onClick={() => onSwitchMode('login')}
           >
@@ -285,7 +286,7 @@ export function OTPVerification({
           </button>
         ) : (
           <Link
-            className="flex items-center gap-xs text-body-md font-body text-on-surface-variant transition-colors hover:text-on-surface"
+            className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-on-surface-variant hover:text-on-surface"
             href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
           >
             <ArrowLeft className="h-4 w-4" />

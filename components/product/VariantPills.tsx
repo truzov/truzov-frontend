@@ -38,7 +38,7 @@ export function VariantPills({
             key={variant.id}
             aria-pressed={variant.id === selectedId}
             className={cn(
-              'rounded-lg border px-3 py-2 text-sm font-medium transition',
+              'min-h-11 min-w-11 rounded-lg border px-3 py-2 text-sm font-medium transition',
               variant.id === selectedId
                 ? 'border-primary bg-primary/5 text-primary'
                 : 'border-outline-variant hover:border-primary/50',

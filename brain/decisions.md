@@ -41,3 +41,43 @@ This document records the foundational architectural decisions and tool selectio
 * **Context:** Need to support multiple separate policy pages (Refund Policy, Shipping Policy, Privacy Policy, Terms of Service) matching the website theme and easily accessible from the header and footer.
 * **Alternatives considered:** Putting the policy text directly in page.tsx components or placing them outside route groupings.
 * **Rationale:** Placing the routes under `app/(shop)/policies/` group automatically integrates them under `ShopLayout` (inheriting Header/Footer). Storing the screens in `components/screens/PolicyScreens.tsx` adheres to the Page-Screen Consolidation Pattern, keeping pages lightweight and modular.
+
+---
+
+## Decision 6: Truzov Customer Storefront Direction
+* **Status:** Active design direction (2026-09)
+* **Context:** Redesign the customer frontend across mobile, tablet, and desktop using the supplied homepage brief and screenshots.
+* **Decision:** Use the forest/cream/sage/terracotta/amber palette, restrained motion, product and process imagery made for Truzov, and a coherent responsive shell. Treat the screenshots as layout references and keep existing navigation routes and frontend API behavior. The backend and separate admin panel are outside this redesign.
+* **Trust constraint:** Present verification badges and statistics only with appropriate live evidence. The design brief's example product names, counts, gift-card, newsletter, About, and Careers links do not authorize fabricated content or dead controls.
+
+## Decision 7: Shared Customer Journey Styling and Local Auth
+* **Status:** Active (2026-09)
+* **Decision:** Extend the storefront palette to the auth modal/pages and bag/checkout using scoped styles; keep the footer white with an Allura script slogan and make the existing wishlist route visible in the header. Preserve frontend routes and backend contracts.
+* **Local development:** Run the backend with its `dev` profile to enable mock OTP `123456` during local testing. Do not change backend code or treat seeded placeholder passwords as usable credentials.
+
+## Decision 8: Account Navigation and Standards Seal
+* **Status:** Active (2026-09)
+* **Decision:** Apply the storefront palette to the signed-in account menu and account pages, retaining existing links and keyboard behavior. Replace the homepage's plain text standards circle with a local SVG seal and subtle reduced-motion-safe tilt. The seal conveys Truzov's process, not a per-product certification claim.
+
+## Decision 9: Restrained Storefront Motion
+* **Status:** Active (2026-09)
+* **Decision:** Add brief native CSS entrance and hover motion to the customer storefront, with supported view-timeline reveals for sections. Reuse existing Lucide SVG icons in account navigation and add no animation dependency. The storefront's reduced-motion rule disables animations, transitions, smooth scrolling, and hover transforms.
+
+## Decision 10: Live Homepage Collection Preview
+* **Status:** Implemented (2026-09-30)
+* **Decision:** Show up to four distinct current products from the live `/products` list plus `/home` fallback. Keep the collection label general, show stock availability, and gate individual lab badges on the product flag plus a passing report ID. Reuse product routes and leave backend code/data unchanged.
+
+## Decision 11: Local Fonts and Shared Customer Theme
+* **Status:** Implemented (2026-09-30)
+* **Decision:** Self-host licensed Inter, Allura and Lora to remove remote-loading fallback differences. Use Inter throughout scoped customer screens and primitives, retain Allura only for the footer script, and preserve separate workspace typography. Reuse installed styling/icon utilities without a new dependency.
+
+## Decision 12: Vector Wordmark and Usable Address Dialog
+* **Status:** Implemented (2026-09-30)
+* **Decision:** Recreate the supplied leaf wordmark in the existing forest palette using true lettering outlines and smooth leaf geometry in a shared SVG asset. A small raster trace was replaced after the user identified its jagged appearance. Keep address dialog heading/actions fixed, scroll the fields, and correct shared input grid sizing without changing address contracts.
+
+## Decision 13: Signup Identifier Continuity
+* **Status:** Implemented (2026-09-30)
+* **Decision:** Reuse the existing auth store for an in-memory normalized email/phone draft across login-to-signup transitions; reset stale OTP state and require fresh verification. No backend change is needed for this frontend continuity defect. The existing account lookup's presence disclosure and IP limits were inspected as a narrow security tradeoff; broader authentication auditing is outside this result.
+
+Final supplied PNG is the authoritative Truzov wordmark and supersedes the reconstructed SVG for all rendered Logo placements.
+Curated Lucide variants and shared optical styling provide consistent UI icons without adding an icon dependency or replacing functional components.

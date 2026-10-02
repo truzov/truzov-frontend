@@ -66,9 +66,7 @@ export function AddressForm({
       result.error.issues.map((issue) => [issue.path[0]?.toString() ?? 'form', issue.message])
     );
 
-    setErrors(
-      Object.fromEntries(Object.entries(issues).filter(([key]) => touched[key]))
-    );
+    setErrors(Object.fromEntries(Object.entries(issues).filter(([key]) => touched[key])));
   }, [form, touched]);
 
   const handleFieldChange = (field: keyof typeof form, value: string) => {
@@ -109,10 +107,7 @@ export function AddressForm({
     };
 
     if (address) {
-      updateAddress.mutate(
-        { addressId: address.id, body },
-        { onSuccess: () => onComplete() }
-      );
+      updateAddress.mutate({ addressId: address.id, body }, { onSuccess: () => onComplete() });
       return;
     }
 
@@ -123,92 +118,136 @@ export function AddressForm({
   const errorFor = (field: string) => fieldError(mutationError, field) ?? errors[field];
 
   return (
-    <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-      <Input
-        error={errorFor('fullName')}
-        label="Full Name"
-        onChange={(event) => handleFieldChange('fullName', event.target.value)}
-        placeholder="Asha Singh"
-        value={form.fullName}
-      />
-      <Input
-        error={errorFor('phone')}
-        label="Phone"
-        onChange={(event) => handleFieldChange('phone', event.target.value)}
-        placeholder="9876543210"
-        value={form.phone}
-      />
-      <Input
-        error={errorFor('pincode')}
-        inputMode="numeric"
-        label="Pincode"
-        onChange={(event) => handleFieldChange('pincode', event.target.value)}
-        placeholder="411001"
-        value={form.pincode}
-      />
-      <Input
-        error={errorFor('city')}
-        label="City"
-        onChange={(event) => handleFieldChange('city', event.target.value)}
-        placeholder="Pune"
-        value={form.city}
-      />
-      <Input
-        error={errorFor('state')}
-        label="State"
-        onChange={(event) => handleFieldChange('state', event.target.value)}
-        placeholder="Maharashtra"
-        value={form.state}
-      />
-      <Input
-        error={errorFor('label')}
-        label="Label (optional)"
-        onChange={(event) => handleFieldChange('label', event.target.value)}
-        placeholder="Home"
-        value={form.label}
-      />
-      <Input
-        error={errorFor('line1')}
-        label="Address Line 1"
-        onChange={(event) => handleFieldChange('line1', event.target.value)}
-        placeholder="Flat / house / street"
-        value={form.line1}
-      />
-      <Input
-        error={errorFor('line2')}
-        label="Address Line 2 (optional)"
-        onChange={(event) => handleFieldChange('line2', event.target.value)}
-        placeholder="Area"
-        value={form.line2}
-      />
-      <Input
-        error={errorFor('landmark')}
-        label="Landmark (optional)"
-        onChange={(event) => handleFieldChange('landmark', event.target.value)}
-        placeholder="Near the temple"
-        value={form.landmark}
-      />
-      {/* Only one default exists server-side: setting this demotes the others in one update. */}
-      <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-text-primary">
-        <input
-          checked={isDefault}
-          onChange={(event) => setIsDefault(event.target.checked)}
-          type="checkbox"
-        />
-        Set as default address
-      </label>
+    <form className="flex min-h-0 flex-col" onSubmit={handleSubmit}>
+      <div className="min-h-0 space-y-6 overflow-y-auto overscroll-contain py-5 pr-1">
+        <fieldset className="grid min-w-0 gap-x-4 gap-y-2 sm:grid-cols-2">
+          <legend className="mb-4 text-base font-medium text-text-primary">Contact details</legend>
+          <Input
+            autoComplete="shipping name"
+            error={errorFor('fullName')}
+            label="Full name"
+            name="fullName"
+            onChange={(event) => handleFieldChange('fullName', event.target.value)}
+            placeholder="Asha Singh"
+            value={form.fullName}
+          />
+          <Input
+            autoComplete="shipping tel"
+            error={errorFor('phone')}
+            label="Phone"
+            name="phone"
+            type="tel"
+            onChange={(event) => handleFieldChange('phone', event.target.value)}
+            placeholder="9876543210"
+            value={form.phone}
+          />
+        </fieldset>
+        <fieldset className="grid min-w-0 gap-x-4 gap-y-2">
+          <legend className="mb-4 text-base font-medium text-text-primary">Delivery address</legend>
+          <Input
+            autoComplete="shipping address-line1"
+            error={errorFor('line1')}
+            label="House, building and street"
+            name="line1"
+            onChange={(event) => handleFieldChange('line1', event.target.value)}
+            placeholder="Flat / house / street"
+            value={form.line1}
+          />
+          <Input
+            autoComplete="shipping address-line2"
+            error={errorFor('line2')}
+            label="Area or locality (optional)"
+            name="line2"
+            onChange={(event) => handleFieldChange('line2', event.target.value)}
+            placeholder="Area"
+            value={form.line2}
+          />
+          <div className="grid min-w-0 gap-x-4 gap-y-2 sm:grid-cols-2">
+            <Input
+              autoComplete="shipping postal-code"
+              error={errorFor('pincode')}
+              inputMode="numeric"
+              label="Pincode"
+              name="pincode"
+              onChange={(event) => handleFieldChange('pincode', event.target.value)}
+              placeholder="411001"
+              value={form.pincode}
+            />
+            <Input
+              autoComplete="shipping address-level2"
+              error={errorFor('city')}
+              label="City"
+              name="city"
+              onChange={(event) => handleFieldChange('city', event.target.value)}
+              placeholder="Pune"
+              value={form.city}
+            />
+            <Input
+              autoComplete="shipping address-level1"
+              error={errorFor('state')}
+              label="State"
+              name="state"
+              onChange={(event) => handleFieldChange('state', event.target.value)}
+              placeholder="Maharashtra"
+              value={form.state}
+            />
+            <Input
+              error={errorFor('landmark')}
+              label="Landmark (optional)"
+              name="landmark"
+              onChange={(event) => handleFieldChange('landmark', event.target.value)}
+              placeholder="Near the temple"
+              value={form.landmark}
+            />
+          </div>
+        </fieldset>
+        <fieldset className="grid min-w-0 gap-x-4 gap-y-2 sm:grid-cols-2">
+          <legend className="mb-4 text-base font-medium text-text-primary">
+            Address preferences
+          </legend>
+          <Input
+            error={errorFor('label')}
+            label="Label (optional)"
+            name="label"
+            onChange={(event) => handleFieldChange('label', event.target.value)}
+            placeholder="Home or work"
+            value={form.label}
+          />
+          {/* Only one default exists server-side: setting this demotes the others in one update. */}
+          <label className="flex min-h-11 items-center gap-3 self-end text-sm font-medium text-text-primary">
+            <input
+              checked={isDefault}
+              className="h-5 w-5 accent-[#04342c]"
+              onChange={(event) => setIsDefault(event.target.checked)}
+              type="checkbox"
+            />
+            Set as default address
+          </label>
+        </fieldset>
 
-      {mutationError ? (
-        <div className="md:col-span-2">
-          <InlineError error={mutationError} />
-        </div>
-      ) : null}
+        {mutationError ? (
+          <div>
+            <InlineError error={mutationError} />
+          </div>
+        ) : null}
+      </div>
 
-      <div className="flex gap-3 md:col-span-2">
-        <Button disabled={!isFormValid || isPending} loading={isPending} type="submit">
-          {address ? 'Save Changes' : 'Save Address'}
+      <div className="flex shrink-0 flex-wrap gap-3 border-t border-surface-border py-4">
+        <Button
+          className="min-h-11 flex-1 sm:flex-none"
+          disabled={!isFormValid || isPending}
+          loading={isPending}
+          type="submit"
+        >
+          {address ? 'Save changes' : 'Save address'}
         </Button>
-        <Button disabled={isPending} type="button" variant="ghost" onClick={onComplete}>
+        <Button
+          className="min-h-11 flex-1 sm:flex-none"
+          disabled={isPending}
+          type="button"
+          variant="ghost"
+          onClick={onComplete}
+        >
           Cancel
         </Button>
       </div>

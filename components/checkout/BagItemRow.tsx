@@ -32,9 +32,9 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
   const lowStock = item.availableStock > 0 && item.availableStock <= 7;
 
   return (
-    <article className="grid grid-cols-[96px_1fr] gap-3 rounded-md border border-surface-border bg-surface-base p-3 shadow-xs sm:grid-cols-[132px_1fr] sm:p-4">
+    <article className="grid grid-cols-[80px_minmax(0,1fr)] gap-3 rounded-2xl border border-surface-border bg-surface-base p-4 shadow-xs sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-5 sm:p-5">
       <Link
-        className="relative aspect-[4/5] overflow-hidden rounded-md bg-surface-raised"
+        className="relative aspect-[4/5] self-start overflow-hidden rounded-xl bg-surface-raised"
         href={`/products/${item.slug}`}
       >
         {item.imageUrl ? (
@@ -52,7 +52,7 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Link className="font-bold hover:text-brand-primary" href={`/products/${item.slug}`}>
+            <Link className="text-base font-medium leading-snug hover:text-brand-primary sm:text-lg" href={`/products/${item.slug}`}>
               {item.name}
             </Link>
             {!item.inStock ? (
@@ -75,7 +75,7 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center rounded-sm border border-surface-border bg-surface-raised">
+          <div className="inline-flex items-center rounded-xl border border-surface-border bg-surface-raised">
             <Button
               aria-label="Decrease quantity"
               // At quantity 1 the decrement would be 0, which the server rejects; removing is the
@@ -87,7 +87,7 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
             >
               <Minus aria-hidden="true" className="h-4 w-4" />
             </Button>
-            <span className="w-14 text-center text-sm font-bold">Qty: {item.quantity}</span>
+            <span className="w-14 text-center text-sm font-medium">Qty: {item.quantity}</span>
             <Button
               aria-label="Increase quantity"
               disabled={isBusy}
@@ -98,7 +98,7 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
               <Plus aria-hidden="true" className="h-4 w-4" />
             </Button>
           </div>
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-text-secondary">
+          <span className="inline-flex items-center gap-1 text-sm text-text-secondary">
             <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-brand-primary" />
             {formatCurrency(item.unitPrice)} each
           </span>
@@ -107,12 +107,12 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
         <div className="mt-4">
           {/* The server's own arithmetic. Never `unitPrice * quantity` computed here — the whole
               point of the migration is that displayed money is what the server will charge. */}
-          <span className="text-lg font-bold">{formatCurrency(item.lineTotal)}</span>
+          <span className="text-lg font-medium tabular-nums">{formatCurrency(item.lineTotal)}</span>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-4 text-sm font-semibold">
+        <div className="mt-2 flex flex-wrap gap-x-4 text-sm font-medium">
           <button
-            className="text-text-secondary hover:text-brand-primary disabled:opacity-50"
+            className="min-h-11 rounded-sm text-text-secondary hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:opacity-50"
             disabled={isBusy}
             type="button"
             onClick={() => removeItem.mutate(item.id)}
@@ -120,7 +120,7 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
             Remove
           </button>
           <button
-            className="text-text-secondary hover:text-brand-primary disabled:opacity-50"
+            className="min-h-11 rounded-sm text-text-secondary hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:opacity-50"
             disabled={isBusy || wishlist.isPending}
             type="button"
             onClick={() => {
@@ -131,7 +131,7 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
               removeItem.mutate(item.id);
             }}
           >
-            Move to Wishlist
+            Move to wishlist
           </button>
         </div>
       </div>

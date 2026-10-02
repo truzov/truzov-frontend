@@ -54,10 +54,10 @@ export function CheckoutPriceDetails({
   const hasItems = itemCount > 0 || Boolean(orderTotals);
 
   return (
-    <aside className="rounded-md border border-surface-border bg-surface-base p-5 shadow-xs lg:sticky lg:top-28">
+    <aside className="h-fit rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6 lg:sticky lg:top-6">
       <div className="border-b border-surface-border pb-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-text-secondary">
-          Price Details ({itemCount} {itemCount === 1 ? 'Item' : 'Items'})
+        <h2 className="text-xl font-medium tracking-tight text-[#04342c]">
+          Price details ({itemCount} {itemCount === 1 ? 'item' : 'items'})
         </h2>
         <div className="mt-4 grid gap-3 text-sm">
           <PriceLine label="Subtotal" value={formatCurrency(subtotal)} />
@@ -75,14 +75,14 @@ export function CheckoutPriceDetails({
       </div>
 
       {orderTotals ? (
-        <div className="flex items-center justify-between py-4 text-lg font-bold">
-          <span>Total Amount</span>
+        <div className="flex items-center justify-between py-4 text-lg font-medium">
+          <span>Total amount</span>
           <span>{formatCurrency(orderTotals.totalAmount)}</span>
         </div>
       ) : (
         // No total before checkout, on purpose: GET /cart returns only `subtotal`, and any total
         // shown here would be a client-side guess at the server's pricing.
-        <p className="py-4 text-xs leading-5 text-text-secondary">
+        <p className="py-4 text-sm leading-6 text-text-secondary">
           Delivery charges, if any, are calculated and confirmed when you place the order.
         </p>
       )}
@@ -99,10 +99,10 @@ export function CheckoutPriceDetails({
         {ctaLabel}
       </Button>
 
-      {termsText ? <p className="mt-3 text-xs leading-5 text-text-secondary">{termsText}</p> : null}
-      <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-text-secondary">
-        <Truck aria-hidden="true" className="h-4 w-4 text-brand-primary" />
-        Safe checkout verified by Truzov Labs.
+      {termsText ? <p className="mt-3 text-sm leading-6 text-text-secondary">{termsText}</p> : null}
+      <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-text-secondary">
+        <Truck aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-brand-primary" />
+        Your order details are confirmed before payment.
       </p>
     </aside>
   );

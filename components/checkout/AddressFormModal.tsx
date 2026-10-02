@@ -15,7 +15,13 @@ export function AddressFormModal({
   address?: AddressDto;
 }) {
   return (
-    <Modal open={open} title={address ? 'Edit Address' : 'Add New Address'} onClose={onClose}>
+    <Modal
+      bodyClassName="flex flex-col overflow-hidden py-0"
+      className="max-w-2xl"
+      open={open}
+      title={address ? 'Edit address' : 'Add new address'}
+      onClose={onClose}
+    >
       <AddressForm address={address} onComplete={onClose} />
     </Modal>
   );

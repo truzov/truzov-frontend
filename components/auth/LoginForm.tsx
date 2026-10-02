@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { isValidRedirect } from '@/lib/auth/redirect';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/auth.store';
@@ -39,6 +40,7 @@ export function LoginForm({
   const error = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
   const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
+  const pendingIdentifier = useAuthStore((state) => state.pendingIdentifier);
 
   /**
    * Both documented sign-in paths are offered because they suit different accounts.
@@ -56,6 +58,7 @@ export function LoginForm({
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
+    defaultValues: { identifier: pendingIdentifier ?? '' },
   });
 
   /**
@@ -90,19 +93,14 @@ export function LoginForm({
       // Gate the OTP send on account existence: an identifier with no account can never redeem
       // a code, so sending one is a dead end the user has to sit through before reaching signup.
       // This is a deliberate, scoped exception to the "otp/send never confirms existence" rule
-      // elsewhere in this flow — see checkAccountExists's doc comment and AuthService.accountExists
-      // on the backend for the rate-limiting that keeps this endpoint from becoming a general
-      // enumeration oracle.
-      // Gate the OTP send on account existence: an identifier with no account can never redeem
-      // a code, so sending one is a dead end the user has to sit through before reaching signup.
-      // This is a deliberate, scoped exception to the "otp/send never confirms existence" rule
       // elsewhere in this flow — see checkAccountExists's doc comment (store and endpoint layers)
       // and AuthService.accountExists on the backend for the rate-limiting that keeps this
       // endpoint from becoming a general enumeration oracle.
       const exists = await checkAccountExists(data.identifier);
 
       if (!exists) {
-        onModeChange?.('signup');
+        if (onModeChange) onModeChange('signup');
+        else router.push('/signup');
         return;
       }
 
@@ -122,12 +120,12 @@ export function LoginForm({
   };
 
   return (
-    <form className="flex w-full flex-col space-y-lg" onSubmit={handleSubmit(onSubmit)}>
+    <form className="flex w-full flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
       <Input
         {...register('identifier')}
         error={errors.identifier?.message}
-        label="Email or Phone Number"
-        inputMode="email"
+        label="Email or phone number"
+        autoComplete="username"
         placeholder="you@example.com or 9876543210"
         type="text"
       />
@@ -144,29 +142,32 @@ export function LoginForm({
       ) : null}
 
       {error ? (
-        <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p>
+        <p role="alert" className="rounded-xl bg-error-container p-3 text-sm text-error">
+          {error}
+        </p>
       ) : null}
 
-      <button
-        className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary px-lg py-md text-h6 font-bold font-body text-on-primary shadow-sm transition-all hover:bg-primary-container hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+      <Button
+        className="w-full"
+        size="lg"
         disabled={isLoading || (usePassword && password.length === 0)}
         type="submit"
       >
         {isLoading ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
             {usePassword ? 'Signing in...' : 'Sending OTP...'}
           </>
         ) : (
           <>
-            {usePassword ? 'Sign In' : 'Send OTP'}
-            <ArrowRight className="h-5 w-5" />
+            {usePassword ? 'Sign in' : 'Send code'}
+            <ArrowRight aria-hidden="true" className="h-5 w-5" />
           </>
         )}
-      </button>
+      </Button>
 
       <button
-        className="text-center text-body-md font-body text-primary transition-colors hover:text-primary-container"
+        className="min-h-11 rounded-lg text-center text-sm font-medium text-primary hover:bg-brand-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         type="button"
         onClick={() => {
           // Clear the previous mode's error so a failed password attempt does not linger above
@@ -180,7 +181,7 @@ export function LoginForm({
       </button>
 
       {!usePassword ? (
-        <p className="text-center text-caption font-body text-on-surface-variant">
+        <p className="text-center text-sm leading-relaxed text-on-surface-variant">
           {/* Neutral wording on purpose: /auth/otp/send answers identically for known and
               unknown identifiers to prevent account enumeration, so the UI must not imply
               whether an account exists. */}
@@ -189,22 +190,22 @@ export function LoginForm({
       ) : null}
 
       <div className="text-center">
-        <p className="text-body-md font-body text-on-surface-variant">
+        <p className="text-sm text-on-surface-variant">
           Don&apos;t have an account?{' '}
           {variant === 'modal' && onModeChange ? (
             <button
-              className="text-h6 font-body text-primary transition-colors hover:text-primary-container"
+              className="inline-flex min-h-11 items-center rounded-lg px-2 font-medium text-primary underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
               type="button"
               onClick={() => onModeChange('signup')}
             >
-              Sign Up
+              Sign up
             </button>
           ) : (
             <Link
-              className="text-h5 font-bold font-body text-primary transition-colors hover:text-primary-container"
+              className="inline-flex min-h-11 items-center rounded-lg px-2 font-medium text-primary underline underline-offset-4"
               href="/signup"
             >
-              Sign Up
+              Sign up
             </Link>
           )}
         </p>

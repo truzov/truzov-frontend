@@ -8,8 +8,8 @@ import { HomeScreen } from '@/components/screens/CustomerScreens';
  * Freshness is now governed by the query's staleTime.
  */
 export const metadata: Metadata = {
-  title: 'Verified Organic Marketplace',
-  description: 'Shop lab-verified organic products with transparent reports.',
+  title: 'Truzov | Every label, verified',
+  description: 'Explore products checked before they reach the shelf. Shop personal care, food and more on truzov.',
 };
 
 export default function Page() {
@@ -18,7 +18,7 @@ export default function Page() {
     '@type': 'Organization',
     name: 'Truzov',
     url: 'https://truzov.com',
-    logo: 'https://truzov.com/logo.png',
+    logo: 'https://truzov.com/truzov-logo-final.png',
   };
 
   return (
