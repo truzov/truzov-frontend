@@ -145,3 +145,5 @@ Use installed Lucide components for UI icons; global .lucide defines1.75px strok
 * Quote keys include owner, selection, quantities and line totals. Disable ordering while a coupon is invalid/pending; revalidate at checkout and allow same-code retries. Random intent keys rotate when address/selection/quantity/coupon changes, remaining stable for unchanged retries.
 * Public seller applications use separate bounded persistence with admin-only reads, not fake accounts or anonymous writes to authenticated ticket endpoints. Show success only after receiving a saved reference.
 * Reserve product and variant stock together under deterministic locks. Record whether variant stock was reserved so legacy cancellation cannot inflate inventory.
+
+* Vercel builds use Next.js default .next output; local .next-build isolation is conditional on absence of VERCEL. Match hosting Output Directory to distDir.

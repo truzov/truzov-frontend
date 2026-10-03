@@ -137,3 +137,9 @@ Chromium browser QA used dedicated storefront 3100/admin 3101, explicitly pointi
 
 Screenshots were retained under `zshivam/qa-artifacts/`. No deploy/push or live database mutation was performed. Browser APIs were fixtures; authenticated full-browser purchases and real coupon/seller submission HTTP flows remain outside these browser checks. The integrated Spring/SQL tests exercise those backend flows against isolated PostgreSQL.
 
+
+## Hosted rollout — 2026-10-04
+
+Backend PR #31 commit bb5cf86 went live on Render with migration V202610040100 applied; public products/categories returned 200 and unauthenticated admin stats returned 401. Storefront PR #11 originally failed because Vercel expected .next/routes-manifest.json while local config used .next-build. Commit ae525d6 selects .next when VERCEL is present; a VERCEL=1 local production build passed all 49 routes and the hosted production deployment is Ready at https://truzov-frontend-sepia.vercel.app/. Admin PR #2 commit24f9489 was rebuilt with production environment and is Ready at https://truzov-admin.vercel.app/. Admin production branch tracking now uses codex/truzov-admin-branding; storefront uses feat/storefront-redesign. Live catalog loaded21 products and branded admin login rendered. Deployment dashboard screenshots are local qa-artifacts/vercel-storefront-live.png and vercel-admin-live.png.
+
+Backend GitHub CI ran372 tests with0 failures, but SpotBugs rejected7 mutable representation findings. Follow-up defensive copies and a scoped repository injection exclusion are being verified separately. Runtime auth limitations recorded earlier remain; no production purchase or seller submission was created during smoke checks.

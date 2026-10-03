@@ -170,3 +170,9 @@ Additional resolved findings: selected variants previously had separate stock fi
 
 Final static disposition: approved, with no outstanding task-blocking code finding in the reviewed final changes. Frontend root agent reports 136 passing tests and typecheck success. Final browser/build and database integration outcomes must be recorded by QA; this review does not claim hosted deployment or live end-to-end purchase verification.
 
+
+## Hosted rollout — 2026-10-04
+
+Backend PR #31 commit bb5cf86 went live on Render with migration V202610040100 applied; public products/categories returned 200 and unauthenticated admin stats returned 401. Storefront PR #11 originally failed because Vercel expected .next/routes-manifest.json while local config used .next-build. Commit ae525d6 selects .next when VERCEL is present; a VERCEL=1 local production build passed all 49 routes and the hosted production deployment is Ready at https://truzov-frontend-sepia.vercel.app/. Admin PR #2 commit24f9489 was rebuilt with production environment and is Ready at https://truzov-admin.vercel.app/. Admin production branch tracking now uses codex/truzov-admin-branding; storefront uses feat/storefront-redesign. Live catalog loaded21 products and branded admin login rendered. Deployment dashboard screenshots are local qa-artifacts/vercel-storefront-live.png and vercel-admin-live.png.
+
+Backend GitHub CI ran372 tests with0 failures, but SpotBugs rejected7 mutable representation findings. Follow-up defensive copies and a scoped repository injection exclusion are being verified separately. Runtime auth limitations recorded earlier remain; no production purchase or seller submission was created during smoke checks.

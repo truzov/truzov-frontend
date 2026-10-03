@@ -92,3 +92,6 @@ Curated Lucide variants and shared optical styling provide consistent UI icons w
 * **Decision:** Extend checkout with optional selected line IDs and coupon code; omitted IDs retain legacy whole-cart behavior, explicit empty/duplicate/missing/foreign selections reject. Reuse admin-managed flat coupons, enforce eligibility and per-user placed-order redemption limits transactionally, and retain discount snapshots on orders. Preserve unselected cart lines.
 * **Seller intake:** Anonymous website applications have separate storage and protected admin listing; existing authenticated support tickets retain their ownership model.
 * **UI:** Use approved Truzov assets in actual ADMIN sign-in, clearable numeric drafts, accessible mobile quantity/logout controls, and remove settings navigation with an old-route redirect. Deploy backend migration/contracts before frontends. See QA/review reports for isolated database and browser evidence.
+
+## Decision 16: Deploy latest PR branches without merging
+Use existing production services and domains. Vercel storefront tracks feat/storefront-redesign; admin now tracks codex/truzov-admin-branding and rebuilds previews with production environment. Hosted Next.js output stays .next while local build isolation stays .next-build.

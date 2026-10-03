@@ -88,3 +88,9 @@ Backend revalidates active/date/minimum/product scope/per-user coupon limits aga
 
 Verification: storefront 137 tests and build/type checks, admin 14 tests and build/type checks, backend 287 unit tests/package and 6 isolated PostgreSQL integration tests passed. Browser checks covered mobile product controls/cart/logout, removed settings, admin login/sort zero-to-blank-to-17, and 1024/1280 overflow. Browser screens used an isolated fixture API; persistence/concurrency were verified separately against local PostgreSQL. No live database writes, pushes, or deployments. Backend API/migration must deploy before the updated frontends.
 
+
+## Hosted rollout — 2026-10-04
+
+Backend PR #31 commit bb5cf86 went live on Render with migration V202610040100 applied; public products/categories returned 200 and unauthenticated admin stats returned 401. Storefront PR #11 originally failed because Vercel expected .next/routes-manifest.json while local config used .next-build. Commit ae525d6 selects .next when VERCEL is present; a VERCEL=1 local production build passed all 49 routes and the hosted production deployment is Ready at https://truzov-frontend-sepia.vercel.app/. Admin PR #2 commit24f9489 was rebuilt with production environment and is Ready at https://truzov-admin.vercel.app/. Admin production branch tracking now uses codex/truzov-admin-branding; storefront uses feat/storefront-redesign. Live catalog loaded21 products and branded admin login rendered. Deployment dashboard screenshots are local qa-artifacts/vercel-storefront-live.png and vercel-admin-live.png.
+
+Backend GitHub CI ran372 tests with0 failures, but SpotBugs rejected7 mutable representation findings. Follow-up defensive copies and a scoped repository injection exclusion are being verified separately. Runtime auth limitations recorded earlier remain; no production purchase or seller submission was created during smoke checks.
