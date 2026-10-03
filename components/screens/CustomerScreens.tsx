@@ -14,6 +14,7 @@ import {
   MapPin,
   ReceiptText,
   CircleUserRound,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -455,6 +456,19 @@ function AccountPanel({
 
 export function AccountSidebar({ userName }: { userName: string }) {
   const pathname = usePathname();
+  const logout = useAuthStore((state) => state.logout);
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const signOut = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+      router.push('/');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <aside className="account-sidebar h-fit min-w-0 rounded-2xl border border-[#dce6d8] bg-white p-4 shadow-[0_8px_28px_#04342c0a] lg:sticky lg:top-24">
@@ -496,6 +510,15 @@ export function AccountSidebar({ userName }: { userName: string }) {
           </div>
         ))}
       </nav>
+      <button
+        className="mt-5 flex min-h-11 w-full items-center gap-2 rounded-lg border-t border-[#dce6d8] px-2 pt-4 text-left text-sm text-[#b44d30] transition-colors hover:bg-[#fae8e0] disabled:cursor-not-allowed disabled:opacity-60"
+        type="button"
+        disabled={loggingOut}
+        onClick={signOut}
+      >
+        <LogOut aria-hidden="true" className="h-4 w-4" />
+        {loggingOut ? 'Logging out…' : 'Log out'}
+      </button>
     </aside>
   );
 }
