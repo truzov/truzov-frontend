@@ -101,3 +101,5 @@ Do not mix Unicode symbols with SVG navigation icons or let input caret touch a 
 * **Review prevention:** Lock prices and variant inventory as well as product stock; restore only recorded reservations on cancellation. Rotate checkout intent keys when user choices change. Test concurrent coupon limits, selected-line leftovers, failure rollback, and actual numeric editing; distinguish fixture screenshots from real database integration.
 
 * Hosted storefront failed after a local distDir change: Vercel sought .next/routes-manifest.json. Always verify the hosted build path; local next build alone does not validate adapter packaging.
+
+* New records with mutable list components passed unit tests but failed CI SpotBugs EI_EXPOSE_REP. Run the repository static-analysis gate before declaring PR checks complete.

@@ -95,3 +95,5 @@ Curated Lucide variants and shared optical styling provide consistent UI icons w
 
 ## Decision 16: Deploy latest PR branches without merging
 Use existing production services and domains. Vercel storefront tracks feat/storefront-redesign; admin now tracks codex/truzov-admin-branding and rebuilds previews with production environment. Hosted Next.js output stays .next while local build isolation stays .next-build.
+
+* CI follow-up: use defensive request/record snapshots; preserve existing Bean Validation behavior. Repository proxy exclusion is narrowly scoped rather than disabling representation checks globally.

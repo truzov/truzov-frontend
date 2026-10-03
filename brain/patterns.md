@@ -147,3 +147,5 @@ Use installed Lucide components for UI icons; global .lucide defines1.75px strok
 * Reserve product and variant stock together under deterministic locks. Record whether variant stock was reserved so legacy cancellation cannot inflate inventory.
 
 * Vercel builds use Next.js default .next output; local .next-build isolation is conditional on absence of VERCEL. Match hosting Output Directory to distDir.
+
+* Request collection records defensively copy input/output while preserving nullable legacy selections and null elements until Bean Validation. Keep injected-repository SpotBugs exclusions scoped to class/constructor/field/pattern.
