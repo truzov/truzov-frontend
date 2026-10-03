@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import {
   BadgeCheck,
   Building2,
@@ -14,14 +14,14 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { submitSellerApplication, type SellerApplicationReceipt, type SellerApplicationRequest } from '@/lib/api/endpoints/support';
 
 /**
  * Customer and Seller support pages (§ support). Styled to match PolicyLayout's hero + the
  * app's brand tokens.
  *
- * ponytail: the forms are UI-only — submit shows a success card and does not POST anywhere.
- * Wire `onSubmit` to the real endpoint (or an email service) once that exists; nothing else
- * here needs to change.
+ * Seller applications persist through the public onboarding endpoint. The separate customer
+ * contact form retains its existing behavior.
  */
 
 const FIELD_CLASS =
@@ -222,7 +222,59 @@ const SELLER_CATEGORIES = [
 ];
 
 export function SellerSupportScreen() {
-  const [submitted, setSubmitted] = useState(false);
+  const [receipt, setReceipt] = useState<SellerApplicationReceipt | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submitting = useRef(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting.current) return;
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const values = new FormData(form);
+    const value = (name: string) => String(values.get(name) ?? '').trim();
+    const body: SellerApplicationRequest = {
+      brand: value('brand'), contact: value('contact'), email: value('email'),
+      phone: value('phone'), category: value('category'),
+      ...(value('website') ? { website: value('website') } : {}),
+      ...(value('gstin') ? { gstin: value('gstin') } : {}),
+      ...(value('about') ? { about: value('about') } : {}),
+    };
+    if (!body.brand || !body.contact) {
+      setError('Enter your company name and contact person.');
+      return;
+    }
+    const phoneDigits = body.phone.replace(/\D/g, '').length;
+    if (!/^[+0-9 ()-]{7,20}$/.test(body.phone) || phoneDigits < 7 || phoneDigits > 15) {
+      setError('Enter a valid phone number with 7–15 digits.');
+      return;
+    }
+    if (body.website) {
+      try {
+        const url = new URL(body.website);
+        if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) {
+          setError('Enter an HTTP or HTTPS website address without embedded login details.');
+          return;
+        }
+      } catch {
+        setError('Enter a valid HTTP or HTTPS website address.');
+        return;
+      }
+    }
+    submitting.current = true;
+    setPending(true);
+    setError(null);
+    try {
+      const saved = await submitSellerApplication(body);
+      setReceipt(saved);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Your application could not be submitted. Please try again.');
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#FDFDFB] font-body text-text-primary">
@@ -244,27 +296,26 @@ export function SellerSupportScreen() {
             ]}
           />
 
-          {submitted ? (
+          {receipt ? (
             <SuccessCard
               heading="Application received!"
-              body="Thanks for your interest in selling on truzov. Our onboarding team will review your details and get in touch within 2–3 business days."
-              onReset={() => setSubmitted(false)}
+              body={`Your details have been saved for our onboarding team. Application reference: ${receipt.id}.`}
+              onReset={() => setReceipt(null)}
             />
           ) : (
             <form
               className="grid gap-5 rounded-3xl border border-surface-border bg-surface-base p-6 shadow-sm lg:p-8"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setSubmitted(true);
-              }}
+              onSubmit={handleSubmit}
+              aria-busy={pending}
             >
+              <fieldset className="grid min-w-0 gap-5" disabled={pending}>
               <div className="grid gap-5 sm:grid-cols-2">
-                <Input label="Brand / company name" name="brand" placeholder="Wellness Foods Pvt. Ltd." required />
-                <Input label="Contact person" name="contact" placeholder="Asha Singh" required />
+                <Input label="Brand / company name" name="brand" placeholder="Wellness Foods Pvt. Ltd." maxLength={150} required />
+                <Input label="Contact person" name="contact" placeholder="Asha Singh" maxLength={150} required />
               </div>
               <div className="grid gap-5 sm:grid-cols-2">
-                <Input label="Email" name="email" type="email" placeholder="brand@example.com" required />
-                <Input label="Phone" name="phone" type="tel" inputMode="tel" placeholder="9876543210" required />
+                <Input label="Email" name="email" type="email" placeholder="brand@example.com" maxLength={254} required />
+                <Input label="Phone" name="phone" type="tel" inputMode="tel" placeholder="9876543210" maxLength={20} required />
               </div>
               <label className="grid gap-1.5">
                 <FieldLabel label="Primary product category" required />
@@ -278,8 +329,8 @@ export function SellerSupportScreen() {
                 </select>
               </label>
               <div className="grid gap-5 sm:grid-cols-2">
-                <Input label="Website / social (optional)" name="website" placeholder="https://…" />
-                <Input label="GST number (optional)" name="gstin" placeholder="22AAAAA0000A1Z5" />
+                <Input label="Website / social (optional)" name="website" type="url" pattern="https?://.+" placeholder="https://…" maxLength={2048} />
+                <Input label="GST number (optional)" name="gstin" placeholder="22AAAAA0000A1Z5" maxLength={15} pattern="[A-Za-z0-9]{15}" title="15 letters and numbers" />
               </div>
               <label className="grid gap-1.5">
                 <FieldLabel label="Tell us about your brand (optional)" />
@@ -287,12 +338,15 @@ export function SellerSupportScreen() {
                   className={FIELD_CLASS}
                   name="about"
                   rows={4}
+                  maxLength={5000}
                   placeholder="What do you make, and what makes it worth verifying?"
                 />
               </label>
-              <Button className="justify-self-start px-8" size="lg" type="submit">
-                Submit application
+              {error ? <p className="text-sm text-text-danger" role="alert">{error}</p> : null}
+              <Button className="justify-self-start px-8" size="lg" type="submit" disabled={pending} aria-label={pending ? 'Submitting application' : 'Submit application'}>
+                {pending ? 'Submitting application…' : 'Submit application'}
               </Button>
+              </fieldset>
             </form>
           )}
         </div>

@@ -8,7 +8,7 @@ import { errorMessage } from '@/lib/api/errors';
 import { queryKeys } from '@/lib/api/queries';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
-import type { AddressDto, CreateAddressRequest } from '@/types/api';
+import type { AddressDto, CheckoutRequest, CreateAddressRequest } from '@/types/api';
 
 const EMPTY_ADDRESSES: AddressDto[] = [];
 
@@ -84,8 +84,8 @@ export function useCheckout() {
     // Takes the key alongside the address so a retry of the SAME attempt replays the original
     // order instead of placing a second one. The caller owns the key's lifetime, because only it
     // knows where one user intent ends and the next begins.
-    mutationFn: ({ addressId, idempotencyKey }: { addressId: string; idempotencyKey?: string }) =>
-      checkout({ addressId }, idempotencyKey),
+    mutationFn: ({ idempotencyKey, ...body }: CheckoutRequest & { idempotencyKey?: string }) =>
+      checkout(body, idempotencyKey),
     onSuccess: (order) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.cart() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.orders() });

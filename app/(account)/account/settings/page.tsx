@@ -1,5 +1,5 @@
-import { SettingsScreen } from '@/components/screens/CustomerScreens';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <SettingsScreen />;
+  redirect('/account');
 }

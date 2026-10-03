@@ -89,3 +89,13 @@ This document compiles resolved architectural bugs and configuration mistakes to
 
 Do not recreate or substitute a wordmark when the user supplies a final approved logo; reference that asset through shared Logo.
 Do not mix Unicode symbols with SVG navigation icons or let input caret touch a search icon. Verify expanded disclosure SVG transforms in browser instead of assuming utility generation.
+
+## Pitfall 12: Assignment Prefix in a Hosted URI Value
+* **Problem:** Render startup failed in `MediaStore` with an illegal URI scheme character because the `CLOUDINARY_URL` value included `CLOUDINARY_URL=`.
+* **Verified fix (2026-10-03):** Store only the Cloudinary URI in the Render value field; preserve unrelated variables with a merge update. The deployment reached live status without source changes.
+* **Boundary:** Successful startup and read-only API checks do not prove uploads, authenticated flows, or production readiness. Default-profile mock OTP and an ephemeral JWT key still require separate production configuration.
+
+## Pitfall 13: UI choices disconnected from persisted workflows
+* **Problem:** Seller form showed success without a request; coupon subpages were template forms; partial-cart UI could not honestly work with whole-cart checkout. Immediate number coercion changed an empty draft back to zero. Quantity purchase controls followed long mobile details, and mobile navigation lacked logout.
+* **Fix:** Persist seller intake and return a reference; use real admin CRUD and server coupon validation; send explicit selected server line IDs and retain other lines. Keep number drafts editable until validation, move purchase controls before descriptions, and reuse existing session logout.
+* **Review prevention:** Lock prices and variant inventory as well as product stock; restore only recorded reservations on cancellation. Rotate checkout intent keys when user choices change. Test concurrent coupon limits, selected-line leftovers, failure rollback, and actual numeric editing; distinguish fixture screenshots from real database integration.

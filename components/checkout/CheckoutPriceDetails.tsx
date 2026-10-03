@@ -1,10 +1,14 @@
 'use client';
 
-import { Truck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Tag, Truck } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { useCart } from '@/hooks/api/useCart';
-import { cn } from '@/lib/utils/cn';
+import { useCheckoutSelection } from '@/hooks/api/useCheckoutSelection';
+import { validateCoupon } from '@/lib/api/endpoints/coupons';
+import { errorMessage } from '@/lib/api/errors';
 import { formatCurrency } from '@/lib/utils/money';
+import { useCheckoutStore } from '@/store/checkout.store';
 
 interface CheckoutPriceDetailsProps {
   ctaLabel?: string;
@@ -13,106 +17,53 @@ interface CheckoutPriceDetailsProps {
   helperText?: string;
   termsText?: string;
   onCta?: () => void;
-  /**
-   * Order-level money, available only AFTER checkout returns an OrderDto. Before that the server
-   * exposes no delivery fee or total, so the panel must not invent them.
-   */
-  orderTotals?: { subtotal: number; deliveryFee: number; totalAmount: number };
+  orderTotals?: { subtotal: number; deliveryFee: number; totalAmount: number; discountAmount?: number; couponCode?: string };
 }
 
-/**
- * Price summary.
- *
- * Every figure here comes from the server. What was removed, and why it matters:
- *
- *  - `calculateCartTotals()` — computed subtotal, a coupon discount, a shipping fee and a total in
- *    the browser from hardcoded policy (10% capped at Rs 150, free over Rs 499, else Rs 49). None of
- *    that is the server's pricing, so the "Total Amount" shown was not what the user would be
- *    charged. This is exactly what the API reference warns against.
- *  - "Total MRP" and "Discount on MRP" — derived by summing `product.mrp` across lines. `CartItemDto`
- *    has no MRP, and more importantly the server publishes no such breakdown, so both lines are gone
- *    rather than reconstructed.
- *  - The coupon form — there is no coupon endpoint (plan §6.1/§8.3). A box that silently did nothing
- *    while appearing to apply a discount is worse than no box.
- *
- * Before checkout the panel therefore shows subtotal and item count only, which is genuinely all the
- * cart endpoint returns. Delivery fee and total appear once there is an order.
- */
-export function CheckoutPriceDetails({
-  ctaLabel = 'Continue',
-  disabled,
-  loading,
-  helperText,
-  termsText,
-  onCta,
-  orderTotals,
-}: CheckoutPriceDetailsProps) {
-  const { cart, isLoading } = useCart();
+/** A quote is display-only; checkout independently validates eligibility and money. */
+export function CheckoutPriceDetails({ ctaLabel = 'Continue', disabled, loading, helperText, termsText, onCta, orderTotals }: CheckoutPriceDetailsProps) {
+  const { owner, cart, couponCode } = useCheckoutSelection();
+  const setCouponCode = useCheckoutStore((state) => state.setCouponCode);
+  const [draft, setDraft] = useState(couponCode);
+  const quote = useQuery({
+    queryKey: ['coupon-quote', owner, couponCode, cart.items.map((item) => [item.id, item.quantity, item.lineTotal])],
+    queryFn: ({ signal }) => validateCoupon(couponCode, cart.items.map((item) => item.id), signal),
+    enabled: !orderTotals && Boolean(couponCode) && cart.items.length > 0 && owner !== 'guest',
+    retry: false,
+    staleTime: 0,
+  });
+  const activeQuote = couponCode && !quote.isFetching && !quote.isError ? quote.data : undefined;
+  const subtotal = orderTotals?.subtotal ?? activeQuote?.subtotal ?? cart.subtotal;
+  const discount = orderTotals?.discountAmount ?? activeQuote?.discountAmount ?? 0;
+  const total = orderTotals?.totalAmount ?? activeQuote?.total;
+  const couponBlocked = !orderTotals && Boolean(couponCode) && (!activeQuote || quote.isFetching || quote.isError);
 
-  const subtotal = orderTotals?.subtotal ?? cart.subtotal;
-  const itemCount = cart.itemCount;
-  const hasItems = itemCount > 0 || Boolean(orderTotals);
-
-  return (
-    <aside className="h-fit rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6 lg:sticky lg:top-6">
-      <div className="border-b border-surface-border pb-4">
-        <h2 className="text-xl font-medium tracking-tight text-[#04342c]">
-          Price details ({itemCount} {itemCount === 1 ? 'item' : 'items'})
-        </h2>
-        <div className="mt-4 grid gap-3 text-sm">
-          <PriceLine label="Subtotal" value={formatCurrency(subtotal)} />
-          {orderTotals ? (
-            <PriceLine
-              label="Delivery"
-              // Zero is a real value here (truzov.commerce.delivery-fee defaults to 0), not a
-              // missing one, so it renders as "Free" rather than being hidden.
-              value={
-                orderTotals.deliveryFee === 0 ? 'Free' : formatCurrency(orderTotals.deliveryFee)
-              }
-            />
-          ) : null}
-        </div>
-      </div>
-
-      {orderTotals ? (
-        <div className="flex items-center justify-between py-4 text-lg font-medium">
-          <span>Total amount</span>
-          <span>{formatCurrency(orderTotals.totalAmount)}</span>
-        </div>
-      ) : (
-        // No total before checkout, on purpose: GET /cart returns only `subtotal`, and any total
-        // shown here would be a client-side guess at the server's pricing.
-        <p className="py-4 text-sm leading-6 text-text-secondary">
-          Delivery charges, if any, are calculated and confirmed when you place the order.
-        </p>
-      )}
-
-      {helperText ? <p className="mb-3 text-sm text-text-danger">{helperText}</p> : null}
-
-      <Button
-        className="w-full"
-        disabled={disabled || loading || (!hasItems && !isLoading)}
-        loading={loading}
-        size="lg"
-        onClick={onCta}
-      >
-        {ctaLabel}
-      </Button>
-
-      {termsText ? <p className="mt-3 text-sm leading-6 text-text-secondary">{termsText}</p> : null}
-      <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-text-secondary">
-        <Truck aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-brand-primary" />
-        Your order details are confirmed before payment.
-      </p>
-    </aside>
-  );
-}
-
-function PriceLine({ label, value, tone }: { label: string; value: string; tone?: 'success' }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <span>{label}</span>
-      <span className={cn(tone === 'success' && 'text-text-success')}>{value}</span>
+  return <aside className="h-fit rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6 lg:sticky lg:top-6">
+    <h2 className="text-xl font-medium tracking-tight text-[#04342c]">Price details</h2>
+    <div className="mt-4 grid gap-3 border-b border-surface-border pb-4 text-sm">
+      <PriceLine label={orderTotals ? 'Subtotal' : `Subtotal (${cart.itemCount} selected ${cart.itemCount === 1 ? 'unit' : 'units'})`} value={formatCurrency(subtotal)} />
+      {discount > 0 && <PriceLine label={`Coupon (${orderTotals?.couponCode ?? activeQuote?.code})`} value={`−${formatCurrency(discount)}`} />}
+      {orderTotals && <PriceLine label="Delivery" value={orderTotals.deliveryFee === 0 ? 'Free' : formatCurrency(orderTotals.deliveryFee)} />}
     </div>
-  );
+    {!orderTotals && <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); const code = draft.trim().toUpperCase(); if (code) { if (code === couponCode) void quote.refetch(); else setCouponCode(owner, code); } }}>
+      <label className="flex items-center gap-2 text-sm font-medium" htmlFor="coupon-code"><Tag aria-hidden="true" size={18} />Have an offer or coupon?</label>
+      <div className="flex gap-2">
+        <input className="min-w-0 flex-1 rounded-lg border border-surface-border bg-white px-3 py-2 uppercase focus-visible:outline-brand-primary" id="coupon-code" maxLength={100} value={draft} placeholder="Enter coupon code" onChange={(event) => setDraft(event.target.value)} />
+        <Button type="submit" variant="outline" disabled={!draft.trim() || !cart.items.length || quote.isFetching}>Apply</Button>
+      </div>
+      {couponCode && <button className="min-h-11 w-fit text-sm text-brand-primary underline" type="button" onClick={() => { setCouponCode(owner, ''); setDraft(''); }}>Remove coupon</button>}
+      {quote.isFetching && couponCode && <p className="text-sm text-text-secondary" role="status">Checking coupon…</p>}
+      {quote.isError && couponCode && <p className="text-sm text-text-danger" role="alert">{errorMessage(quote.error)}</p>}
+      {activeQuote && <p className="text-sm text-text-success" role="status">{activeQuote.code} applied. You save {formatCurrency(activeQuote.discountAmount)}.</p>}
+    </form>}
+    {total !== undefined ? <div className="flex items-center justify-between py-4 text-lg font-medium"><span>Total amount</span><span>{formatCurrency(total)}</span></div> : <p className="py-4 text-sm leading-6 text-text-secondary">Delivery charges, if any, are confirmed when you place the order.</p>}
+    {helperText && <p className="mb-3 text-sm text-text-danger">{helperText}</p>}
+    <Button className="w-full" disabled={disabled || loading || couponBlocked || (!orderTotals && !cart.items.length)} loading={loading} size="lg" onClick={onCta}>{ctaLabel}</Button>
+    {termsText && <p className="mt-3 text-sm leading-6 text-text-secondary">{termsText}</p>}
+    <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-text-secondary"><Truck aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-brand-primary" />Unselected items stay in your bag. Coupon eligibility is checked again when you order.</p>
+  </aside>;
+}
+
+function PriceLine({ label, value }: { label: string; value: string }) {
+  return <div className="flex justify-between gap-4"><span>{label}</span><span>{value}</span></div>;
 }

@@ -21,7 +21,7 @@ import type { CartItemDto } from '@/types/api';
  * Mutations are keyed by `item.id` (the LINE id), not `productId` — the same product can occupy two
  * lines through different variants, so a product-keyed update is ambiguous.
  */
-export function BagItemRow({ item }: { item: CartItemDto }) {
+export function BagItemRow({ item, selected = true, onSelect }: { item: CartItemDto; selected?: boolean; onSelect?: (selected: boolean) => void }) {
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
   const wishlist = useToggleWishlist();
@@ -52,12 +52,13 @@ export function BagItemRow({ item }: { item: CartItemDto }) {
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
+            {onSelect && <label className="mb-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-primary"><input type="checkbox" className="h-5 w-5 accent-brand-primary" checked={selected} onChange={(event) => onSelect(event.target.checked)} />Select {item.name} for checkout</label>}
             <Link className="text-base font-medium leading-snug hover:text-brand-primary sm:text-lg" href={`/products/${item.slug}`}>
               {item.name}
             </Link>
             {!item.inStock ? (
               <p className="mt-1 text-sm font-semibold text-text-danger">
-                Out of stock — remove it to continue
+                Out of stock — leave it unselected to continue
               </p>
             ) : lowStock ? (
               <p className="mt-1 text-sm text-brand-accent">Only {item.availableStock} left</p>

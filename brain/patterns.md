@@ -134,3 +134,14 @@ To maintain consistency and code reuse across the application, developers should
 
 All wordmark placements reuse components/layout/Logo.tsx; use the final supplied local PNG with native dimensions and responsive CSS sizing.
 Use installed Lucide components for UI icons; global .lucide defines1.75px stroke and shrink0. Keep role-based sizes(20px navigation,18px input icons,24px section artwork), currentColor for semantics, decorative aria-hidden and labels on controls. Google brand artwork and Truzov assets remain separate.
+
+## 13. Hosted Environment Value Repair
+* Render environment value fields contain the URI alone; dotenv/shell files contain the variable assignment. Validate scheme and account identity without printing credentials.
+* Correct a confirmed configuration defect with a merge update that preserves unrelated variables. Verify successful startup, live deployment status, and read-only API responses; record production-profile and authentication limitations separately.
+
+## 14. Selected checkout, coupons, and seller applications
+* Keep numerical input drafts as strings so users can clear/type values; normalize and validate only at submission/blur. Product quantity controls precede long descriptions on mobile and use actual product/variant ceilings.
+* UI checkout selection identifies server cart lines; never delete unselected lines temporarily to simulate partial checkout. Server owns prices, discount eligibility, stock, and order creation. Order discount/code are immutable snapshots; redemption usage is per placed order.
+* Quote keys include owner, selection, quantities and line totals. Disable ordering while a coupon is invalid/pending; revalidate at checkout and allow same-code retries. Random intent keys rotate when address/selection/quantity/coupon changes, remaining stable for unchanged retries.
+* Public seller applications use separate bounded persistence with admin-only reads, not fake accounts or anonymous writes to authenticated ticket endpoints. Show success only after receiving a saved reference.
+* Reserve product and variant stock together under deterministic locks. Record whether variant stock was reserved so legacy cancellation cannot inflate inventory.

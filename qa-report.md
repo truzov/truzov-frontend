@@ -97,3 +97,43 @@ Chromium verified header logo widths of 96px at 375px viewport and 112px at 1440
 ## Consistent SVG icon pass (2026-09-30)
 
 Chromium checked homepage, products, cart, and login at 375px and 1440px. Rendered Lucide icons consistently measure 1.75px stroke, with 20px header action icons and an 18px desktop search icon. Search icon and input have a 10px gap; no document overflow occurred. Mobile menu open/close, search submission at both widths, footer disclosure, and account auth modal open/Escape close passed. Screenshots of both homepage widths, mobile footer, and auth modal were inspected for icon alignment. Footer disclosure works, but its chevron remained unrotated in the initial check; follow-up validation records the correction below.
+
+## Neon demo setup and administrator QA (2026-10-02)
+
+Coordinated live verification supplied by the root execution agent: backend selected Neon credentials from `database 2/.env`, not `.env.branch`; the first seed inserted twelve new demo products while preserving nine existing products (21 total). A second execution inserted zero duplicate records and retained 21 total products. The twelve new product images were verified as Cloudinary references; existing products retain their images.
+
+Normal API login for `admin@truzov.local` returned the admin role, and authenticated dashboard statistics were checked. The intended admin is `ADMIN/Main_File/Sellzy_Dashboard` at localhost:3001, with storefront localhost:3000 and backend localhost:8080. Root browser verification displayed 21 catalogue products and the new demo categories. This QA record does not imply all existing products are Cloudinary-hosted or that Render is deployed.
+
+Reviewer independently parsed both PowerShell scripts successfully after adding the seed runtime requirement and launcher exit-code propagation. Static checks confirm twelve SQL product tuples, empty demo certifications, false lab/report flags, no invented reviews, and published/pending catalogue state compatible with the existing read query. No additional live database mutation was made by the reviewer.
+
+- Additional database-only check: traced ProductQueryService listing/detail/batch/related/home rails to ProductRepository; no runtime fixture fallback found in reviewed catalog paths. Compared all 12 Neon demo ids/names/prices with API: zero mismatches. Browser admin login reached authenticated dashboard and storefront showed 21 products with Cloudinary demo images.
+
+
+## Checkout route recovery
+Cart/address/payment/confirm HTTP200 after fresh build-directory restart. Browser address route shows Authentication required and Sign In instead of404 or malformed JavaScript. Existing api-client, auth-security, buy-now suites:3 files,53 tests passed. Completed purchase not attempted.
+
+
+## Admin branding
+Browser dashboard showed Truzov wordmark, forest sidebar, cream canvas, sage navigation accents and amber order chart. PNG alpha channel minimum0 confirms transparency. Admin TypeScript check passed before final minor logo container polish; final rerun recorded separately.
+
+
+- Final admin TypeScript rerun passed, including transparent logo container changes.
+
+
+## Eight marketplace fixes QA (2026-10-04)
+
+Focused real-backend integration ran with the full Spring context and an isolated PostgreSQL 16 Testcontainer, without using Neon/Render or customer data. Final `SelectedCouponCheckoutIT`: **6 completed, 0 failures, 0 errors, 0 skipped**. It covers admin coupon creation and active listing, authenticated coupon validation, selected checkout discounted totals and untouched cart lines, per-user redemption concurrency, insufficient product/variant stock rollback, cancellation stock restoration, persisted public seller application and authenticated admin visibility/authorization. Reports: backend `target-eightfixes/failsafe-reports/`; retained sanitized verification log `qa-eightfixes-it.log`. The first final run found a checksum mismatch in the prior reusable test container because the newly untracked migration had changed during implementation; rerunning with `TESTCONTAINERS_REUSE_ENABLE=false` created a fresh isolated database and passed, without Flyway repair.
+
+Root/developer verification supplied separately: storefront final 137 tests/typecheck and changed-file lint passed; production build generated 49 routes. Final coupon retry behavior has a functional regression test. Backend 287 unit tests and isolated package passed; admin 14 tests/typecheck/build passed. This QA agent directly executed the 6 integration tests and browser checks below.
+
+Chromium browser QA used dedicated storefront 3100/admin 3101, explicitly pointing to local 18080. API fixtures and a local HTTP fixture for server rendering verified UI behavior; these browser results do not establish real authenticated end-to-end HTTP transactions. Real database-backed behavior is supported separately by the integration suite above.
+
+- 375px cart: visible `Qty: 2` stays within viewport; deselecting one of two lines changes selection to 1 of 2; screenshot `qa-artifacts/mobile-cart.png`.
+- Mobile navigation: visible signed-in logout; no settings link; logout sends exactly one endpoint request and clears refresh token; screenshot `qa-artifacts/mobile-logout.png`.
+- Mobile product: purchase controls and visible numeric quantity appear before product-detail tabs in DOM/rendered layout; screenshot `qa-artifacts/mobile-product.png`. The image placeholder is an intentionally imageless fixture.
+- 1024px and 1280px storefront: document scrollWidth does not exceed viewport; screenshots `qa-artifacts/storefront-1024.png` and `storefront-1280.png`.
+- Admin sign-in: Truzov logo visible and admin tab shows unchanged admin email/password sign-in action; screenshot `qa-artifacts/admin-signin.png`.
+- Admin category sort order: initial 0 can be cleared to an empty input and replaced with 17 without a forced leading 0; screenshot `qa-artifacts/admin-sort.png`.
+
+Screenshots were retained under `zshivam/qa-artifacts/`. No deploy/push or live database mutation was performed. Browser APIs were fixtures; authenticated full-browser purchases and real coupon/seller submission HTTP flows remain outside these browser checks. The integrated Spring/SQL tests exercise those backend flows against isolated PostgreSQL.
+

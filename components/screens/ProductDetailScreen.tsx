@@ -25,6 +25,7 @@ import { ProductDetailScreenSkeleton, Skeleton } from '@/components/ui/Skeleton'
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { ProductImageLightbox } from '@/components/product/ProductImageLightbox';
 import { VariantPills } from '@/components/product/VariantPills';
+import { QuantitySelector } from '@/components/product/QuantitySelector';
 import { useCategories, useProduct, useProductReviews, useRelatedProducts } from '@/hooks/api/useCatalog';
 import { useAddToCart, useBuyNow } from '@/hooks/api/useCart';
 import { useIsWishlisted, useToggleWishlist } from '@/hooks/api/useWishlist';
@@ -57,7 +58,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const { data: categories } = useCategories();
 
   const [tab, setTab] = useState<Tab>('Product Details');
-  const [quantity, setQuantity] = useState(1);
+  const [requestedQuantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // Only the user's explicit choice is stored; the effective selection is derived below, so
@@ -124,7 +125,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
    * A variant product with nothing selectable cannot be added: there is no variant id to send.
    * The "Currently out of stock" line above already explains it.
    */
-  const noSelectableVariant = Boolean(product.variants?.length) && !selectedVariantId;
+  const noSelectableVariant = Boolean(product.variants?.length) && (!selectedVariantId || !selectedVariant || selectedVariant.inStock === false || selectedVariant.stockCount === 0);
   /**
    * `mrp` and `discount` are not variant-adjusted server-side, so with a +₹700 variant selected
    * the server's pair would render as a bogus "25% off" against the adjusted price. The saving
@@ -134,13 +135,14 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const hasSaving = (selectedVariant?.priceModifier ?? 0) === 0 && product.mrp > product.price;
   // Stock ceiling for the quantity stepper. The server enforces its own per-line cap
   // (max-item-quantity) regardless; this only stops the obvious case locally.
-  const maxQuantity = Math.max(1, product.stockCount || 1);
+  const maxQuantity = Math.max(1, Math.min(20, product.stockCount || 1, selectedVariant?.stockCount ?? product.stockCount ?? 1));
+  const quantity = Math.min(requestedQuantity, maxQuantity);
 
   return (
     <div className="bg-background font-body text-on-surface">
       <div className="mx-auto max-w-[1440px] px-5 py-8 lg:px-6 lg:py-16">
         <div className="grid gap-8 lg:grid-cols-[5fr_4fr_3fr] lg:items-start">
-          <section className="grid gap-2">
+          <section className="order-1 grid gap-2 lg:col-start-1 lg:row-start-1 lg:row-span-2">
             <div className="relative aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white">
               {selectedImage ? (
                 <button
@@ -193,7 +195,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
             ) : null}
           </section>
 
-          <section className="grid gap-4">
+          <section className="order-2 grid gap-4 lg:col-start-2 lg:row-start-1">
             <nav className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
               <Link href="/products">Marketplace</Link>
               <ChevronRight aria-hidden="true" className="h-3 w-3" />
@@ -276,6 +278,157 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               </div>
             )}
 
+          </section>
+          <aside className="order-3 grid gap-4 lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-36">
+            <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-md">
+              <p className="text-xl font-medium">
+                {formatCurrency(effectivePrice(product.price, selectedVariant))}
+              </p>
+              {/* Real stock state. This block previously read "In stock. Ready to ship."
+                  unconditionally, including for products with stockCount 0. */}
+              {product.inStock && !noSelectableVariant ? (
+                <p className="mt-2 flex items-center gap-1 text-sm font-medium text-text-success">
+                  <span className="h-2 w-2 rounded-full bg-text-success" />
+                  In stock
+                  {product.stockCount > 0 && product.stockCount <= 10
+                    ? ` — only ${product.stockCount} left`
+                    : ''}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm font-medium text-text-danger">Currently out of stock</p>
+              )}
+
+              {product.variants?.length ? (
+                <div className="mt-5">
+                  <span className="text-sm font-medium text-on-surface-variant">
+                    {product.variants[0]?.label ?? 'Option'}
+                  </span>
+                  <div className="mt-2">
+                    <VariantPills
+                      onSelect={setChosenVariantId}
+                      selectedId={selectedVariantId}
+                      variants={product.variants}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="mt-5">
+                <QuantitySelector value={quantity} max={maxQuantity} disabled={!product.inStock || noSelectableVariant} onChange={setQuantity} />
+              </div>
+
+              <div className="mt-6 grid gap-3">
+                <Button
+                  className="h-12 w-full rounded-full bg-primary text-base text-on-primary hover:bg-primary/90"
+                  disabled={!product.inStock || isAdding || noSelectableVariant}
+                  loading={isAdding}
+                  onClick={() =>
+                    add({
+                      productId: product.id,
+                      productName: product.name,
+                      variantId: selectedVariantId,
+                      quantity,
+                      slug: product.slug,
+                      imageUrl: gallery[0]?.url,
+                      unitPrice: product.price,
+                    })
+                  }
+                >
+                  <ShoppingCart aria-hidden="true" className="h-5 w-5" />
+                  Add to Cart
+                </Button>
+                {/*
+                  "Buy Now" adds to the cart and then goes to checkout, via useBuyNow(). It used
+                  to call add(...) without ever navigating, so the user stayed on this page
+                  after clicking it — that was the defect; useBuyNow() owns the add+navigate
+                  sequencing (and the auth-modal detour when logged out).
+                */}
+                <Button
+                  className="h-12 w-full rounded-full border-primary bg-surface-container text-base text-primary hover:bg-surface-container-high"
+                  disabled={!product.inStock || isBuyingNow || noSelectableVariant}
+                  loading={isBuyingNow}
+                  variant="outline"
+                  onClick={() =>
+                    buyNow({
+                      productId: product.id,
+                      variantId: selectedVariantId,
+                      quantity,
+                    })
+                  }
+                >
+                  <Zap aria-hidden="true" className="h-5 w-5" />
+                  Buy Now
+                </Button>
+                <div className="mt-2 grid grid-cols-2 gap-4">
+                  <Button
+                    className={cn(
+                      'h-auto rounded-lg border-primary/20 py-2 hover:bg-primary/5',
+                      isInWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'text-primary'
+                    )}
+                    disabled={wishlist.isPending}
+                    variant="outline"
+                    onClick={() => wishlist.toggle(product.id)}
+                  >
+                    <Heart
+                      aria-hidden="true"
+                      className={cn('h-4 w-4', isInWishlist && 'fill-current')}
+                    />
+                    <span className="leading-tight">
+                      {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+                    </span>
+                  </Button>
+                  <Button
+                    className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
+                    variant="outline"
+                    onClick={() => {
+                      // Native share where available; clipboard is the universal fallback.
+                      // Both are best-effort, so a rejection (user dismissed the sheet, or no
+                      // clipboard permission) is intentionally not surfaced as an error.
+                      const url = window.location.href;
+                      if (navigator.share) {
+                        void navigator.share({ title: product.name, url }).catch(() => undefined);
+                        return;
+                      }
+                      void navigator.clipboard?.writeText(url).catch(() => undefined);
+                    }}
+                  >
+                    <Share2 aria-hidden="true" className="h-4 w-4" />
+                    Share
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 border-t border-surface-container pt-5">
+                {/*
+                  The fabricated "Delivery by Thu, Oct 24" and "Free delivery on orders over
+                  ₹999" lines are gone: there is no delivery-estimate endpoint, and the delivery
+                  fee is set server-side (truzov.commerce.delivery-fee) and shown on the order.
+                */}
+                {product.weight ? (
+                  <div className="flex gap-4">
+                    <span className="mt-0.5 grid h-5 w-5 place-items-center text-xs font-bold text-primary">
+                      ⚖
+                    </span>
+                    <div>
+                      <p className="font-medium">Net quantity</p>
+                      <p className="text-xs text-on-surface-variant">{product.weight}</p>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="flex gap-4">
+                  <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Authenticity Guaranteed</p>
+                    <p className="text-xs text-on-surface-variant">
+                      Full refund if lab test fails verification
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section className="order-4 grid gap-4 lg:col-start-2 lg:row-start-2">
             <div
               className="mt-2 flex gap-8 overflow-x-auto border-b border-outline-variant"
               role="tablist"
@@ -440,180 +593,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
             </div>
           </section>
 
-          <aside className="grid gap-4 lg:sticky lg:top-36">
-            <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-md">
-              <p className="text-xl font-medium">
-                {formatCurrency(effectivePrice(product.price, selectedVariant))}
-              </p>
-              {/* Real stock state. This block previously read "In stock. Ready to ship."
-                  unconditionally, including for products with stockCount 0. */}
-              {product.inStock ? (
-                <p className="mt-2 flex items-center gap-1 text-sm font-medium text-text-success">
-                  <span className="h-2 w-2 rounded-full bg-text-success" />
-                  In stock
-                  {product.stockCount > 0 && product.stockCount <= 10
-                    ? ` — only ${product.stockCount} left`
-                    : ''}
-                </p>
-              ) : (
-                <p className="mt-2 text-sm font-medium text-text-danger">Currently out of stock</p>
-              )}
 
-              {product.variants?.length ? (
-                <div className="mt-5">
-                  <span className="text-sm font-medium text-on-surface-variant">
-                    {product.variants[0]?.label ?? 'Option'}
-                  </span>
-                  <div className="mt-2">
-                    <VariantPills
-                      onSelect={setChosenVariantId}
-                      selectedId={selectedVariantId}
-                      variants={product.variants}
-                    />
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="mt-5">
-                <label className="text-sm font-medium text-on-surface-variant" htmlFor="qty">
-                  Quantity
-                </label>
-                <div className="mt-2 flex w-fit overflow-hidden rounded-lg border border-outline-variant">
-                  <button
-                    aria-label="Decrease quantity"
-                    className="h-10 w-10 bg-surface-container-highest text-lg transition hover:bg-surface-container-high"
-                    onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                    type="button"
-                  >
-                    -
-                  </button>
-                  <input
-                    className="h-10 w-12 border-0 text-center font-medium outline-none"
-                    id="qty"
-                    readOnly
-                    value={quantity}
-                  />
-                  <button
-                    aria-label="Increase quantity"
-                    className="h-10 w-10 bg-surface-container-highest text-lg transition hover:bg-surface-container-high"
-                    onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))}
-                    type="button"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-3">
-                <Button
-                  className="h-12 w-full rounded-full bg-primary text-base text-on-primary hover:bg-primary/90"
-                  disabled={!product.inStock || isAdding || noSelectableVariant}
-                  loading={isAdding}
-                  onClick={() =>
-                    add({
-                      productId: product.id,
-                      productName: product.name,
-                      variantId: selectedVariantId,
-                      quantity,
-                      slug: product.slug,
-                      imageUrl: gallery[0]?.url,
-                      unitPrice: product.price,
-                    })
-                  }
-                >
-                  <ShoppingCart aria-hidden="true" className="h-5 w-5" />
-                  Add to Cart
-                </Button>
-                {/*
-                  "Buy Now" adds to the cart and then goes to checkout, via useBuyNow(). It used
-                  to call add(...) without ever navigating, so the user stayed on this page
-                  after clicking it — that was the defect; useBuyNow() owns the add+navigate
-                  sequencing (and the auth-modal detour when logged out).
-                */}
-                <Button
-                  className="h-12 w-full rounded-full border-primary bg-surface-container text-base text-primary hover:bg-surface-container-high"
-                  disabled={!product.inStock || isBuyingNow || noSelectableVariant}
-                  loading={isBuyingNow}
-                  variant="outline"
-                  onClick={() =>
-                    buyNow({
-                      productId: product.id,
-                      variantId: selectedVariantId,
-                      quantity,
-                    })
-                  }
-                >
-                  <Zap aria-hidden="true" className="h-5 w-5" />
-                  Buy Now
-                </Button>
-                <div className="mt-2 grid grid-cols-2 gap-4">
-                  <Button
-                    className={cn(
-                      'h-auto rounded-lg border-primary/20 py-2 hover:bg-primary/5',
-                      isInWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'text-primary'
-                    )}
-                    disabled={wishlist.isPending}
-                    variant="outline"
-                    onClick={() => wishlist.toggle(product.id)}
-                  >
-                    <Heart
-                      aria-hidden="true"
-                      className={cn('h-4 w-4', isInWishlist && 'fill-current')}
-                    />
-                    <span className="leading-tight">
-                      {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
-                    </span>
-                  </Button>
-                  <Button
-                    className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
-                    variant="outline"
-                    onClick={() => {
-                      // Native share where available; clipboard is the universal fallback.
-                      // Both are best-effort, so a rejection (user dismissed the sheet, or no
-                      // clipboard permission) is intentionally not surfaced as an error.
-                      const url = window.location.href;
-                      if (navigator.share) {
-                        void navigator.share({ title: product.name, url }).catch(() => undefined);
-                        return;
-                      }
-                      void navigator.clipboard?.writeText(url).catch(() => undefined);
-                    }}
-                  >
-                    <Share2 aria-hidden="true" className="h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 border-t border-surface-container pt-5">
-                {/*
-                  The fabricated "Delivery by Thu, Oct 24" and "Free delivery on orders over
-                  ₹999" lines are gone: there is no delivery-estimate endpoint, and the delivery
-                  fee is set server-side (truzov.commerce.delivery-fee) and shown on the order.
-                */}
-                {product.weight ? (
-                  <div className="flex gap-4">
-                    <span className="mt-0.5 grid h-5 w-5 place-items-center text-xs font-bold text-primary">
-                      ⚖
-                    </span>
-                    <div>
-                      <p className="font-medium">Net quantity</p>
-                      <p className="text-xs text-on-surface-variant">{product.weight}</p>
-                    </div>
-                  </div>
-                ) : null}
-                <div className="flex gap-4">
-                  <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Authenticity Guaranteed</p>
-                    <p className="text-xs text-on-surface-variant">
-                      Full refund if lab test fails verification
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
         </div>
 
         {/* Real recommendations, replacing two hardcoded products with invented prices. Hidden

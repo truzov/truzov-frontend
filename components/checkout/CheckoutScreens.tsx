@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { CartScreenSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { useCart } from '@/hooks/api/useCart';
+import { useCheckoutSelection } from '@/hooks/api/useCheckoutSelection';
 import {
   useAddresses,
   useCheckout,
@@ -22,6 +23,7 @@ import {
 } from '@/hooks/api/useCommerce';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
 import { useGuestCartStore, type GuestCartItem } from '@/lib/cart/guest-cart.store';
+import { cartLineKey } from '@/lib/cart/selection';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency } from '@/lib/utils/money';
 import { useAuthModalStore } from '@/store/auth-modal.store';
@@ -31,20 +33,9 @@ import { useOtpModalStore } from '@/store/otp-modal.store';
 import type { AddressDto } from '@/types/api';
 
 /**
- * Cart and checkout, backed by the server-side cart.
- *
- * The three structural changes from the previous version:
- *
- * 1. No per-item selection. `POST /checkout` orders the ENTIRE cart — there is no partial-checkout
- *    parameter — so a UI implying "check out 2 of 5 items" would have charged for all five. That is
- *    a "charged for things I didn't select" bug, so the checkboxes are gone (plan §8.2).
- * 2. No payment step. There is no payment-intent endpoint; the only payment surface is a
- *    gateway->server HMAC webhook. The card number / CVV / UPI inputs posted nowhere and have been
- *    deleted outright rather than hidden behind a flag, because a card-shaped field in the DOM is a
- *    liability for any future PCI review (plan §8.3). What was the payment step is now an order
- *    review that calls POST /checkout; `paymentStatus` comes back on the order.
- * 3. Orders are not minted client-side. The old flow built `{ id: 'TRZ-' + Date.now(), ... }`
- *    locally, pushed it into a store and waited 700ms to fake latency.
+ * Checkout sends explicit server cart line IDs and an optional coupon. The backend owns
+ * prices, inventory, eligibility, and order creation; unselected lines remain in the bag.
+ * Payment is a separate session opened after the order commits.
  */
 
 /* ------------------------------------------------------------------ the bag */
@@ -54,6 +45,9 @@ export function BagScreen() {
   const { cart, isLoading, isError, error, refetch } = useCart();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const authStatus = useAuthStore((state) => state.status);
+  const { owner, cart: selected } = useCheckoutSelection();
+  const setLineSelected = useCheckoutStore((state) => state.setLineSelected);
+  const selectAll = useCheckoutStore((state) => state.selectAll);
 
   // Session restore is a network round trip, so "not logged in" is only meaningful once it settles.
   if (authStatus === 'idle' || authStatus === 'restoring') {
@@ -95,7 +89,7 @@ export function BagScreen() {
 
   // Out-of-stock lines block checkout: the server would reject the order with a 409, so it is
   // clearer to say so here than to let the user reach the last step and fail.
-  const blockedItems = cart.items.filter((item) => !item.inStock);
+  const blockedItems = selected.items.filter((item) => !item.inStock);
 
   return (
     <div>
@@ -106,27 +100,31 @@ export function BagScreen() {
               <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">
                 {cart.itemCount} {cart.itemCount === 1 ? 'item' : 'items'} in your bag
               </h1>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+                <span>{selected.items.length} of {cart.items.length} products selected</span>
+                <button className="min-h-11 text-brand-primary underline" type="button" onClick={() => selectAll(owner)}>Select all</button>
+              </div>
             </section>
 
             {blockedItems.length ? (
               <p className="rounded-md border border-text-danger/30 bg-status-dangerBg p-3 text-sm text-text-danger">
                 {blockedItems.length === 1 ? 'One item is' : `${blockedItems.length} items are`} out
-                of stock. Remove {blockedItems.length === 1 ? 'it' : 'them'} to continue.
+                of stock. Unselect or remove {blockedItems.length === 1 ? 'it' : 'them'} to continue.
               </p>
             ) : null}
 
             <div className="grid gap-3">
               {cart.items.map((item) => (
-                <BagItemRow key={item.id} item={item} />
+                <BagItemRow key={item.id} item={item} selected={selected.items.some((line) => line.id === item.id)} onSelect={(checked) => setLineSelected(owner, cartLineKey(item), checked)} />
               ))}
             </div>
           </main>
 
           <CheckoutPriceDetails
             ctaLabel="Continue"
-            disabled={blockedItems.length > 0}
+            disabled={blockedItems.length > 0 || !selected.items.length}
             helperText={
-              blockedItems.length > 0 ? 'Remove out-of-stock items to continue.' : undefined
+              blockedItems.length > 0 ? 'Unselect out-of-stock items to continue.' : !selected.items.length ? 'Select at least one product to continue.' : undefined
             }
             termsText="By continuing, you agree to Truzov's terms and verified marketplace policies."
             onCta={() => router.push('/checkout/address')}
@@ -149,6 +147,10 @@ export function BagScreen() {
 function GuestBagScreen() {
   const items = useGuestCartStore((state) => state.items);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
+  const selectionOwner = useCheckoutStore((state) => state.selectionOwner);
+  const excludedKeys = useCheckoutStore((state) => state.excludedLineKeys);
+  const setLineSelected = useCheckoutStore((state) => state.setLineSelected);
+  const selectAll = useCheckoutStore((state) => state.selectAll);
 
   // Hydrate from localStorage once on the client; SSR renders an empty frame either way.
   useEffect(() => {
@@ -169,8 +171,9 @@ function GuestBagScreen() {
     );
   }
 
-  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
-  const subtotal = items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
+  const selected = items.filter((item) => selectionOwner !== 'guest' || !excludedKeys.includes(cartLineKey(item)));
+  const itemCount = selected.reduce((total, item) => total + item.quantity, 0);
+  const subtotal = selected.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
 
   return (
     <div>
@@ -179,13 +182,14 @@ function GuestBagScreen() {
           <main className="grid gap-4">
             <section className="rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6">
               <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">
-                {itemCount} {itemCount === 1 ? 'item' : 'items'} in your bag
+                {items.length} {items.length === 1 ? 'product' : 'products'} in your bag
               </h1>
+              <div className="mt-3 flex items-center justify-between text-sm"><span>{selected.length} selected</span><button className="min-h-11 text-brand-primary underline" type="button" onClick={() => selectAll('guest')}>Select all</button></div>
             </section>
 
             <div className="grid gap-3">
               {items.map((item) => (
-                <GuestBagItemRow key={`${item.productId}:${item.variantId ?? ''}`} item={item} />
+                <GuestBagItemRow key={cartLineKey(item)} item={item} selected={selected.includes(item)} onSelect={(checked) => setLineSelected('guest', cartLineKey(item), checked)} />
               ))}
             </div>
           </main>
@@ -207,12 +211,13 @@ function GuestBagScreen() {
             <Button
               className="mt-6 w-full"
               variant="primary"
+              disabled={!selected.length}
               onClick={() => openAuthModal({ mode: 'login', redirectTo: '/cart' })}
             >
               Sign in to continue
             </Button>
-            <p className="mt-3 text-center text-sm leading-6 text-text-secondary">
-              Your bag is saved to this device and merges into your account when you sign in.
+            <p className="mt-3 text-center text-sm leading-6 text-text-secondary" id="coupon-code">
+              Sign in to apply offers and coupon codes. Your bag and product selections are saved on this device and merge into your account.
             </p>
           </aside>
         </div>
@@ -222,7 +227,7 @@ function GuestBagScreen() {
 }
 
 /** A guest line: same layout as the server row, local mutations, no stock/line id. */
-function GuestBagItemRow({ item }: { item: GuestCartItem }) {
+function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; selected: boolean; onSelect: (selected: boolean) => void }) {
   const setQuantity = useGuestCartStore((state) => state.setQuantity);
   const remove = useGuestCartStore((state) => state.remove);
 
@@ -244,6 +249,7 @@ function GuestBagItemRow({ item }: { item: GuestCartItem }) {
       </Link>
 
       <div className="min-w-0">
+        <label className="mb-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-primary"><input type="checkbox" className="h-5 w-5 accent-brand-primary" checked={selected} onChange={(event) => onSelect(event.target.checked)} />Select {item.name} for checkout</label>
         <div className="flex items-start justify-between gap-3">
           <Link className="text-base font-medium leading-snug hover:text-brand-primary sm:text-lg" href={`/products/${item.slug}`}>
             {item.name}
@@ -305,9 +311,14 @@ function GuestBagItemRow({ item }: { item: GuestCartItem }) {
   );
 }
 
+function BlockedCheckoutSelectionState() {
+  return <div className="mx-auto max-w-3xl rounded-2xl border border-surface-border bg-white p-6 text-center"><h1 className="text-2xl font-medium">Select products to checkout</h1><p className="mt-3 text-text-secondary">Your unselected products stay in the bag.</p><Link className="mt-4 inline-flex min-h-11 items-center text-brand-primary underline" href="/cart">Return to bag</Link></div>;
+}
+
 export function AddressScreen() {
   const router = useRouter();
   const { cart, isLoading: cartLoading } = useCart();
+  const { cart: selectedCart } = useCheckoutSelection();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const authStatus = useAuthStore((state) => state.status);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
@@ -342,6 +353,7 @@ export function AddressScreen() {
   if (!cart.items.length) {
     return <BlockedCheckoutEmptyState />;
   }
+  if (!selectedCart.items.length) return <BlockedCheckoutSelectionState />;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -423,6 +435,7 @@ export function AddressScreen() {
 export function PaymentScreen() {
   const router = useRouter();
   const { cart, isLoading: cartLoading } = useCart();
+  const { cart: selectedCart, couponCode } = useCheckoutSelection();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
@@ -433,21 +446,17 @@ export function PaymentScreen() {
   const placeOrder = useCheckout();
   const openPayment = useCreatePaymentSession();
 
-  /**
-   * One key per visit to this screen, so pressing "place order" twice — or a retry after a
-   * timeout — replays the first order instead of creating a second. Deliberately NOT derived from
-   * the address or the cart: two genuine orders to the same address must not share a key, or the
-   * second would be answered with the first.
-   *
-   * Navigating away and back mints a new key, which is correct: that is a new intent.
-   */
+  // Keep unchanged retries on one intent, but changing the address, selection, or coupon
+  // starts a new attempt. The key is random, never the fingerprint itself.
+  const checkoutIntent = JSON.stringify([user?.id, selectedAddressId, couponCode.trim().toUpperCase(),
+    selectedCart.items.map((item) => [item.id, item.quantity]).sort((a, b) => String(a[0]).localeCompare(String(b[0])))]);
   const idempotencyKey = useMemo(
-    () =>
+    () => ({ intent: checkoutIntent, key:
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    []
-  );
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}` }),
+    [checkoutIntent]
+  ).key;
 
   const selectedAddress = addresses.find((address) => address.id === selectedAddressId);
 
@@ -462,6 +471,7 @@ export function PaymentScreen() {
   if (!cart.items.length) {
     return <BlockedCheckoutEmptyState />;
   }
+  if (!selectedCart.items.length) return <BlockedCheckoutSelectionState />;
 
   if (!selectedAddress) {
     return (
@@ -487,7 +497,7 @@ export function PaymentScreen() {
 
   const submit = () => {
     placeOrder.mutate(
-      { addressId: selectedAddress.id, idempotencyKey },
+      { addressId: selectedAddress.id, cartItemIds: selectedCart.items.map((item) => item.id), couponCode: couponCode || undefined, idempotencyKey },
       {
         onSuccess: (order) => {
           resetCheckout();
@@ -536,7 +546,7 @@ export function PaymentScreen() {
         </section>
 
         <section className="grid gap-3">
-          {cart.items.map((item) => (
+          {selectedCart.items.map((item) => (
             <div
               key={item.id}
               className="flex items-start justify-between gap-4 rounded-2xl border border-surface-border bg-surface-base p-4 sm:p-5"
@@ -586,7 +596,7 @@ export function PaymentScreen() {
 
       <CheckoutPriceDetails
         ctaLabel="Place order"
-        disabled={phoneUnverified}
+        disabled={phoneUnverified || selectedCart.items.some((item) => !item.inStock)}
         loading={placeOrder.isPending}
         termsText="By placing the order, you agree to Truzov's Terms of Use and Privacy Policy."
         onCta={submit}
@@ -703,6 +713,7 @@ export function ConfirmationScreen() {
             <div className="mt-4 space-y-2">
               <SummaryLine label="Items" value={String(order.items.length)} />
               <SummaryLine label="Subtotal" value={formatCurrency(order.subtotal)} />
+              {Boolean(order.discountAmount) && <SummaryLine label={`Coupon (${order.couponCode})`} value={`−${formatCurrency(order.discountAmount ?? 0)}`} />}
               <SummaryLine
                 label="Delivery"
                 value={order.deliveryFee === 0 ? 'Free' : formatCurrency(order.deliveryFee)}

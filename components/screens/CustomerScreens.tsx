@@ -13,7 +13,6 @@ import {
   Truck,
   MapPin,
   ReceiptText,
-  Settings,
   CircleUserRound,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -429,7 +428,6 @@ const accountNavSections = [
     label: 'MANAGE',
     items: [
       { label: 'Addresses', href: '/account/addresses', icon: MapPin },
-      { label: 'Settings', href: '/account/settings', icon: Settings },
     ],
   },
 ];
@@ -463,7 +461,7 @@ export function AccountSidebar({ userName }: { userName: string }) {
       <div className="border-b border-[#dce6d8] px-2 pb-5 pt-2">
         <p className="text-xs font-medium uppercase tracking-[0.17em] text-[#346b54]">your space</p>
         <p className="mt-2 break-words text-xl font-medium text-[#04342c]">{userName}</p>
-        <p className="mt-2 text-base leading-relaxed text-[#547064]">Manage orders, addresses, and preferences.</p>
+        <p className="mt-2 text-base leading-relaxed text-[#547064]">Manage your profile, orders, and addresses.</p>
       </div>
       <nav aria-label="Account pages" className="mt-4 flex flex-wrap gap-2 lg:mt-5 lg:grid lg:gap-5">
         {accountNavSections.map((section) => (
@@ -878,6 +876,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
               <span className="text-text-secondary">Subtotal</span>
               <span>{formatCurrency(order.subtotal)}</span>
             </div>
+            {Boolean(order.discountAmount) && <div className="flex justify-between text-text-success"><span>Coupon ({order.couponCode})</span><span>−{formatCurrency(order.discountAmount ?? 0)}</span></div>}
             <div className="flex justify-between">
               <span className="text-text-secondary">Delivery</span>
               <span>

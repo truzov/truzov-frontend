@@ -16,6 +16,8 @@ import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useAuthModalStore, type BuyNowIntent } from '@/store/auth-modal.store';
 import { useUiStore } from '@/store/ui.store';
+import { useCheckoutStore } from '@/store/checkout.store';
+import { cartLineKey } from '@/lib/cart/selection';
 import type { CartDto } from '@/types/api';
 
 /**
@@ -155,7 +157,15 @@ export function useBuyNow() {
 
   const checkout = async (intent: BuyNowIntent) => {
     try {
-      await addAsync(intent); // body is exactly productId/variantId/quantity (R5.2, R5.3)
+      const cart = await addAsync(intent);
+      const owner = useAuthStore.getState().user?.id;
+      if (owner) {
+        useCheckoutStore.getState().selectAll(owner);
+        for (const line of cart.items) {
+          const same = line.productId === intent.productId && (line.variantId ?? '') === (intent.variantId ?? '');
+          if (!same) useCheckoutStore.getState().setLineSelected(owner, cartLineKey(line), false);
+        }
+      }
       router.push('/checkout/address'); // only after success (R2.5, R2.7)
     } catch {
       // useAddToCart.onError already raised the error toast, including the backend message and
@@ -195,6 +205,10 @@ export function useGuestCartMerge() {
     const items = useGuestCartStore.getState().items;
     if (items.length === 0) {
       return;
+    }
+    const owner = useAuthStore.getState().user?.id;
+    if (owner && useCheckoutStore.getState().selectionOwner === 'guest') {
+      useCheckoutStore.setState({ selectionOwner: owner, couponCode: '' });
     }
 
     let cancelled = false;

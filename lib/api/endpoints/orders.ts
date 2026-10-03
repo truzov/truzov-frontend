@@ -11,8 +11,8 @@ import type {
 export const ORDER_PAGE_LIMIT = 20;
 
 /**
- * Places an order from the SERVER-SIDE cart. The only input is which address to ship to — the
- * items, quantities and every money value come from the server.
+ * Places an order from selected SERVER-SIDE cart line IDs and the delivery address.
+ * The server validates any coupon and owns quantities, stock, and every money value.
  *
  * Documented preconditions: the user must have a verified phone and a saved address. An unverified
  * phone comes back as 403 PHONE_NOT_VERIFIED, which the API client turns into an OTP redirect.

@@ -5,14 +5,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/utils/cn';
-import { Heart, LogOut, MapPin, ReceiptText, Settings, CircleUserRound } from 'lucide-react';
+import { Heart, LogOut, MapPin, ReceiptText, CircleUserRound } from 'lucide-react';
 
 const menuItems = [
   { label: 'my account', href: '/account', icon: CircleUserRound },
   { label: 'orders', href: '/account/orders', icon: ReceiptText },
   { label: 'wishlist', href: '/wishlist', icon: Heart },
   { label: 'saved addresses', href: '/account/addresses', icon: MapPin },
-  { label: 'settings', href: '/account/settings', icon: Settings },
 ];
 
 export function AccountMenu({ className }: { className?: string }) {

@@ -81,3 +81,14 @@ This document records the foundational architectural decisions and tool selectio
 
 Final supplied PNG is the authoritative Truzov wordmark and supersedes the reconstructed SVG for all rendered Logo placements.
 Curated Lucide variants and shared optical styling provide consistent UI icons without adding an icon dependency or replacing functional components.
+
+## Decision 14: Configuration-only Render Deployment Repair
+* **Status:** Verified (2026-10-03)
+* **Decision:** Remove the assignment prefix from the existing Render `CLOUDINARY_URL` value through a merge update using the matching existing account. Preserve other environment variables, branch commit `f4ce79f`, source, migrations, and startup safeguards.
+* **Evidence and boundary:** Deployment `dep-db0055psrm7s73djlhm0` is live; products/categories return 200 and unauthenticated admin stats returns 401. Default profile, mock OTP, and ephemeral JWT remain; production readiness and Cloudinary uploads were not established. See backend `qa-report.md`.
+
+## Decision 15: Real selected checkout and shared admin workflows
+* **Status:** Implemented and locally verified (2026-10-04), not deployed.
+* **Decision:** Extend checkout with optional selected line IDs and coupon code; omitted IDs retain legacy whole-cart behavior, explicit empty/duplicate/missing/foreign selections reject. Reuse admin-managed flat coupons, enforce eligibility and per-user placed-order redemption limits transactionally, and retain discount snapshots on orders. Preserve unselected cart lines.
+* **Seller intake:** Anonymous website applications have separate storage and protected admin listing; existing authenticated support tickets retain their ownership model.
+* **UI:** Use approved Truzov assets in actual ADMIN sign-in, clearable numeric drafts, accessible mobile quantity/logout controls, and remove settings navigation with an old-route redirect. Deploy backend migration/contracts before frontends. See QA/review reports for isolated database and browser evidence.
