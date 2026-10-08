@@ -124,3 +124,6 @@ Backend tests cover subset checkout ownership/empty selection, untouched lines, 
 
 Frontend/admin tests cover blank-to-number sort editing including zero, actual API payloads, seller failure/success reference, coupon preview failure and checkout recomputation, line-selection reconciliation, visible mobile quantity and logout, removed settings links, and unchanged admin login authentication. Run relevant Vitest/typecheck/build suites and focused browser checks at mobile and desktop sizes. Record evidence in review/QA reports and Project Brain; do not claim end-to-end success from mocked responses alone.
 
+
+## Review fixes — 2026-10-08
+See docs/plans/review-fixes-20261008.md. Check existing work before editing; only missing fixes are in scope. FINDINGS.md records investigations before implementation.

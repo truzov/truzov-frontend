@@ -1,17 +1,18 @@
 'use client';
 
 import { useRef, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import {
   BadgeCheck,
   Building2,
   Check,
   Clock,
-  Headphones,
   Mail,
   Phone,
   ShieldCheck,
   TrendingUp,
 } from 'lucide-react';
+import { TicketScreen } from './TicketScreen';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { submitSellerApplication, type SellerApplicationReceipt, type SellerApplicationRequest } from '@/lib/api/endpoints/support';
@@ -21,7 +22,7 @@ import { submitSellerApplication, type SellerApplicationReceipt, type SellerAppl
  * app's brand tokens.
  *
  * Seller applications persist through the public onboarding endpoint. The separate customer
- * contact form retains its existing behavior.
+ * contact page uses the authenticated ticket workflow.
  */
 
 const FIELD_CLASS =
@@ -129,83 +130,7 @@ function InfoPanel({
 /* -------------------------------------------------------------- customer support */
 
 export function CustomerSupportScreen() {
-  const [submitted, setSubmitted] = useState(false);
-
-  return (
-    <div className="min-h-screen bg-[#FDFDFB] font-body text-text-primary">
-      <SupportHero
-        icon={Headphones}
-        eyebrow="Customer Support"
-        title="We're here to help"
-        subtitle="Questions about an order, a refund, or a product's lab report? Send us a note and our support team will get back to you."
-      />
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
-          <InfoPanel
-            title="Ways we can help"
-            contact
-            points={[
-              { icon: Headphones, label: 'Orders & delivery', text: 'Track, change, or ask about an order you placed.' },
-              { icon: ShieldCheck, label: 'Refunds & returns', text: 'Start a return or check where your refund is.' },
-              { icon: BadgeCheck, label: 'Product & lab reports', text: 'Questions about verification, ingredients, or authenticity.' },
-            ]}
-          />
-
-          {submitted ? (
-            <SuccessCard
-              heading="Thanks for reaching out!"
-              body="Your request has been received. Our support team will get back to you within 1–2 business days."
-              onReset={() => setSubmitted(false)}
-            />
-          ) : (
-            <form
-              className="grid gap-5 rounded-3xl border border-surface-border bg-surface-base p-6 shadow-sm lg:p-8"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setSubmitted(true);
-              }}
-            >
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Input label="Full name" name="name" placeholder="Asha Singh" required />
-                <Input label="Email" name="email" type="email" placeholder="you@example.com" required />
-              </div>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Input label="Phone (optional)" name="phone" type="tel" inputMode="tel" placeholder="9876543210" />
-                <Input label="Order number (optional)" name="orderNumber" placeholder="ORD-20260101-000001" />
-              </div>
-              <label className="grid gap-1.5">
-                <FieldLabel label="Topic" required />
-                <select className={FIELD_CLASS} name="topic" defaultValue="" required>
-                  <option value="" disabled>
-                    Choose a topic
-                  </option>
-                  <option>Orders & delivery</option>
-                  <option>Returns & refunds</option>
-                  <option>Product quality / lab reports</option>
-                  <option>Payments</option>
-                  <option>My account</option>
-                  <option>Something else</option>
-                </select>
-              </label>
-              <label className="grid gap-1.5">
-                <FieldLabel label="How can we help?" required />
-                <textarea
-                  className={FIELD_CLASS}
-                  name="message"
-                  rows={5}
-                  placeholder="Tell us what's going on…"
-                  required
-                />
-              </label>
-              <Button className="justify-self-start px-8" size="lg" type="submit">
-                Send message
-              </Button>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <TicketScreen />;
 }
 
 /* ---------------------------------------------------------------- seller support */
@@ -285,6 +210,7 @@ export function SellerSupportScreen() {
         subtitle="Fill in your details to get started and join India's verification-led health marketplace. Our onboarding team will review and reach out."
       />
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <p className="mb-6">Already a seller? <Link className="underline" href="/support/tickets">Raise a support ticket or view your requests.</Link></p>
         <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
           <InfoPanel
             title="Why sell with us"

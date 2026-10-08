@@ -11,6 +11,7 @@ const menuItems = [
   { label: 'my account', href: '/account', icon: CircleUserRound },
   { label: 'orders', href: '/account/orders', icon: ReceiptText },
   { label: 'wishlist', href: '/wishlist', icon: Heart },
+  { label: 'support & tickets', href: '/support/tickets', icon: ReceiptText },
   { label: 'saved addresses', href: '/account/addresses', icon: MapPin },
 ];
 

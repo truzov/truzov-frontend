@@ -126,7 +126,7 @@ export function BagScreen() {
             helperText={
               blockedItems.length > 0 ? 'Unselect out-of-stock items to continue.' : !selected.items.length ? 'Select at least one product to continue.' : undefined
             }
-            termsText="By continuing, you agree to Truzov's terms and verified marketplace policies."
+            termsText="By continuing, you agree to truzov's terms and verified marketplace policies."
             onCta={() => router.push('/checkout/address')}
           />
         </div>
@@ -598,7 +598,7 @@ export function PaymentScreen() {
         ctaLabel="Place order"
         disabled={phoneUnverified || selectedCart.items.some((item) => !item.inStock)}
         loading={placeOrder.isPending}
-        termsText="By placing the order, you agree to Truzov's Terms of Use and Privacy Policy."
+        termsText="By placing the order, you agree to truzov's Terms of Use and Privacy Policy."
         onCta={submit}
       />
     </div>

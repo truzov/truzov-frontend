@@ -103,3 +103,10 @@ Do not mix Unicode symbols with SVG navigation icons or let input caret touch a 
 * Hosted storefront failed after a local distDir change: Vercel sought .next/routes-manifest.json. Always verify the hosted build path; local next build alone does not validate adapter packaging.
 
 * New records with mutable list components passed unit tests but failed CI SpotBugs EI_EXPOSE_REP. Run the repository static-analysis gate before declaring PR checks complete.
+
+## Review fixes — source traps caught (2026-10-08)
+A seller-only vendor role gate would block customer applicants before approval; seller audience must retain applicant access. Product edit omitted benefits/ingredients/certifications and backend replacement semantics cleared them; preserve arrays. Form reuse across product IDs can seed the next form from previous async detail; key editor by ID. Do not claim layout, response timing, Flyway, tests or build PASS from source inspection. Docker CLI presence does not establish a running isolated test runner.
+
+Validation: Next.js generated route types catch synchronous dynamic params that standalone tsc misses. Windows Docker dependency bind mounts can cause startup timeouts; use immutable read-only Linux toolchain volumes. Mockito throwing stubs must be replaced with doThrow, not when invoking the stub.
+
+Header breakpoint regression: this project customizes Tailwind 2xl to 1440px. Use explicit min-[1536px] variants for the intended desktop header; six Chromium cases now verify the full category navigation.

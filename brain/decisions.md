@@ -97,3 +97,8 @@ Curated Lucide variants and shared optical styling provide consistent UI icons w
 Use existing production services and domains. Vercel storefront tracks feat/storefront-redesign; admin now tracks codex/truzov-admin-branding and rebuilds previews with production environment. Hosted Next.js output stays .next while local build isolation stays .next-build.
 
 * CI follow-up: use defensive request/record snapshots; preserve existing Bean Validation behavior. Repository proxy exclusion is narrowly scoped rather than disabling representation checks globally.
+
+## Decision 17: Review-fix reuse and flag defaults (2026-10-08)
+Source implemented; runtime validation pending. Featured and publication remain manual. New products default to Auto; migration preserves existing booleans as manual overrides. New window defaults 30 days; bestseller counts at least 10 paid, non-cancelled/non-returned units over 30 days. Admin /settings/product-flags adjusts rules; time expiry refreshed each minute. Vendor manual flag setting stays disallowed. Preserve verified identity/KYC onboarding pending user confirmation of any redesign. No live deployment authorized or performed in this task.
+
+2026-10-08: User permits temporary matching toolchain downloads for verification; project dependencies unchanged. No live migration/deployment is authorized by these local checks.

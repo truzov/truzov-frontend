@@ -147,3 +147,32 @@ Backend GitHub CI ran372 tests with0 failures, but SpotBugs rejected7 mutable re
 ## Backend CI follow-up — 2026-10-04
 
 PR #31 follow-up commit 6c26a04 defensively snapshots Coupon.productIds, ValidateRequest.cartItemIds and CheckoutRequest.cartItemIds. Optional null cart selection and null element Bean Validation semantics are preserved. One existing XML-pattern exclusion matches only CouponService constructor/carts field EI_EXPOSE_REP2 for the private final Spring repository proxy. Reviewer found no material issue. Final isolated build ran 287 unit tests with zero failures/errors and SpotBugs with zero findings. Earlier GitHub run passed all 372 tests but failed only these seven representation findings. Render auto-deploy and replacement GitHub checks started after push.
+
+## Review fixes QA — 2026-10-08
+Read-only diff checks passed in all three repositories (git -c core.whitespace=cr-at-eol diff --check). Independent source review covered changed auth, tickets, flags/product editing, offers, menu positioning and branding. No target-controlled tests/builds were executed: security-audit/SKILL.md requires an OS sandbox with network/environment/write/resource isolation; Docker engine is unavailable. Earlier passing test/build records in this file are historical and do not validate this change.
+
+Ready checks, all NOT RUN:
+- Storefront: tests/support-tickets.test.tsx (guest, persisted status/reply, repeat-submit guard, error draft), tests/offers.test.tsx (public real offers/empty), e2e/review-header.spec.ts (375/1024/1152/1280/1440/1536; overlay position, hero adjacency, links, Escape).
+- Admin: tests/review-fixes.test.tsx scoped password/OTP, admin API and modes; tests/forms.test.ts data preservation; tests/panel.test.ts permissions. Typecheck/build pending.
+- Backend: AuthServicePanelTest, AuthRateLimitTest, ReviewFixesIT and updated PanelOpsIT/PanelRouteSecurityIT. Run only against dummy isolated PostgreSQL; verify Flyway fresh+upgrade, manual/auto flags, admin CRUD/owner guards, wrong-role/unknown/wrong-password 401 without tokens, shared 429 limits, OTP and own-ticket security.
+- Production/visual: no measured timing parity, migration execution or full-browser authenticated transaction evidence. Backend APIs/migration must be validated before frontend rollout.
+
+See docs/review-fixes-report.md and FINDINGS.md. Current source changes are local only.
+
+## Review fixes validation resumed — 2026-10-08
+This supersedes the earlier Docker-engine blocker for this task. The user started Docker and explicitly authorized temporary matching Linux toolchain downloads; project manifests/lockfiles were not changed.
+
+Passed:
+- Storefront: exact Vitest 4.1.8, 142 tests in 15 files; standalone TypeScript 5.9.3; Next.js 16.2.7 production build (51 generated pages).
+- Admin: exact Vitest 4.1.8 with Vite 8.3.1, 20 tests in 3 files; standalone TypeScript; Next.js 16.1.6 webpack production build, including generated route types (89 generated pages).
+- Backend: 291 unit tests; 117 affected integration tests across VendorProductEndpointIT (10), SellerOnboardingIT (6), ReviewFixesIT (4), ProductEndpointsIT (12), PanelRouteSecurityIT (79), PanelOpsIT (6). Fresh Flyway migrations included V202610080100.
+- Backend offline Maven packaging and SpotBugs check: BUILD SUCCESS, zero BugInstances/errors. The narrowly scoped AdminProductController constructor/products field exclusion matches only Spring-managed service injection; collection exposure checks remain enabled.
+- Upgrade SQL fixture on PostgreSQL 16: all prior migrations applied first, dummy products seeded with opposite true/false manual flags, Firebase row with dummy ciphertext and mixed-case branding. New migration preserved force_on/force_off and final booleans, removed the complete Firebase row, normalized display data, and gave newly inserted products Auto modes with correct defaults.
+
+Execution controls: --network none (or only a shared isolated loopback namespace for local browser/server), --read-only, --cap-drop ALL, no-new-privileges, env -i with explicit PATH/HOME/TMPDIR/cache/dummy URL values, read-only source/dependencies, writable /scratch tmpfs only. Limits: CPU 1–2 cores; memory 512 MiB for SQL and 2–3 GiB for Java/Node; pids 64–192; file-size 128–256 MiB; scratch disk 512 MiB–3 GiB; bounded timeout per run (180–600 seconds for completed checks). No Docker socket, host credentials, dotenv, shared database or production service was exposed.
+
+The Windows dependency bind mount caused storefront worker startup timeouts and an admin build deadline. Copying immutable dependencies into read-only Docker volumes resolved the I/O bottleneck. The admin build then exposed two pre-existing Next.js dynamic-parameter type errors: removed unused draft-edit params and awaited stock-detail params. A fresh complete admin build passed afterward. The backend mock re-stubbing test fix uses doThrow to avoid invoking an earlier throwing stub.
+
+Playwright 1.60.0 with matching Chrome Headless Shell 148.0.7778.96 (revision 1223): 6/6 checks passed at 375/1024/1152/1280/1440/1536px with active Personal care/Food categories. Verified no viewport overflow, hero/header adjacency, menu overlay without main displacement, correct Offers links and Escape focus return. Header uses explicit min-[1536px] variants because this project overrides Tailwind 2xl to 1440px. Storefront production build passed again after this correction. Browser/server used separate capped containers sharing only an isolated network-none loopback namespace; no retained browser output. Exact response timing, real provider configuration and deployed enforcement remain unverified. No push/deployment or live database mutation occurred.
+
+Cleanup: temporary backend source inputs were relocated outside the storefront repository. Automatic approval review rejected deletion of the remaining empty validation directory, stopped containers and temporary Docker toolchain volumes with "blocked by policy"; no further reason was returned. The disposable browser server is stopped, all target-generated scratch output was ephemeral, and no production service was touched. Parent-prepared toolchain/source inputs may remain outside the repositories for reuse.

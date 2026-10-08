@@ -6,13 +6,13 @@ import { ChevronDown } from 'lucide-react';
 const groups = [
   { title: 'shop', links: [{ label: 'all products', href: '/products' }, { label: 'verified products', href: '/products?labVerified=true' }, { label: 'lab reports', href: '/trust/lab-reports' }] },
   { title: 'company', links: [{ label: 'our verification process', href: '/trust/how-it-works' }, { label: 'become a seller', href: '/vendor/register' }, { label: 'seller support', href: '/support/seller' }] },
-  { title: 'help', links: [{ label: 'customer support', href: '/support/customer' }, { label: 'shipping', href: '/policies/shipping-policy' }, { label: 'refunds', href: '/policies/refund-policy' }] },
+  { title: 'help', links: [{ label: 'support & tickets', href: '/support/tickets' }, { label: 'shipping', href: '/policies/shipping-policy' }, { label: 'refunds', href: '/policies/refund-policy' }] },
 ];
 
 export function Footer() {
   return <footer className="border-t border-[#dce6d8] bg-white pb-16 font-body text-[#04342c] lg:pb-0">
     <div className="mx-auto max-w-[1240px] px-5 pt-14 lg:pt-16">
-      <div className="flex flex-wrap items-end justify-between gap-8 border-b border-[#dce6d8] pb-10"><div><span className="text-[12px] tracking-[.08em] text-[#27500a]">the truzov way</span><p className="footer-script mt-3 max-w-[720px] text-[clamp(34px,5vw,70px)] leading-[1.35] text-[#04342c]">good products.<br />checked first.</p></div><Image className="standards-seal h-32 w-32 shrink-0 sm:h-40 sm:w-40" src="/truzov-standards-seal.svg" alt="Truzov Standards — checked first" width={160} height={160} /></div>
+      <div className="flex flex-wrap items-end justify-between gap-8 border-b border-[#dce6d8] pb-10"><div><span className="text-[12px] tracking-[.08em] text-[#27500a]">the truzov way</span><p className="footer-script mt-3 max-w-[720px] text-[clamp(34px,5vw,70px)] leading-[1.35] text-[#04342c]">good products.<br />checked first.</p></div><Image className="standards-seal h-32 w-32 shrink-0 sm:h-40 sm:w-40" src="/truzov-standards-seal.svg" alt="truzov Standards — checked first" width={160} height={160} /></div>
       <div className="hidden gap-10 py-12 lg:grid lg:grid-cols-[1.5fr_repeat(3,1fr)]">
         <div><Logo /><p className="mt-4 max-w-[270px] text-[14px] leading-relaxed text-[#476158]">A marketplace for products checked before they reach your shelf.</p></div>
         {groups.map((group) => <div key={group.title}><h2 className="font-body text-[15px] font-medium">{group.title}</h2><ul className="mt-5 space-y-3">{group.links.map((link) => <li key={link.label}><Link className="text-[13px] text-[#476158] transition-colors hover:text-[#d85a30]" href={link.href}>{link.label}</Link></li>)}</ul></div>)}

@@ -1113,7 +1113,7 @@ export function TrustHowItWorksScreen() {
     <div className="customer-page">
       <h1 className="customer-page-title max-w-3xl">Verification before checkout confidence.</h1>
       <p className="mt-4 max-w-2xl text-text-secondary">
-        Truzov combines Amazon-like shopping speed with a transparent verification workflow for
+        truzov combines Amazon-like shopping speed with a transparent verification workflow for
         health, organic, and wellness products.
       </p>
       <div className="mt-10 grid gap-5 md:grid-cols-4">

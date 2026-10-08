@@ -207,7 +207,7 @@ export function VendorProductWizardScreen() {
             error={fieldError(mutation.error, 'brand')}
             label="Brand"
             onChange={set('brand')}
-            placeholder="Truzov"
+            placeholder="truzov"
             required
             value={form.brand}
           />

@@ -149,3 +149,8 @@ Use installed Lucide components for UI icons; global .lucide defines1.75px strok
 * Vercel builds use Next.js default .next output; local .next-build isolation is conditional on absence of VERCEL. Match hosting Output Directory to distDir.
 
 * Request collection records defensively copy input/output while preserving nullable legacy selections and null elements until Bean Validation. Keep injected-repository SpotBugs exclusions scoped to class/constructor/field/pattern.
+
+## Review-fix patterns — 2026-10-08
+Panel role audience belongs in the backend before token creation (password and OTP); customer applicants remain eligible for seller onboarding. Reuse owner-scoped support endpoints with user-specific query keys and text-only message rendering. Product edit mapping preserves all editable arrays and keys the form by ID. Final merchandising booleans are DB-maintained from admin-only Auto/force modes; storefronts consume final values without duplicating rules. Overlay navigation uses absolute placement under the sticky header, no body scrollbar toggling or page displacement.
+
+Validation pattern: run exact local dependency versions under network isolation with readonly inputs and scratch tmpfs; move dependency inputs to Linux Docker volumes when Windows bind I/O prevents reliable startup.

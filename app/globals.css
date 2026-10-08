@@ -225,7 +225,7 @@ footer details[open] summary .lucide-chevron-down { transform: rotate(180deg); }
 .storefront main { scroll-margin-top: 75px; }
 .truzov-home h1, .truzov-home h2, .truzov-home h3 { font-family: inherit; font-weight: 500; letter-spacing: -.035em; }
 .home-container { width: min(100% - 40px, 1240px); margin-inline: auto; }
-.home-hero { margin-top: 14px; background: var(--forest); color: #e1f5ee; overflow: hidden; }
+.home-hero { margin-top: 0; background: var(--forest); color: #e1f5ee; overflow: hidden; }
 .footer-script { font-family: Allura, 'Segoe Script', 'Brush Script MT', cursive; font-weight: 400; letter-spacing: 0; }
 .standards-seal { transform-origin: center; animation: standards-tilt 3.2s ease-in-out infinite alternate; filter: drop-shadow(0 10px 16px #04342c20); }
 .standards-seal:hover { animation-play-state: paused; }
@@ -358,7 +358,7 @@ footer details[open] summary .lucide-chevron-down { transform: rotate(180deg); }
   .home-gifts { gap: 30px; }
 }
 @media (max-width: 640px) {
-  .home-hero { margin-top: 10px; }
+  .home-hero { margin-top: 0; }
   .home-container { width: min(100% - 36px, 1240px); }
   .home-hero-inner { display: flex; flex-direction: column; }
   .home-hero-copy { padding: 40px 25px 35px; }
