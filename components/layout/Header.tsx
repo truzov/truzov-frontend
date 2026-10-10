@@ -1,250 +1,78 @@
 'use client';
 
-import {
-  BadgeCheck,
-  ChevronDown,
-  FlaskConical,
-  Heart,
-  Search,
-  ShieldCheck,
-  ShoppingCart,
-  Users,
-} from 'lucide-react';
+import { Heart, LogOut, Menu, Search, ShoppingCart, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import { useAuthStore } from '@/store/auth.store';
 import { AccountMenu } from '@/components/auth/AccountMenu';
 import { useCartItemCount } from '@/hooks/api/useCart';
+import { useCategories } from '@/hooks/api/useCatalog';
 import { Logo } from './Logo';
 
 export function Header() {
   const router = useRouter();
+  const { data: categories = [] } = useCategories();
+  const count = useCartItemCount();
   const [query, setQuery] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
-  // Server-provided count from the same cache entry the cart page reads, so the badge cannot drift
-  // from the cart. Previously summed from a persisted local cart. Zero for guests, who have no cart.
-  const itemCount = useCartItemCount();
-
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const [policiesOpen, setPoliciesOpen] = useState(false);
-  const policiesRef = useRef<HTMLDivElement>(null);
-  const [supportOpen, setSupportOpen] = useState(false);
-  const supportRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (!policiesRef.current?.contains(target)) {
-        setPoliciesOpen(false);
-      }
-      if (!supportRef.current?.contains(target)) {
-        setSupportOpen(false);
+    const close = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+        setSearchOpen(false);
       }
     };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, []);
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && (menuOpen || searchOpen)) {
+        setMenuOpen(false);
+        setSearchOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [menuOpen, searchOpen]);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const logout = useAuthStore((state) => state.logout);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const categoryHref = (term: string) => {
+    const item = categories.find((category) => category.isActive && `${category.name} ${category.slug}`.toLowerCase().includes(term));
+    return item ? `/category/${item.slug}` : '/products';
+  };
+  const links = [
+    { label: 'shop', href: '/products' },
+    { label: 'offers & coupons', href: '/offers' },
+    ...(categories.some((category) => category.isActive && `${category.name} ${category.slug}`.toLowerCase().includes('personal')) ? [{ label: 'personal care', href: categoryHref('personal') }] : []),
+    ...(categories.some((category) => category.isActive && `${category.name} ${category.slug}`.toLowerCase().includes('food')) ? [{ label: 'food', href: categoryHref('food') }] : []),
+    { label: 'our verification process', href: '/trust/how-it-works' },
+    { label: 'lab reports', href: '/trust/lab-reports' },
+  ];
 
-  return (
-    <>
-      <header className="sticky top-0 z-50 border-b border-outline-variant bg-white font-body shadow-xs">
-        <div className="bg-primary text-on-primary">
-          <div className="mx-auto hidden max-w-[1440px] items-center justify-center gap-8 px-6 py-2 text-[13px] font-semibold lg:flex">
-            {(
-              [
-                [FlaskConical, 'Lab Tested'],
-                [BadgeCheck, 'Authentic Products'],
-                [Users, 'Trusted Vendors'],
-                [ShieldCheck, 'Transparency You Can Trust'],
-                [Heart, "India's Verified Health Marketplace"],
-              ] as Array<[typeof FlaskConical, string]>
-            ).map(([Icon, label]) => (
-              <span key={label} className="flex items-center gap-2 whitespace-nowrap">
-                <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
-                {label}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="mx-auto grid max-w-[1440px] gap-3 px-4 py-3 lg:grid-cols-[140px_1fr_auto] lg:items-center lg:gap-10 lg:px-6 lg:py-5">
-          <div className="flex items-center justify-between">
-            <Logo />
-            <div className="flex items-center gap-1 lg:hidden">
-              <AccountMenu />
-              <Link
-                aria-label="Open cart"
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-brand-primary hover:bg-brand-light"
-                href="/cart"
-              >
-                <ShoppingCart aria-hidden="true" className="h-5 w-5" />
-                {isMounted && itemCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-xs text-on-primary">
-                    {itemCount}
-                  </span>
-                ) : null}
-              </Link>
-            </div>
-          </div>
-          <form
-            className="flex h-12 min-w-0 overflow-hidden rounded-lg border border-outline-variant bg-background lg:max-w-[800px]"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const trimmed = query.trim();
-              if (trimmed) {
-                router.push(`/search?q=${encodeURIComponent(trimmed)}`);
-              }
-            }}
-          >
-            <button
-              className="hidden items-center gap-2 border-r border-outline-variant px-4 text-sm font-medium text-on-surface-variant transition hover:bg-surface-container-low md:flex"
-              type="button"
-            >
-              All Categories
-              <ChevronDown aria-hidden="true" className="h-4 w-4 text-outline" />
-            </button>
-            <input
-              className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-on-surface outline-none placeholder:text-outline"
-              placeholder="Search verified products, brands, categories..."
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <Button
-              aria-label="Search"
-              className="h-full w-16 rounded-none bg-primary text-on-primary hover:bg-primary/90"
-              size="icon"
-              type="submit"
-            >
-              <Search aria-hidden="true" className="h-5 w-5" />
-            </Button>
-          </form>
-          <nav className="hidden items-center gap-6 lg:flex">
-            <span className="flex items-center gap-2 rounded-full border border-primary/20 bg-surface-container-low px-5 py-2.5 text-sm font-bold text-primary">
-              <BadgeCheck aria-hidden="true" className="h-5 w-5" />
-              truzov Verified
-            </span>
-            <AccountMenu />
-            <Link href="/wishlist">
-              <Button
-                className="px-0 text-on-surface hover:bg-transparent hover:text-primary"
-                variant="ghost"
-              >
-                <Heart aria-hidden="true" className="h-7 w-7" />
-                Wishlist
-              </Button>
-            </Link>
-            <Link
-              className="relative inline-flex items-center gap-2 px-0 text-on-surface hover:text-primary"
-              href="/cart"
-            >
-              <ShoppingCart aria-hidden="true" className="h-7 w-7" />
-              Cart
-              {isMounted && itemCount > 0 ? (
-                <span
-                  aria-live="polite"
-                  className="absolute -right-3 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-on-primary"
-                >
-                  {itemCount}
-                </span>
-              ) : null}
-            </Link>
-          </nav>
-        </div>
-        <nav className="hidden border-y border-outline-variant/70 bg-white lg:block">
-          <div className="mx-auto flex max-w-[1440px] items-center gap-8 px-6 py-3 text-sm font-semibold text-on-surface">
-            <Link className="flex items-center gap-1 hover:text-primary" href="/products">
-              Shop
-            </Link>
-            <Link className="hover:text-primary" href="/products">
-              Brands
-            </Link>
-            <Link href="/trust/how-it-works">Why Verified?</Link>
-            <Link href="/trust/lab-reports">Lab Reports</Link>
-            <Link href="/trust/how-it-works">About Us</Link>
-            <div ref={policiesRef} className="relative">
-              <button
-                onClick={() => setPoliciesOpen(!policiesOpen)}
-                className="flex items-center gap-1 hover:text-primary font-semibold transition"
-                aria-expanded={policiesOpen}
-                type="button"
-              >
-                Policies
-                <ChevronDown aria-hidden="true" className="h-4 w-4" />
-              </button>
-              {policiesOpen && (
-                <div className="absolute left-0 top-[calc(100%+12px)] z-50 w-48 rounded-lg border border-outline-variant bg-white p-1.5 shadow-md">
-                  <Link
-                    href="/policies/refund-policy"
-                    onClick={() => setPoliciesOpen(false)}
-                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
-                  >
-                    Refund Policy
-                  </Link>
-                  <Link
-                    href="/policies/shipping-policy"
-                    onClick={() => setPoliciesOpen(false)}
-                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
-                  >
-                    Shipping Policy
-                  </Link>
-                  <Link
-                    href="/policies/privacy-policy"
-                    onClick={() => setPoliciesOpen(false)}
-                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
-                  >
-                    Privacy Policy
-                  </Link>
-                  <Link
-                    href="/policies/terms-of-service"
-                    onClick={() => setPoliciesOpen(false)}
-                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
-                  >
-                    Terms of Service
-                  </Link>
-                </div>
-              )}
-            </div>
-            <div ref={supportRef} className="relative">
-              <button
-                onClick={() => setSupportOpen(!supportOpen)}
-                className="flex items-center gap-1 hover:text-primary font-semibold transition"
-                aria-expanded={supportOpen}
-                type="button"
-              >
-                Support
-                <ChevronDown aria-hidden="true" className="h-4 w-4" />
-              </button>
-              {supportOpen && (
-                <div className="absolute left-0 top-[calc(100%+12px)] z-50 w-48 rounded-lg border border-outline-variant bg-white p-1.5 shadow-md">
-                  <Link
-                    href="/support/customer"
-                    onClick={() => setSupportOpen(false)}
-                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
-                  >
-                    Customer Support
-                  </Link>
-                  <Link
-                    href="/support/seller"
-                    onClick={() => setSupportOpen(false)}
-                    className="block rounded-md px-3.5 py-2 text-sm text-text-secondary transition hover:bg-surface-raised hover:text-primary font-semibold"
-                  >
-                    Seller Support
-                  </Link>
-                </div>
-              )}
-            </div>
-            <Link
-              className="ml-auto rounded-lg bg-primary px-8 py-3 text-sm font-bold text-on-primary transition hover:bg-primary/90"
-              href="/products?labVerified=true"
-            >
-              Explore Verified Products
-            </Link>
-          </div>
-        </nav>
-      </header>
-    </>
-  );
+  return <header ref={headerRef} className="sticky top-0 z-50 border-b border-[#dce6d8] bg-[#fdfbf7]/95 font-body text-[#04342c] backdrop-blur-md">
+    <a className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-[100] focus:rounded focus:bg-white focus:px-4 focus:py-2" href="#main-content">skip to content</a>
+    <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-2 px-4 sm:gap-4 md:px-8 min-[1536px]:gap-4">
+      <button ref={menuButtonRef} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} aria-controls="store-menu" className="grid h-11 w-11 place-items-center rounded-md hover:bg-[#eaf3de] min-[1536px]:hidden" onClick={() => { setMenuOpen(!menuOpen); setSearchOpen(false); }} type="button">{menuOpen ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}</button>
+      <Logo className="mr-auto w-[96px] min-[1536px]:w-[112px]" />
+      <nav aria-label="Main navigation" className="hidden items-center gap-3 min-[1536px]:gap-4 min-[1536px]:flex">{links.map((link) => <Link className="whitespace-nowrap text-[13px] transition-colors hover:text-[#d85a30]" href={link.href} key={link.label}>{link.label}</Link>)}</nav>
+      <form className="ml-auto hidden h-11 w-[min(19vw,230px)] items-center gap-2.5 rounded-lg bg-[#eaf0e6] px-3 min-[1536px]:flex" onSubmit={(event) => { event.preventDefault(); if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`); }} role="search">
+        <Search aria-hidden="true" size={18} /><input aria-label="Search products" className="search-input min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#5e7569]" onChange={(event) => setQuery(event.target.value)} placeholder="search products" value={query} />
+      </form>
+      <button aria-label="Search" aria-expanded={searchOpen} className="grid h-11 w-11 place-items-center rounded-md hover:bg-[#eaf3de] min-[1536px]:hidden" onClick={() => { setSearchOpen(!searchOpen); setMenuOpen(false); }} type="button"><Search aria-hidden="true" size={20} /></button>
+      <Link aria-label="Wishlist" className="grid h-11 w-11 place-items-center rounded-md hover:bg-[#eaf3de]" href="/wishlist"><Heart aria-hidden="true" size={20} /></Link>
+      <AccountMenu className="hidden min-[1536px]:block" />
+      <Link aria-label={count > 0 ? `Cart, ${count} items` : 'Cart'} className="relative grid h-11 w-11 place-items-center rounded-md hover:bg-[#eaf3de]" href="/cart"><ShoppingCart aria-hidden="true" size={20} />{count > 0 && <span className="absolute right-0 top-0 grid h-5 min-w-5 place-items-center rounded-full bg-[#d85a30] px-1 text-[10px] text-white">{count}</span>}</Link>
+    </div>
+    {searchOpen && <form className="absolute inset-x-0 top-full flex gap-2 bg-[#fdfbf7] shadow-lg border-t border-[#dce6d8] p-3 min-[1536px]:hidden" onSubmit={(event) => { event.preventDefault(); if (query.trim()) { router.push(`/search?q=${encodeURIComponent(query.trim())}`); setSearchOpen(false); } }} role="search"><input autoFocus aria-label="Search products" className="search-input min-w-0 flex-1 rounded-md border-0 bg-white px-3 py-2 outline-none" onChange={(event) => setQuery(event.target.value)} placeholder="search products" value={query} /><button className="min-h-11 rounded-md bg-[#04342c] px-4 text-white" type="submit">search</button></form>}
+    {menuOpen && <nav aria-label="Mobile navigation" className="absolute inset-x-0 top-full shadow-lg max-h-[calc(100dvh-70px)] overflow-y-auto border-t border-[#dce6d8] bg-[#fdfbf7] px-5 py-3 min-[1536px]:hidden" id="store-menu">{[...links, { label: 'account', href: '/account' }, { label: 'wishlist', href: '/wishlist' }, { label: 'support & tickets', href: '/support/tickets' }, { label: 'seller support', href: '/support/seller' }].map((link) => <Link className="flex min-h-12 items-center border-b border-[#e4e8dd] text-[15px]" href={link.href} key={link.label} onClick={() => setMenuOpen(false)}>{link.label}</Link>)}
+      {isLoggedIn && <button className="flex min-h-12 w-full items-center gap-3 text-left text-[15px] text-[#b44d30] disabled:opacity-50" disabled={loggingOut} type="button" onClick={async () => { setLoggingOut(true); try { await logout(); setMenuOpen(false); router.push('/'); } finally { setLoggingOut(false); } }}><LogOut aria-hidden="true" size={20} />{loggingOut ? 'Logging out…' : 'Log out'}</button>}
+    </nav>}
+  </header>;
 }

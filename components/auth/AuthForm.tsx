@@ -52,11 +52,8 @@ export function AuthForm({
     clearError();
   }, [clearError, mode]);
 
-  // A verified code for an identifier that has no account: the server answered 404
-  // ACCOUNT_NOT_FOUND, and the store kept the consumed session as a signup voucher.
-  // Switch to signup (the modal re-renders in that mode; the mode effect above resets
-  // the step and the error) — the signup form pre-fills the verified identifier and
-  // carries the session, so the account is born verified with no second code.
+  // An unknown account switches to signup with an in-memory identifier draft.
+  // The draft never skips signup verification.
   const accountNotFound = errorCode === ERROR_CODES.ACCOUNT_NOT_FOUND;
 
   useEffect(() => {
@@ -69,11 +66,7 @@ export function AuthForm({
   if (step === 'otp') {
     return (
       <div className="grid gap-4">
-        <OTPVerification
-          onVerified={onSuccess}
-          variant={variant}
-          onSwitchMode={onModeChange}
-        />
+        <OTPVerification onVerified={onSuccess} variant={variant} onSwitchMode={onModeChange} />
         <button
           className="w-full text-center text-sm font-semibold text-accent-link hover:underline"
           type="button"
@@ -110,9 +103,7 @@ export function AuthForm({
           variant={variant}
           onModeChange={onModeChange}
           onSuccess={onSuccess}
-          // Signup returns no tokens, so success here means "code sent", not "signed in" —
-          // unless a carried-forward session already proved the identifier, in which case
-          // SignupForm signs in with the password it just collected.
+          // Signup success means "code sent"; verification is still required.
           onOtpSent={variant === 'modal' ? () => setStep('otp') : undefined}
         />
       )}

@@ -1,6 +1,10 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  distDir: process.env.VERCEL ? '.next' : '.next-build',
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.truzov.com' },

@@ -1,27 +1,21 @@
 'use client';
 
 import {
-  ArrowRight,
-  BadgeCheck,
-  CheckCircle2,
   ClipboardCheck,
-  CreditCard,
   FileText,
   Heart,
-  Leaf,
-  Microscope,
   PackageCheck,
   Pencil,
   Phone,
   Plus,
   Search,
   ShieldCheck,
-  ShoppingCart,
   Truck,
-  Zap,
   MapPin,
+  ReceiptText,
+  CircleUserRound,
+  LogOut,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -31,10 +25,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PhoneChangeModal } from '@/components/auth/PhoneChangeModal';
 import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
-import { Rating } from '@/components/ui/Rating';
 import {
   AddressesScreenSkeleton,
-  HomeScreenSkeleton,
   LabReportsScreenSkeleton,
   OrderDetailScreenSkeleton,
   OrdersScreenSkeleton,
@@ -44,14 +36,7 @@ import { OrderItemRow } from '@/components/commerce/OrderItemRow';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { MobileFilterSheet } from '@/components/product/MobileFilterSheet';
 import { formatAddress } from '@/components/checkout/CheckoutScreens';
-import {
-  useBanners,
-  useCategories,
-  useHome,
-  useLabReports,
-  useProductList,
-  useProductsByIds,
-} from '@/hooks/api/useCatalog';
+import { useCategories, useLabReports, useProductList, useProductsByIds } from '@/hooks/api/useCatalog';
 import { useWishlist } from '@/hooks/api/useWishlist';
 import { useAddresses, useCancelOrder, useOrder, useOrders } from '@/hooks/api/useCommerce';
 import { DEFAULT_PRODUCT_LIMIT } from '@/lib/api/endpoints/catalog';
@@ -65,341 +50,12 @@ import {
   type ProductFilterState,
 } from '@/lib/utils/filters';
 import { formatCurrency } from '@/lib/utils/money';
-import { displayImages, humaniseSlug } from '@/lib/utils/product';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
 import type { OrderStatus } from '@/types/api';
 
-function TrustStrip() {
-  const items = [
-    [ShieldCheck, 'Certified Organic Sources'],
-    [CreditCard, 'Secure Checkout'],
-    [Microscope, 'Third-Party Lab Audited'],
-    [Truck, 'Temperature Controlled'],
-  ] as const;
-
-  return (
-    <section className="border-y border-outline-variant bg-surface-container-high py-8">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-8 px-6 text-on-surface md:justify-between">
-        {items.map(([Icon, label]) => (
-          <div key={label} className="flex items-center gap-3">
-            <Icon aria-hidden="true" className="h-5 w-5 fill-current text-primary" />
-            <span className="text-sm font-bold">{label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function HomeScreen() {
-  const { data, isLoading, isError, error, refetch } = useHome();
-
-  /**
-   * Verified against the running backend: `GET /home` returns `banners: []` even though
-   * `GET /banners?placement=hero` returns the seeded hero record. So the hero falls back to the
-   * dedicated endpoint when /home supplies none. `enabled` means the extra request only happens
-   * while that gap exists and stops on its own once /home includes banners (plan §T8).
-   */
-  const heroFallback = useBanners('hero', Boolean(data) && data?.banners.length === 0);
-
-  // One request backs this whole page (`GET /home` returns banners, categories, bestSellers,
-  // newArrivals and featured together), so a single skeleton/error pair covers it rather than
-  // each section loading independently and the layout jumping four times.
-  if (isLoading) {
-    return <HomeScreenSkeleton />;
-  }
-
-  if (isError || !data) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-16">
-        <ErrorState
-          error={error}
-          title="We could not load the homepage"
-          onRetry={() => void refetch()}
-        />
-      </div>
-    );
-  }
-
-  // Pick the hero by placement rather than index. `banners[0]` happened to work against
-  // fixtures but is arbitrary against real data, where placements are a marketing concern and
-  // ordering is not guaranteed. Falls back to any active banner so a renamed placement degrades
-  // to "wrong banner" instead of "no hero".
-  const availableBanners = data.banners.length ? data.banners : heroFallback.data ?? [];
-  const hero =
-    availableBanners.find((banner) => banner.placement === 'hero' && banner.active) ??
-    availableBanners.find((banner) => banner.active);
-  const heroImage = hero?.imageUrl;
-
-  const categories = data.categories;
-  // Best sellers are the intended carousel content; `featured` is a reasonable stand-in on a
-  // young catalogue where nothing has sold yet.
-  const carouselSource = data.bestSellers.length ? data.bestSellers : data.featured;
-  // The track is a CSS marquee, so it needs enough tiles to fill the viewport twice over to
-  // loop without a visible gap. Duplicating only when the list is short avoids rendering a
-  // large catalogue twice for no reason.
-  const carouselProducts =
-    carouselSource.length > 0 && carouselSource.length < 8
-      ? [...carouselSource, ...carouselSource]
-      : carouselSource;
-
-  return (
-    <>
-      <section className="bg-primary py-16 text-white md:py-32">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-6 md:flex-row md:gap-12">
-          <div className="flex-1 space-y-6 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wide">
-              <BadgeCheck aria-hidden="true" className="h-4 w-4 fill-current" />
-              Clinically Audited Inventory
-            </div>
-            <h1 className="text-[36px] font-black leading-[1.1] tracking-tight md:text-[64px]">
-              {hero?.headline ?? 'Scientific Purity.'}
-            </h1>
-            {hero?.subtext ? (
-              <p className="mx-auto max-w-lg text-base leading-relaxed text-white/90 md:mx-0 md:text-lg">
-                {hero.subtext}
-              </p>
-            ) : null}
-            <div className="pt-2">
-              <Link
-                className="inline-flex items-center rounded-full bg-white px-8 py-4 font-bold text-primary shadow-md transition hover:bg-white/90"
-                href={hero?.href ?? '/products'}
-              >
-                {hero?.ctaLabel ?? 'Browse Marketplace'}
-              </Link>
-            </div>
-          </div>
-          {/* `imageUrl` is optional on BannerDto, and the backend omits null fields entirely,
-              so the whole panel is conditional rather than passing undefined to next/image. */}
-          {heroImage ? (
-            <div className="relative w-full max-w-[340px] flex-shrink-0 md:max-w-none md:flex-1">
-              <div className="aspect-square overflow-hidden rounded-[3rem] border-[12px] border-white/10 shadow-2xl">
-                <Image
-                  alt={hero?.headline ?? 'Featured promotion'}
-                  className="object-cover"
-                  fill
-                  priority
-                  sizes="(min-width: 1024px) 45vw, 340px"
-                  src={heroImage}
-                />
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      <TrustStrip />
-
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <h2 className="mb-10 text-center font-heading text-2xl text-on-surface md:text-left">
-          Shop by Lab-Verified Category
-        </h2>
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
-          {categories.map((category) => (
-            <Link
-              key={category.slug}
-              className="group flex cursor-pointer flex-col items-center gap-4"
-              href={`/category/${category.slug}`}
-            >
-              <div className="relative aspect-square w-full overflow-hidden rounded-3xl border-2 border-transparent bg-surface-container shadow-md transition group-hover:border-primary group-hover:shadow-lg">
-                {/* `image` is optional on CategoryDto and omitted when null, so it cannot be
-                    passed straight to next/image — an undefined src throws at render. */}
-                {category.image ? (
-                  <Image
-                    alt={category.name}
-                    className="object-cover transition group-hover:scale-105"
-                    fill
-                    sizes="(min-width: 1024px) 16vw, (min-width: 768px) 33vw, 50vw"
-                    src={category.image}
-                  />
-                ) : (
-                  <span className="grid h-full w-full place-items-center text-xs text-on-surface-variant">
-                    {category.name}
-                  </span>
-                )}
-              </div>
-              <p className="text-center text-sm font-bold">{category.name}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-surface-container-low py-16">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mb-8 flex items-start justify-between gap-4">
-            <div>
-              <h2 className="font-heading text-2xl text-on-surface">Verified Best-Sellers</h2>
-              <p className="mt-1 text-sm text-on-surface-variant">
-                Top performing products from our last 24-hour lab audit cycle.
-              </p>
-            </div>
-            <Link
-              className="flex shrink-0 items-center gap-1 text-sm font-bold text-primary hover:underline"
-              href="/products"
-            >
-              View All
-              <ArrowRight aria-hidden="true" className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="overflow-hidden">
-            {carouselProducts.length === 0 ? (
-              <p className="py-6 text-sm text-on-surface-variant">
-                No products are available yet. Check back shortly.
-              </p>
-            ) : null}
-            <div className="carousel-track gap-4 py-2">
-              {carouselProducts.map((product, idx) => {
-                const image = displayImages(product.images, product.name)[0];
-
-                return (
-                <div
-                  key={`${product.id}-${idx}`}
-                  className="w-[200px] flex-shrink-0 sm:w-[220px] lg:w-[calc((100%-48px)/4)]"
-                >
-                  <Link
-                    className="flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm transition hover:shadow-md"
-                    href={`/products/${product.slug}`}
-                  >
-                    <div className="relative aspect-square w-full overflow-hidden bg-surface-container">
-                      {/* Previously `src={product.images[0]?.url ?? ''}`. An empty string is not
-                          a valid src and next/image rejects it, so the absent case is handled as
-                          a placeholder instead. */}
-                      {image ? (
-                        <Image
-                          alt={image.alt}
-                          className="object-cover"
-                          fill
-                          sizes="(min-width: 1024px) 25vw, 220px"
-                          src={image.url}
-                        />
-                      ) : null}
-                    </div>
-                    <div className="flex flex-1 flex-col gap-2 p-3">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                          {humaniseSlug(product.categorySlug)}
-                        </p>
-                        <h3 className="mt-0.5 text-sm font-bold leading-snug text-on-surface line-clamp-2">
-                          {product.name}
-                        </h3>
-                      </div>
-                      <Rating rating={product.rating} />
-                      <div className="mt-auto flex items-center justify-between pt-1">
-                        <span className="text-base font-bold text-primary">
-                          {formatCurrency(product.price)}
-                        </span>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
-                          <ShoppingCart aria-hidden="true" className="h-3.5 w-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-col gap-6 lg:flex-row">
-            <div className="flex-[2] rounded-[2rem] border border-gray-100 bg-white p-10 shadow-sm">
-              <h2 className="mb-12 text-[28px] font-extrabold text-on-surface">Why truzov?</h2>
-              <div className="relative flex flex-col gap-8 md:flex-row md:gap-4">
-                <div className="absolute left-[10%] right-[10%] top-10 hidden h-px bg-gray-200 md:block" />
-                {[
-                  {
-                    step: '1. Sourced',
-                    text: 'Carefully sourced from trusted farmers & brands',
-                    icon: Leaf,
-                  },
-                  {
-                    step: '2. Lab Tested',
-                    text: 'Every batch tested in NABL accredited labs',
-                    icon: Microscope,
-                  },
-                  {
-                    step: '3. Verified',
-                    text: 'We verify results for purity & authenticity',
-                    icon: ShieldCheck,
-                  },
-                  {
-                    step: '4. Delivered',
-                    text: 'Delivered to you with complete transparency',
-                    icon: Truck,
-                  },
-                ].map(({ step, text, icon: Icon }) => (
-                  <div
-                    key={step}
-                    className="relative z-10 flex flex-1 flex-col items-center text-center"
-                  >
-                    <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white bg-brand-light shadow-sm">
-                      <Icon aria-hidden="true" className="h-8 w-8 text-brand-primary" />
-                    </div>
-                    <h3 className="mb-2 text-sm font-bold text-on-surface">{step}</h3>
-                    <p className="max-w-[140px] text-xs leading-relaxed text-on-surface-variant">
-                      {text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-[2rem] bg-[#f0f9f0] p-10">
-              <div className="z-10">
-                <h2 className="mb-4 text-[28px] font-extrabold text-on-surface">
-                  See the Proof, Always
-                </h2>
-                <p className="mb-10 max-w-[240px] text-sm leading-relaxed text-on-surface-variant">
-                  Every product comes with a lab report. Because you deserve to know what you eat.
-                </p>
-                <Link
-                  className="inline-flex rounded-xl bg-primary px-8 py-3.5 text-sm font-bold text-white transition hover:bg-primary/90"
-                  href="/trust/lab-reports"
-                >
-                  View Lab Reports
-                </Link>
-              </div>
-              <div className="absolute bottom-0 right-0 p-4 opacity-40">
-                <div className="relative flex h-32 w-24 flex-col gap-2 rounded-tr-3xl bg-[#c9e0c9] p-4">
-                  <div className="h-1.5 w-full rounded-full bg-white" />
-                  <div className="h-1.5 w-full rounded-full bg-white" />
-                  <div className="h-1.5 w-2/3 rounded-full bg-white" />
-                  <div className="absolute -left-4 -top-4 rounded-full bg-white p-1">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary">
-                      <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-white" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-0 grid grid-cols-2 gap-8 border-t border-gray-100 py-8 md:grid-cols-4">
-            {[
-              { icon: Truck, title: '2-3 Days Delivery', sub: 'Across Major Cities' },
-              { icon: ArrowRight, title: 'Hassle Free Returns', sub: 'Easy 7 Days Return' },
-              { icon: ShieldCheck, title: 'Secure Payments', sub: '100% Safe & Secure' },
-              { icon: Zap, title: 'Dedicated Support', sub: "We're Here to Help" },
-            ].map(({ icon: Icon, title, sub }) => (
-              <div key={title} className="flex items-center gap-4">
-                <Icon aria-hidden="true" className="h-7 w-7 flex-shrink-0 text-brand-primary" />
-                <div>
-                  <p className="text-sm font-extrabold text-on-surface">{title}</p>
-                  <p className="text-xs text-on-surface-variant">{sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </>
-  );
-}
+export { HomeScreen } from './HomeScreen';
 
 const SORT_OPTIONS: Array<[string, string]> = [
   ['price_asc', 'Price: Low to High'],
@@ -434,6 +90,8 @@ function FilterPanel({
   const { data: categories, isLoading, isError } = useCategories();
   const pathname = usePathname();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const active = draft ?? filters;
 
@@ -470,7 +128,7 @@ function FilterPanel({
   };
 
   return (
-    <aside className="rounded-lg border border-surface-border bg-surface-base p-4 lg:sticky lg:top-36">
+    <aside className="catalogue-filters rounded-lg border border-surface-border bg-surface-base p-4 lg:sticky lg:top-24">
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-2xl">Filters</h2>
         <button className="text-sm font-semibold text-brand-primary" type="button" onClick={clear}>
@@ -485,7 +143,7 @@ function FilterPanel({
                 own. A failure here must not block the grid: browsing by URL still works
                 without the sidebar, so the category list is simply omitted rather than
                 escalated into a page-level error. */}
-            {isLoading ? (
+            {isLoading || !mounted ? (
               <>
                 <Skeleton className="h-5 w-24" />
                 <Skeleton className="h-5 w-20" />
@@ -498,12 +156,13 @@ function FilterPanel({
                 <button
                   key={category.slug}
                   className={cn(
-                    'text-left',
+                    'filter-choice text-left',
                     active.category === category.slug
                       ? 'font-semibold text-brand-primary'
                       : 'text-text-secondary'
                   )}
                   type="button"
+                  aria-pressed={active.category === category.slug}
                   onClick={() =>
                     commit({ category: active.category === category.slug ? undefined : category.slug })
                   }
@@ -522,6 +181,7 @@ function FilterPanel({
               active.labVerified ? 'bg-brand-primary text-white' : 'bg-brand-light text-brand-primary'
             )}
             type="button"
+            aria-pressed={Boolean(active.labVerified)}
             onClick={() => commit({ labVerified: active.labVerified ? undefined : true })}
           >
             Lab Verified Only
@@ -535,10 +195,11 @@ function FilterPanel({
               <button
                 key={value}
                 className={cn(
-                  'text-left',
+                  'filter-choice text-left',
                   active.sort === value ? 'font-semibold text-brand-primary' : undefined
                 )}
                 type="button"
+                aria-pressed={active.sort === value}
                 onClick={() => commit({ sort: value })}
               >
                 {label}
@@ -552,7 +213,7 @@ function FilterPanel({
 }
 
 export function ProductListingScreen({
-  title = 'Verified Marketplace',
+  title = 'Shop the collection',
   filters,
 }: {
   title?: string;
@@ -590,13 +251,14 @@ export function ProductListingScreen({
   const lastPage = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6 text-sm text-text-secondary">
-        <Link href="/">Home</Link> <span>&gt;</span> <span>{title}</span>
-      </div>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="customer-page">
+      <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap gap-2 text-sm text-text-secondary">
+        <Link className="hover:underline" href="/">Home</Link> <span aria-hidden="true">/</span> <span aria-current="page">{title}</span>
+      </nav>
+      <div className="customer-page-intro flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-heading text-4xl capitalize">{title}</h1>
+          <span className="home-kicker">the truzov marketplace</span>
+          <h1 className="customer-page-title mt-2">{title}</h1>
           {/* `total` is the full server-side count, not `items.length` — the latter would read
               "Showing 24 products" on a catalogue of 500. */}
           <p className="mt-1 text-text-secondary">
@@ -604,7 +266,7 @@ export function ProductListingScreen({
           </p>
         </div>
         <button
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-brand-primary px-4 text-sm font-semibold text-brand-primary lg:hidden"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-primary bg-white px-4 text-sm font-medium text-brand-primary lg:hidden"
           type="button"
           onClick={() => setFilterSheetOpen(true)}
         >
@@ -615,7 +277,7 @@ export function ProductListingScreen({
         </button>
       </div>
       {activeFilters.length ? (
-        <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+        <div className="mb-5 flex flex-wrap gap-2">
           {activeFilters.map(([key, value]) => (
             <Badge key={key} variant="info">
               {key}: {value}
@@ -623,11 +285,11 @@ export function ProductListingScreen({
           ))}
         </div>
       ) : null}
-      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
         <div className="hidden lg:block">
           <FilterPanel filters={filters} />
         </div>
-        <div>
+        <div className="catalogue-results min-w-0">
           {isError ? (
             <ErrorState
               error={error}
@@ -702,9 +364,16 @@ export function SearchScreen({ query }: { query?: string }) {
 
   if (!trimmed) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="customer-page max-w-3xl">
+        <div className="customer-page-intro">
+          <span className="home-kicker">find your next favourite</span>
+          <h1 className="customer-page-title mt-2">Search the marketplace</h1>
+          <p>Explore products, brands, and categories.</p>
+        </div>
         <form
-          className="flex h-12 overflow-hidden rounded-lg border border-outline-variant bg-background"
+          aria-label="Search catalogue"
+          role="search"
+          className="flex min-h-12 overflow-hidden rounded-lg border border-outline-variant bg-white"
           onSubmit={(event) => {
             event.preventDefault();
             const next = draft.trim();
@@ -714,6 +383,7 @@ export function SearchScreen({ query }: { query?: string }) {
           }}
         >
           <input
+            aria-label="Search products"
             autoFocus
             className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-on-surface outline-none placeholder:text-outline"
             placeholder="Search verified products, brands, categories..."
@@ -749,17 +419,16 @@ export function SearchScreen({ query }: { query?: string }) {
 const accountNavSections = [
   {
     label: 'OVERVIEW',
-    items: [{ label: 'Profile', href: '/account' }],
+    items: [{ label: 'Profile', href: '/account', icon: CircleUserRound }],
   },
   {
     label: 'ORDERS',
-    items: [{ label: 'Orders & Returns', href: '/account/orders' }],
+    items: [{ label: 'Orders & Returns', href: '/account/orders', icon: ReceiptText }],
   },
   {
     label: 'MANAGE',
     items: [
-      { label: 'Addresses', href: '/account/addresses' },
-      { label: 'Settings', href: '/account/settings' },
+      { label: 'Addresses', href: '/account/addresses', icon: MapPin },
     ],
   },
 ];
@@ -774,34 +443,47 @@ function AccountPanel({
   titleAction?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-surface-border bg-surface-base p-6 shadow-sm lg:p-8">
+    <section className="account-panel rounded-2xl border border-[#dce6d8] bg-white p-5 shadow-[0_8px_28px_#04342c0a] sm:p-7 lg:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <h2 className="font-heading text-xl text-text-primary">{title}</h2>
+        <h2 className="text-xl font-medium text-[#04342c] sm:text-2xl">{title}</h2>
         {titleAction}
       </div>
-      <hr className="mt-4 border-surface-border" />
-      <div className="mt-6">{children}</div>
+      <hr className="mt-5 border-[#dce6d8]" />
+      <div className="mt-2">{children}</div>
     </section>
   );
 }
 
 export function AccountSidebar({ userName }: { userName: string }) {
   const pathname = usePathname();
+  const logout = useAuthStore((state) => state.logout);
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const signOut = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+      router.push('/');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
-    <aside className="h-fit rounded-3xl border border-surface-border bg-white p-5 shadow-sm lg:sticky lg:top-28">
-      <div className="border-b border-surface-border pb-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-text-muted">Account</p>
-        <p className="mt-1 font-heading text-2xl text-text-primary">{userName}</p>
-        <p className="mt-1 text-sm text-text-secondary">Manage orders, addresses, and preferences.</p>
+    <aside className="account-sidebar h-fit min-w-0 rounded-2xl border border-[#dce6d8] bg-white p-4 shadow-[0_8px_28px_#04342c0a] lg:sticky lg:top-24">
+      <div className="border-b border-[#dce6d8] px-2 pb-5 pt-2">
+        <p className="text-xs font-medium uppercase tracking-[0.17em] text-[#346b54]">your space</p>
+        <p className="mt-2 break-words text-xl font-medium text-[#04342c]">{userName}</p>
+        <p className="mt-2 text-base leading-relaxed text-[#547064]">Manage your profile, orders, and addresses.</p>
       </div>
-      <nav className="mt-5 grid gap-5">
+      <nav aria-label="Account pages" className="mt-4 flex flex-wrap gap-2 lg:mt-5 lg:grid lg:gap-5">
         {accountNavSections.map((section) => (
-          <div key={section.label}>
-            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-text-muted">
+          <div className="shrink-0" key={section.label}>
+            <p className="hidden px-2 text-xs font-medium uppercase tracking-[0.17em] text-[#547064] lg:block">
               {section.label}
             </p>
-            <ul className="mt-3 grid gap-1">
+            <ul className="flex gap-2 lg:mt-3 lg:grid lg:gap-1">
               {section.items.map((item) => {
                 const active =
                   pathname === item.href ||
@@ -811,12 +493,14 @@ export function AccountSidebar({ userName }: { userName: string }) {
                   <li key={item.href + item.label}>
                     <Link
                       href={item.href}
-                      className={`flex items-center rounded-2xl px-3 py-2.5 text-sm transition ${
+                      aria-current={active ? 'page' : undefined}
+                      className={`flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-sm transition-colors ${
                         active
-                          ? 'bg-brand-light font-semibold text-brand-primary'
-                          : 'text-text-secondary hover:bg-surface-raised hover:text-text-primary'
+                          ? 'bg-[#eaf3de] font-medium text-[#04342c]'
+                          : 'text-[#476158] hover:bg-[#f2f5ec] hover:text-[#04342c]'
                       }`}
                     >
+                      <item.icon aria-hidden="true" className="mr-2 h-4 w-4 shrink-0 text-[#346b54]" />
                       {item.label}
                     </Link>
                   </li>
@@ -826,6 +510,15 @@ export function AccountSidebar({ userName }: { userName: string }) {
           </div>
         ))}
       </nav>
+      <button
+        className="mt-5 flex min-h-11 w-full items-center gap-2 rounded-lg border-t border-[#dce6d8] px-2 pt-4 text-left text-sm text-[#b44d30] transition-colors hover:bg-[#fae8e0] disabled:cursor-not-allowed disabled:opacity-60"
+        type="button"
+        disabled={loggingOut}
+        onClick={signOut}
+      >
+        <LogOut aria-hidden="true" className="h-4 w-4" />
+        {loggingOut ? 'Logging out…' : 'Log out'}
+      </button>
     </aside>
   );
 }
@@ -848,8 +541,6 @@ export function AccountScreen() {
    * `avatarUrl` is accepted by the endpoint but there is no upload flow, so it is not exposed.
    */
   const [form, setForm] = useState({ name: '', email: '' });
-
-  const displayName = user?.name || 'Guest';
 
   function startEdit() {
     setForm({
@@ -875,20 +566,20 @@ export function AccountScreen() {
   }
 
   const profileRows = [
-    { label: 'Full Name', value: user?.name || '—' },
+    { label: 'Full name', value: user?.name || '—' },
     {
-      label: 'Mobile Number',
+      label: 'Mobile number',
       value: user?.phone || '— not added —',
       // Surfaced because it is not cosmetic: an unverified phone blocks checkout with a
       // 403 PHONE_NOT_VERIFIED, so the user needs to see it before they hit that wall.
       verified: user?.phone ? user.phoneVerified : undefined,
     },
-    { label: 'Email ID', value: user?.email || '— not added —', verified: user?.email ? user.emailVerified : undefined },
+    { label: 'Email address', value: user?.email || '— not added —', verified: user?.email ? user.emailVerified : undefined },
   ];
 
   return (
     <div className="mx-auto max-w-4xl">
-      <AccountPanel title={`Profile Details${displayName ? ` for ${displayName}` : ''}`}>
+      <AccountPanel title="Profile details">
         {editing ? (
           <div className="grid gap-5">
             <Input
@@ -911,7 +602,7 @@ export function AccountScreen() {
                   {user?.phone || '— not added —'}
                 </span>
                 <Button
-                  size="sm"
+                  className="min-h-11"
                   variant="outline"
                   onClick={() => setPhoneModalOpen(true)}
                 >
@@ -932,32 +623,32 @@ export function AccountScreen() {
                 {saveError}
               </p>
             ) : null}
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-wrap gap-3 pt-2">
               <Button
-                className="px-10 uppercase tracking-wider"
+                className="min-h-11 px-7 font-medium normal-case tracking-normal"
                 disabled={isSaving}
                 loading={isSaving}
                 variant="primary"
                 onClick={() => void saveEdit()}
               >
-                Save
+                save changes
               </Button>
               <Button
-                className="px-10 uppercase tracking-wider"
+                className="min-h-11 px-7 font-medium normal-case tracking-normal"
                 variant="outline"
                 onClick={() => setEditing(false)}
               >
-                Cancel
+                cancel
               </Button>
             </div>
           </div>
         ) : (
           <>
-            <dl className="grid gap-y-5">
+            <dl className="grid">
               {profileRows.map(({ label, value, verified }) => (
-                <div key={label} className="grid grid-cols-[180px_1fr] items-start gap-4">
-                  <dt className="text-sm text-text-secondary">{label}</dt>
-                  <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-text-primary">
+                <div key={label} className="grid gap-1 border-b border-[#e6ece2] py-4 last:border-b-0 sm:grid-cols-[170px_minmax(0,1fr)] sm:items-start sm:gap-4">
+                  <dt className="text-sm text-[#547064]">{label}</dt>
+                  <dd className="flex min-w-0 flex-wrap items-center gap-2 break-all text-sm font-medium text-[#04342c]">
                     {value}
                     {verified === true ? <Badge variant="success">Verified</Badge> : null}
                     {verified === false ? <Badge variant="info">Not verified</Badge> : null}
@@ -965,13 +656,13 @@ export function AccountScreen() {
                 </div>
               ))}
             </dl>
-            <div className="mt-8">
+            <div className="mt-6">
               <Button
-                className="px-12 uppercase tracking-wider"
+                className="min-h-11 px-7 font-medium normal-case tracking-normal"
                 variant="primary"
                 onClick={startEdit}
               >
-                Edit
+                edit details
               </Button>
             </div>
           </>
@@ -1208,6 +899,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
               <span className="text-text-secondary">Subtotal</span>
               <span>{formatCurrency(order.subtotal)}</span>
             </div>
+            {Boolean(order.discountAmount) && <div className="flex justify-between text-text-success"><span>Coupon ({order.couponCode})</span><span>−{formatCurrency(order.discountAmount ?? 0)}</span></div>}
             <div className="flex justify-between">
               <span className="text-text-secondary">Delivery</span>
               <span>
@@ -1256,7 +948,7 @@ export function AddressesScreen() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl">
       <AccountPanel
         title="Saved Addresses"
         titleAction={
@@ -1354,18 +1046,14 @@ export function SettingsScreen() {
   const { user } = useAuthStore();
 
   const settingsRows = [
-    { label: 'Email notifications', value: 'Order updates and delivery alerts' },
     { label: 'Login email', value: user?.email ?? 'Not set' },
     { label: 'Mobile number', value: user?.phone ?? 'Not added' },
     { label: 'Language', value: 'English (India)' },
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <AccountPanel
-        title="Settings"
-        titleAction={<Button variant="outline">Update Preferences</Button>}
-      >
+    <div className="mx-auto max-w-5xl">
+      <AccountPanel title="Account settings">
         <div className="grid gap-4 md:grid-cols-2">
           {settingsRows.map(({ label, value }) => (
             <article
@@ -1378,8 +1066,7 @@ export function SettingsScreen() {
           ))}
         </div>
         <div className="mt-5 rounded-2xl border border-dashed border-surface-border bg-surface-raised/50 p-5 text-sm text-text-secondary">
-          This section is ready for password, notification, and privacy controls when those
-          settings are backed by API endpoints.
+          You can update your name, email, and mobile number in your <Link className="font-medium text-brand-primary underline underline-offset-4" href="/account">profile details</Link>.
         </div>
       </AccountPanel>
     </div>
@@ -1396,48 +1083,22 @@ export function WishlistScreen() {
   const productIds = useMemo(() => items.map((item) => item.productId), [items]);
   const productsQuery = useProductsByIds(productIds);
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <h1 className="mb-6 font-heading text-4xl">Wishlist</h1>
-        <ProductGrid loading products={[]} skeletonCount={4} />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
-        <ErrorState
-          error={error}
-          title="We could not load your wishlist"
-          onRetry={() => void refetch()}
-        />
-      </div>
-    );
-  }
-
-  if (!items.length) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
-        <EmptyState
-          action="Browse Products"
-          href="/products"
-          icon={Heart}
-          message="Save products you love and compare lab reports later."
-          title="Save items you love"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="mb-6 font-heading text-4xl">Wishlist</h1>
-      {/* The wishlist itself loaded; only the product details are still in flight. Showing
-          skeletons for that second hop keeps the count visible without a blank screen. */}
-      {productsQuery.isLoading ? (
-        <ProductGrid loading products={[]} skeletonCount={items.length} />
+    <div className="customer-page min-h-[55vh]">
+      <div className="customer-page-intro flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span className="home-kicker inline-flex items-center gap-2"><Heart aria-hidden="true" size={16} /> saved for later</span>
+          <h1 className="customer-page-title mt-2">Your wishlist</h1>
+          <p className="mt-2 text-text-secondary">{items.length ? `${items.length} saved ${items.length === 1 ? 'product' : 'products'}, all in one place.` : 'Keep the products you love close at hand.'}</p>
+        </div>
+        <Link className="home-see-all min-h-11 content-center" href="/products">continue shopping</Link>
+      </div>
+      {isError ? (
+        <ErrorState error={error} title="We could not load your wishlist" onRetry={() => void refetch()} />
+      ) : isLoading || productsQuery.isLoading ? (
+        <ProductGrid loading products={[]} skeletonCount={items.length || 4} />
+      ) : !items.length ? (
+        <EmptyState action="Browse products" href="/products" icon={Heart} message="Save products with the heart icon and find them here." title="Your wishlist is empty" />
       ) : productsQuery.isError ? (
         <InlineError error={productsQuery.error} onRetry={() => void productsQuery.refetch()} />
       ) : (
@@ -1449,10 +1110,10 @@ export function WishlistScreen() {
 
 export function TrustHowItWorksScreen() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12">
-      <h1 className="max-w-3xl font-heading text-5xl">Verification before checkout confidence.</h1>
+    <div className="customer-page">
+      <h1 className="customer-page-title max-w-3xl">Verification before checkout confidence.</h1>
       <p className="mt-4 max-w-2xl text-text-secondary">
-        Truzov combines Amazon-like shopping speed with a transparent verification workflow for
+        truzov combines Amazon-like shopping speed with a transparent verification workflow for
         health, organic, and wellness products.
       </p>
       <div className="mt-10 grid gap-5 md:grid-cols-4">

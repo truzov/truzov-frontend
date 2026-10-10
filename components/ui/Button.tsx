@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold transition-colors disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
+  'ui-button inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold transition-colors disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -40,6 +40,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled || loading}
+      data-variant={variant ?? 'primary'}
+      data-size={size ?? 'md'}
       {...props}
     >
       {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : children}

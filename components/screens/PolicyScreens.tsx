@@ -113,10 +113,10 @@ export function RefundPolicyScreen() {
       content: (
         <>
           <p>
-            Truzov is India&apos;s first verification-led health and wellness marketplace. We prioritize customer confidence, product purity, and clinical integrity above all else. This Refund Policy describes our return and exchange guidelines to ensure a transparent, secure, and hassle-free post-purchase experience.
+            truzov is India&apos;s first verification-led health and wellness marketplace. We prioritize customer confidence, product purity, and clinical integrity above all else. This Refund Policy describes our return and exchange guidelines to ensure a transparent, secure, and hassle-free post-purchase experience.
           </p>
           <p>
-            By purchasing on Truzov, you agree to the conditions outlined in this policy. If you have any concerns regarding a specific order, our customer care team is available 24/7 to assist.
+            By purchasing on truzov, you agree to the conditions outlined in this policy. If you have any concerns regarding a specific order, our customer care team is available 24/7 to assist.
           </p>
         </>
       ),
@@ -127,7 +127,7 @@ export function RefundPolicyScreen() {
       content: (
         <>
           <p>
-            We back every product listed on Truzov with our strict <strong>Verification & Authenticity Guarantee</strong>. Since each batch undergoes rigorous laboratory checks before being approved for sale, we hold ourselves and our vendors to the highest standards.
+            We back every product listed on truzov with our strict <strong>Verification & Authenticity Guarantee</strong>. Since each batch undergoes rigorous laboratory checks before being approved for sale, we hold ourselves and our vendors to the highest standards.
           </p>
           <p className="rounded-lg border border-brand-primary/20 bg-brand-light/25 p-4 text-text-success font-medium">
             🛡️ If any batch you purchase fails our stated quality metrics, purity reports, or is found to contain unauthorized pesticides, additives, or heavy metals, you are entitled to a full 100% refund, including return shipping costs.
@@ -141,7 +141,7 @@ export function RefundPolicyScreen() {
       content: (
         <>
           <p>
-            Truzov provides a <strong>14-day return window</strong> from the date of package delivery. To be eligible for a refund or replacement, the return request must be filed through your account dashboard within 14 calendar days.
+            truzov provides a <strong>14-day return window</strong> from the date of package delivery. To be eligible for a refund or replacement, the return request must be filed through your account dashboard within 14 calendar days.
           </p>
           <p>
             After the 14-day window has expired, we unfortunately cannot offer a refund or exchange, except in documented cases of hidden quality defects verified by laboratory analysis.
@@ -156,7 +156,7 @@ export function RefundPolicyScreen() {
         <>
           <p>To ensure hygiene, product safety, and traceability, items returned must meet the following criteria:</p>
           <ul className="list-disc pl-5 space-y-2">
-            <li>The product must be in its original, unopened packaging with the Truzov batch verification seal intact.</li>
+            <li>The product must be in its original, unopened packaging with the truzov batch verification seal intact.</li>
             <li>All accompanying accessories, labels, booklets, or promotional gifts must be returned in their original condition.</li>
             <li>
               <strong>Temperature-Sensitive Items:</strong> Products like live probiotics, cold-pressed oils, or enzymatic honeys that require temperature control cannot be returned for change of mind. They can only be returned if they arrive damaged or fail quality verification.
@@ -196,7 +196,7 @@ export function RefundPolicyScreen() {
               <strong>Original Payment Method:</strong> Refunded to your debit/credit card, UPI, or net banking account within 5-7 business days.
             </li>
             <li>
-              <strong>Truzov Store Credits:</strong> Credited to your account instantly with an additional <strong>5% bonus credit</strong> as a token of our appreciation.
+              <strong>truzov Store Credits:</strong> Credited to your account instantly with an additional <strong>5% bonus credit</strong> as a token of our appreciation.
             </li>
           </ul>
         </>
@@ -222,7 +222,7 @@ export function ShippingPolicyScreen() {
       content: (
         <>
           <p>
-            We aim to deliver your verified health essentials safely and swiftly. Truzov offers simple and transparent shipping structures:
+            We aim to deliver your verified health essentials safely and swiftly. truzov offers simple and transparent shipping structures:
           </p>
           <div className="grid gap-4 sm:grid-cols-2 mt-2">
             <div className="rounded-xl border border-surface-border bg-[#FDFDFB] p-4 text-center">
@@ -245,7 +245,7 @@ export function ShippingPolicyScreen() {
       content: (
         <>
           <p>
-            Truzov ships to over 19,000 pin codes across India. All orders are processed at our verified vendor hubs within 12-24 hours.
+            truzov ships to over 19,000 pin codes across India. All orders are processed at our verified vendor hubs within 12-24 hours.
           </p>
           <ul className="list-disc pl-5 space-y-2">
             <li>
@@ -267,7 +267,7 @@ export function ShippingPolicyScreen() {
       content: (
         <>
           <p>
-            To prevent denaturing of enzymes, vitamins, and active cultures, Truzov employs specialized <strong>Cold-Chain Shipping</strong> for designated sensitive categories:
+            To prevent denaturing of enzymes, vitamins, and active cultures, truzov employs specialized <strong>Cold-Chain Shipping</strong> for designated sensitive categories:
           </p>
           <p>
             Probiotics, raw active honeys, and organic cold-pressed oils are shipped in multi-layer insulated envelopes with reusable food-grade ice gel packs. This preserves the absolute bio-potency of your supplements during transit, even in peak summer months, at no extra cost to you.
@@ -297,10 +297,10 @@ export function ShippingPolicyScreen() {
       content: (
         <>
           <p>
-            All Truzov packages are sealed using our signature green, tamper-evident security tape.
+            All truzov packages are sealed using our signature green, tamper-evident security tape.
           </p>
           <p className="rounded-lg border border-brand-primary/20 bg-brand-light/25 p-4 text-brand-primary font-medium">
-            ⚠️ IMPORTANT: Please do not accept the package from the delivery executive if the Truzov security tape is broken, torn, or shows signs of re-taping. Report it immediately to support@truzov.com to receive a priority replacement order.
+            ⚠️ IMPORTANT: Please do not accept the package from the delivery executive if the truzov security tape is broken, torn, or shows signs of re-taping. Report it immediately to support@truzov.com to receive a priority replacement order.
           </p>
         </>
       ),
@@ -325,7 +325,7 @@ export function PrivacyPolicyScreen() {
       content: (
         <>
           <p>
-            Truzov is committed to protecting your personal data and respect for your digital privacy. We collect:
+            truzov is committed to protecting your personal data and respect for your digital privacy. We collect:
           </p>
           <ul className="list-disc pl-5 space-y-2">
             <li>
@@ -362,7 +362,7 @@ export function PrivacyPolicyScreen() {
       content: (
         <>
           <p>
-            Your trust is our primary asset. Truzov does <strong>not sell, trade, or rent</strong> your personal information to marketing databases. We only share essential metadata with:
+            Your trust is our primary asset. truzov does <strong>not sell, trade, or rent</strong> your personal information to marketing databases. We only share essential metadata with:
           </p>
           <ul className="list-disc pl-5 space-y-2">
             <li>
@@ -423,7 +423,7 @@ export function TermsOfServiceScreen() {
       content: (
         <>
           <p>
-            Welcome to Truzov. These Terms of Service govern your use of the website, mobile site, and services hosted by Truzov Verification Health.
+            Welcome to truzov. These Terms of Service govern your use of the website, mobile site, and services hosted by truzov Verification Health.
           </p>
           <p>
             By accessing or placing an order on our platform, you acknowledge that you have read, understood, and agreed to be bound by these terms. If you do not agree, please do not use the services.
@@ -437,10 +437,10 @@ export function TermsOfServiceScreen() {
       content: (
         <>
           <p>
-            Truzov operates a curation platform connecting health-conscious buyers to verified vendors.
+            truzov operates a curation platform connecting health-conscious buyers to verified vendors.
           </p>
           <p>
-            While Truzov conducts independent lab testing on random batch samples, the primary legal liability for product weights, manufacturing compliance, FSSAI licensing, and advertising claims resides with the respective third-party vendor listed on the product page.
+            While truzov conducts independent lab testing on random batch samples, the primary legal liability for product weights, manufacturing compliance, FSSAI licensing, and advertising claims resides with the respective third-party vendor listed on the product page.
           </p>
         </>
       ),
@@ -465,7 +465,7 @@ export function TermsOfServiceScreen() {
       content: (
         <>
           <p>
-            You must be at least 18 years of age to establish a Truzov account. You are responsible for keeping your login credentials confidential.
+            You must be at least 18 years of age to establish a truzov account. You are responsible for keeping your login credentials confidential.
           </p>
           <p>
             Any attempt to bypass security, scrap laboratory databases, upload malicious code, or post fraudulent reviews is subject to account termination and legal action.
@@ -479,7 +479,7 @@ export function TermsOfServiceScreen() {
       content: (
         <>
           <p>
-            Truzov Verification Health, its directors, and employees shall not be liable for any indirect, incidental, or consequential damages resulting from product usage. Our total liability for any claim shall not exceed the amount paid by the customer for the product under dispute.
+            truzov Verification Health, its directors, and employees shall not be liable for any indirect, incidental, or consequential damages resulting from product usage. Our total liability for any claim shall not exceed the amount paid by the customer for the product under dispute.
           </p>
         </>
       ),

@@ -3,28 +3,36 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-/**
- * Checkout UI state.
- *
- * Only `selectedAddressId` remains, because it is the one genuine client-side choice in this flow —
- * `POST /checkout` takes an `addressId` and nothing else.
- *
- * `paymentMethod` was removed with the payment-method UI: the API has no payment-intent or
- * payment-method endpoint, only a gateway-to-server HMAC webhook. Storing a method the server never
- * receives would have been state that influenced nothing (plan §6.1 / §8.3).
- */
+/** UI choices only. The backend owns prices, eligibility, and order creation. */
 interface CheckoutStore {
   selectedAddressId?: string;
+  selectionOwner: string;
+  excludedLineKeys: string[];
+  couponCode: string;
   setSelectedAddress: (addressId: string) => void;
+  setLineSelected: (owner: string, key: string, selected: boolean) => void;
+  selectAll: (owner: string) => void;
+  setCouponCode: (owner: string, code: string) => void;
   resetCheckout: () => void;
 }
+
+const initial = { selectedAddressId: undefined, selectionOwner: 'guest', excludedLineKeys: [] as string[], couponCode: '' };
 
 export const useCheckoutStore = create<CheckoutStore>()(
   persist(
     (set) => ({
-      selectedAddressId: undefined,
+      ...initial,
       setSelectedAddress: (addressId) => set({ selectedAddressId: addressId }),
-      resetCheckout: () => set({ selectedAddressId: undefined }),
+      setLineSelected: (owner, key, selected) => set((state) => {
+        const excluded = state.selectionOwner === owner ? state.excludedLineKeys : [];
+        return { selectionOwner: owner,
+          excludedLineKeys: selected ? excluded.filter((entry) => entry !== key) : [...new Set([...excluded, key])],
+          couponCode: state.selectionOwner === owner ? state.couponCode : '',
+        };
+      }),
+      selectAll: (owner) => set((state) => ({ selectionOwner: owner, excludedLineKeys: [], couponCode: state.selectionOwner === owner ? state.couponCode : '' })),
+      setCouponCode: (owner, code) => set((state) => ({ selectionOwner: owner, couponCode: code, excludedLineKeys: state.selectionOwner === owner ? state.excludedLineKeys : [] })),
+      resetCheckout: () => set({ ...initial }),
     }),
     { name: 'truzov-checkout' }
   )

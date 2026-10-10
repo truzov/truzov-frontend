@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import { Loader2 } from 'lucide-react';
 import { beginGoogleSignIn, googleClientId } from '@/lib/auth/google-oauth';
 
@@ -51,18 +52,22 @@ export function GoogleSignInButton({ redirectTo = '/' }: GoogleSignInButtonProps
       </div>
 
       {error ? (
-        <p className="rounded-lg bg-error-container p-sm text-caption text-error">{error}</p>
+        <p role="alert" className="rounded-xl bg-error-container p-3 text-sm text-error">
+          {error}
+        </p>
       ) : null}
 
-      <button
-        className="flex w-full items-center justify-center gap-sm rounded-lg border border-outline bg-surface px-lg py-md text-h6 font-bold font-body text-on-surface shadow-sm transition-all hover:bg-surface-variant hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+      <Button
+        className="w-full bg-white"
+        variant="outline"
+        size="lg"
         disabled={isRedirecting}
         type="button"
         onClick={handleClick}
       >
         {isRedirecting ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
             Redirecting...
           </>
         ) : (
@@ -71,7 +76,7 @@ export function GoogleSignInButton({ redirectTo = '/' }: GoogleSignInButtonProps
             Continue with Google
           </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }

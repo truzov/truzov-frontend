@@ -5,8 +5,8 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://truzov.com'),
   title: {
-    default: 'Truzov | Verified Organic Marketplace',
-    template: '%s | Truzov',
+    default: 'truzov | Verified Organic Marketplace',
+    template: '%s | truzov',
   },
   description:
     'Shop lab-verified organic and wellness products with transparent reports, trusted vendors, and secure checkout.',
@@ -20,12 +20,7 @@ export default function RootLayout({
   return (
     <html className="light" lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=optional"
-          rel="stylesheet"
-        />
+        <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <meta name="format-detection" content="telephone=no,email=no,address=no" />
       </head>
       <body>

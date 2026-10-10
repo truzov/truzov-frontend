@@ -1,10 +1,11 @@
-import Image from 'next/image';
 import Link from 'next/link';
+import Image from 'next/image';
+import { cn } from '@/lib/utils/cn';
 
-export function Logo() {
+export function Logo({ className, onClick, light = false }: { className?: string; onClick?: () => void; light?: boolean }) {
   return (
-    <Link className="inline-flex items-center" href="/">
-      <Image src="/truzov-logo.png" alt="truzov" width={160} height={40} className="h-8 w-auto" />
+    <Link aria-label="truzov home" className={cn('inline-flex min-h-11 w-[112px] shrink-0 items-center', className)} href="/" onClick={onClick}>
+      <Image alt="truzov" className={cn('h-auto w-full', light && 'brightness-0 invert')} src="/truzov-logo-final.png" width={2137} height={736} unoptimized priority />
     </Link>
   );
 }

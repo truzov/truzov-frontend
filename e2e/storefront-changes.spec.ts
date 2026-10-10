@@ -50,7 +50,7 @@ test.describe('toast over the auth modal', () => {
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Login with OTP/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
 
     // Password sign-in is the only login path that fails in one request. The OTP path answers
     // identically for known and unknown identifiers by design, so it cannot produce a failure toast.

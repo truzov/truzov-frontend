@@ -5,21 +5,22 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthModalStore } from '@/store/auth-modal.store';
 import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/utils/cn';
-import { Heart, LogOut, MapPin, ReceiptText, Settings, UserRound } from 'lucide-react';
+import { Heart, LogOut, MapPin, ReceiptText, CircleUserRound } from 'lucide-react';
 
 const menuItems = [
-  { label: 'My Account', href: '/account', icon: UserRound },
-  { label: 'Orders', href: '/account/orders', icon: ReceiptText },
-  { label: 'Wishlist', href: '/wishlist', icon: Heart },
-  { label: 'Saved Addresses', href: '/account/addresses', icon: MapPin },
-  { label: 'Settings', href: '/account/settings', icon: Settings },
+  { label: 'my account', href: '/account', icon: CircleUserRound },
+  { label: 'orders', href: '/account/orders', icon: ReceiptText },
+  { label: 'wishlist', href: '/wishlist', icon: Heart },
+  { label: 'support & tickets', href: '/support/tickets', icon: ReceiptText },
+  { label: 'saved addresses', href: '/account/addresses', icon: MapPin },
 ];
 
 export function AccountMenu({ className }: { className?: string }) {
   const { isLoggedIn, user, logout } = useAuthStore();
-  const { isOpen: authOpen, openAuthModal } = useAuthModalStore();
+  const { openAuthModal } = useAuthModalStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -28,9 +29,20 @@ export function AccountMenu({ className }: { className?: string }) {
       }
     };
 
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && menuOpen) {
+        setMenuOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+
     document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, []);
+    document.addEventListener('keydown', onEscape);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [menuOpen]);
 
   const openAuth = () => {
     openAuthModal({ mode: 'login' });
@@ -52,42 +64,44 @@ export function AccountMenu({ className }: { className?: string }) {
   return (
     <div ref={menuRef} className={cn('relative', className)}>
       <button
-        aria-expanded={isLoggedIn ? menuOpen : authOpen}
+        ref={buttonRef}
+        aria-expanded={isLoggedIn ? menuOpen : undefined}
         aria-label="Account"
-        className="grid h-10 w-10 place-items-center rounded-full text-on-surface transition hover:bg-surface-container-low hover:text-primary"
+        aria-controls={isLoggedIn && menuOpen ? 'account-panel' : undefined}
+        className="grid h-11 w-11 place-items-center rounded-full text-[#04342c] transition hover:bg-[#eaf3de]"
         type="button"
         onClick={handleAccountClick}
       >
-        <UserRound aria-hidden="true" className="h-7 w-7" />
+        <CircleUserRound aria-hidden="true" className="h-5 w-5" />
       </button>
 
       {menuOpen && isLoggedIn ? (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[70] w-[min(348px,calc(100vw-32px))] rounded-lg border border-outline-variant bg-white shadow-md">
-          <span className="absolute -top-2 right-5 h-4 w-4 rotate-45 border-l border-t border-outline-variant bg-white" />
-          <div className="px-5 py-5">
-            <p className="text-xl font-bold leading-tight text-on-surface">{displayName}</p>
-            <p className="mt-2 text-base text-on-surface-variant">{displayEmail}</p>
+        <div id="account-panel" className="absolute right-0 top-[calc(100%+12px)] z-[70] w-[min(328px,calc(100vw-24px))] overflow-visible rounded-2xl border border-[#dce6d8] bg-[#fdfbf7] p-2 text-[#04342c] shadow-[0_22px_55px_#04342c26]">
+          <div className="rounded-xl bg-[#04342c] px-5 py-5 text-[#e1f5ee]">
+            <p className="text-[11px] font-medium tracking-[.15em] text-[#a9d9c6]">YOUR SPACE</p>
+            <p className="mt-3 truncate text-xl font-medium leading-tight">{displayName}</p>
+            <p className="mt-1 truncate text-sm text-[#bfe5d8]">{displayEmail}</p>
           </div>
-          <div className="border-t border-outline-variant py-3">
+          <nav aria-label="Account" className="grid gap-0.5 py-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
 
               return (
                 <Link
                   key={item.label}
-                  className="flex items-center gap-5 px-7 py-3 text-on-surface transition hover:bg-surface-container-low"
+                  className="flex min-h-11 items-center gap-3 rounded-lg px-4 text-[14px] text-[#04342c] transition-colors hover:bg-[#eaf3de] focus-visible:bg-[#eaf3de]"
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
                 >
-                  <Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-on-surface-variant" />
+                  <Icon aria-hidden="true" className="h-[18px] w-[18px] shrink-0 text-[#346b54]" />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
-          </div>
-          <div className="border-t border-outline-variant p-4">
+          </nav>
+          <div className="border-t border-[#dce6d8] pt-2">
             <button
-              className="flex w-full items-center gap-6 rounded-md px-3 py-2 text-left text-error transition hover:bg-error-container"
+              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-4 text-left text-[14px] text-[#b44d30] transition-colors hover:bg-[#fae8e0]"
               type="button"
               onClick={() => {
                 logout();
@@ -95,7 +109,7 @@ export function AccountMenu({ className }: { className?: string }) {
               }}
             >
               <LogOut aria-hidden="true" className="h-5 w-5" />
-              Logout
+              log out
             </button>
           </div>
         </div>

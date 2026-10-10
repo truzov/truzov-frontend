@@ -199,8 +199,8 @@ export interface ProductImageDto {
 
 /**
  * CONFIRMED against the running backend (2026-08-22): `{ id, label, value, priceModifier,
- * inStock }`. `stockCount` is NOT returned per variant despite existing in the database, so it
- * is optional here and the quantity stepper uses the product-level `stockCount` instead.
+ * inStock, stockCount }`. `stockCount` remains optional for compatibility with older
+ * deployments; new responses expose the actual variant ceiling for quantity selection.
  *
  * `priceModifier` is a signed delta in rupees (seed values: -200, 0, +700).
  */
@@ -525,6 +525,8 @@ export interface OrderDto {
   paymentStatus: PaymentStatus;
   subtotal: number;
   deliveryFee: number;
+  discountAmount?: number;
+  couponCode?: string;
   totalAmount: number;
   items: OrderItemDto[];
   createdAt: string;
@@ -533,6 +535,16 @@ export interface OrderDto {
 
 export interface CheckoutRequest {
   addressId: string;
+  cartItemIds?: string[];
+  couponCode?: string;
+}
+
+export interface CouponQuote {
+  code: string;
+  discountAmount: number;
+  subtotal: number;
+  /** Server-confirmed total, including delivery. */
+  total: number;
 }
 
 /** Outcome of a payment attempt. Distinct from `PaymentStatus`, which describes the ORDER. */

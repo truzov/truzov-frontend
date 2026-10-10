@@ -19,17 +19,64 @@ import { expect, test } from '@playwright/test';
 
 const HONEY_SLUG = 'raw-forest-honey-500g';
 
-test('homepage renders banner, categories and best sellers from the API', async ({ page }) => {
+test('homepage shows the verified marketplace and published products', async ({ page }) => {
   await page.goto('/');
 
-  // Headline comes from the seeded `ban_hero` content banner, not hardcoded copy.
-  await expect(page.getByRole('heading', { name: /Pure\. Tested\. Trusted\./i })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /every label, verified\.\s*every claim, tested\./i })).toBeVisible();
+  await expect(page.locator('.home-category-care')).toContainText('personal care');
+  await expect(page.locator('.home-category-food')).toContainText('food');
+  await expect(page.getByRole('link', { name: /Raw Forest Honey 500g/i })).toHaveAttribute('href', `/products/${HONEY_SLUG}`);
+  await expect(page.locator('.home-product')).toHaveCount(3);
+  await expect(page.locator('.home-product')).toContainText(['Raw Forest Honey 500g', 'A2 Cow Ghee 1L', 'Cold Pressed Coconut Oil 1L']);
+  await expect(page.locator('.home-product').filter({ hasText: 'Raw Forest Honey 500g' }).locator('.home-verified')).toHaveCount(1);
+  await expect(page.locator('.home-product').filter({ hasText: 'A2 Cow Ghee 1L' }).locator('.home-verified')).toHaveCount(0);
+  await expect(page.locator('.home-product').filter({ hasText: 'Cold Pressed Coconut Oil 1L' })).toContainText('currently unavailable');
+  await expect(page.getByRole('link', { name: /shop verified products/i })).toHaveAttribute('href', '/products?labVerified=true');
+});
 
-  // Seeded categories.
-  await expect(page.getByRole('link', { name: /Honey/ }).first()).toBeVisible();
+test('homepage remains usable at phone, tablet and desktop widths', async ({ page }) => {
+  for (const width of [375, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1, name: /every label, verified/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /shop verified products/i })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+});
 
-  // Best sellers carousel is populated from GET /home.
-  await expect(page.getByText('Raw Forest Honey 500g').first()).toBeVisible();
+test('homepage labels only products with verification and a passing report', async ({ page }) => {
+  const products = [
+    { id: 'passed', slug: 'passed-product', name: 'Passing product', brand: 'Truzov', price: 100, images: [], isLabVerified: true },
+    { id: 'pending', slug: 'pending-product', name: 'Pending product', brand: 'Truzov', price: 100, images: [], isLabVerified: true },
+    { id: 'unverified', slug: 'unverified-product', name: 'Unverified product', brand: 'Truzov', price: 100, images: [], isLabVerified: false },
+  ];
+  await page.route('**/api/v1/home', route => route.fulfill({
+    status: 200,
+    headers: { 'access-control-allow-origin': 'http://localhost:3000' },
+    contentType: 'application/json',
+    body: JSON.stringify({ data: { banners: [], categories: [], featured: products, newArrivals: [], bestSellers: [] } }),
+  }));
+  await page.route('**/api/v1/products?**', route => route.fulfill({
+    status: 200,
+    headers: { 'access-control-allow-origin': 'http://localhost:3000' },
+    contentType: 'application/json',
+    body: JSON.stringify({ data: { items: products, total: products.length, page: 1, limit: 4 } }),
+  }));
+  await page.route('**/api/v1/lab-reports**', route => route.fulfill({
+    status: 200,
+    headers: { 'access-control-allow-origin': 'http://localhost:3000' },
+    contentType: 'application/json',
+    body: JSON.stringify({ data: { items: [{ productId: 'passed', status: 'pass' }, { productId: 'pending', status: 'pending' }, { productId: 'unverified', status: 'pass' }], total: 3, page: 1, limit: 20 } }),
+  }));
+  await page.goto('/');
+  const grid = page.locator('.home-product-grid');
+  await expect(grid).toContainText('Passing product');
+  await expect(grid).toContainText('Pending product');
+  await expect(grid).toContainText('Unverified product');
+  await expect(grid.locator('.home-verified')).toHaveCount(1);
+  await expect(grid.locator('.home-product').filter({ hasText: 'Passing product' }).locator('.home-verified')).toHaveCount(1);
+  await expect(grid.locator('.home-product').filter({ hasText: 'Pending product' }).locator('.home-verified')).toHaveCount(0);
+  await expect(grid.locator('.home-product').filter({ hasText: 'Unverified product' }).locator('.home-verified')).toHaveCount(0);
 });
 
 test('product listing shows the real server-side total', async ({ page }) => {
@@ -61,7 +108,9 @@ test('product detail shows real price, variants and lab metrics', async ({ page 
   await page.goto(`/products/${HONEY_SLUG}`);
 
   await expect(page.getByRole('heading', { name: 'Raw Forest Honey 500g' })).toBeVisible();
-  // Price and MRP from the DTO. `discount` is the server's number (25%), never recomputed.
+  // The default variant is 1kg; select the seeded 500g option for its ₹449 price.
+  await page.getByRole('button', { name: '500g' }).click();
+  // Price and MRP from the selected variant DTO.
   await expect(page.getByText('₹449').first()).toBeVisible();
   await expect(page.getByText(/25% OFF/)).toBeVisible();
 
@@ -127,14 +176,13 @@ test('lab reports page lists published reports', async ({ page }) => {
   await expect(page.getByText('18.5%')).toBeVisible();
 });
 
-test('adding to cart as a guest prompts sign-in instead of a local cart', async ({ page }) => {
+test('adding to cart as a guest saves the item locally', async ({ page }) => {
   await page.goto(`/products/${HONEY_SLUG}`);
 
   await page.getByRole('button', { name: /^Add to Cart$/ }).click();
 
-  // The cart endpoint is bearer-only, so there is no guest cart to fall back on (plan §8.1).
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Login with OTP/i })).toBeVisible();
+  await expect(page.getByText('Added to cart', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Cart, 1 items/i })).toBeVisible();
 });
 
 test('search queries the server', async ({ page }) => {
