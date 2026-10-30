@@ -1,5 +1,11 @@
 # Truzov frontend redesign QA report
 
+## Release and Google OAuth QA — 2026-10-30
+
+Authoritative current detail: docs/release-status-20261030.md and docs/oauth-security-review-20261030.md. Fresh backend CI679 tests/coverage/package/SpotBugs passed; overall image-scan gate fails two existing Spring advisories. Storefront initial154 and admin22 tests/typechecks passed; all three diff checks passed. Production builds READY and nine public Chromium checks passed on storefront847204a/admin e43dd81. Live Neon migrations, public image delivery, test-admin auth/logout and a generated private Cloudinary upload/denied unsigned delivery/exact cleanup passed.
+
+OAuth e874caa:165 tests in18files (20 OAuth cases), standalone TypeScript and changed-file ESLint pass. Independent focused security review found no blocker. Render Google settings and persistent generated JWT key are live; frontend production READY. Dummy Google code rejects401 with no session. Manual browser checks pass button/handoff, cancellation and unsolicited callback error. User fixed Google callback registration; account chooser now appears. Real Google consent/session verification remains pending user action. Temporary automated OAuth browser helper creation was rejected by approval review; it did not execute, and the earlier nine-case browser result does not validate this source revision.
+
 Date: 2026-09-27
 
 ## Result
@@ -225,3 +231,5 @@ All three diff whitespace checks pass. No commit, push, deployment, production l
 Follow-up validation: 154 storefront tests plus TypeScript passed; 22 panel tests plus TypeScript passed. The panel production build passed again (90 generated pages). Chromium checks against that production build passed at 375/768/1440px (3/3), including automatic /signin navigation and the visible global success notification. The storefront recovery regression verifies no navigation/notification on rejection and exactly one fixed /login navigation after confirmation. All three repository whitespace checks pass. Backend source is unchanged by this follow-up; the earlier 295-unit/384-integration results remain its validation. No fresh storefront production build was needed for this routing-only change after TypeScript and the complete storefront suite passed.
 
 Verification used the same isolated Docker controls described above. Initial panel build/browser attempts failed because the runner omitted cached native modules or selected an incompatible libc/SWC combination; the final runner used Node22 Alpine and the existing read-only exact dependency, native, shared binary and font caches. No packages were installed or changed. Follow-up source review was performed by the coordinating agent; a fresh delegated review was unavailable due to the account usage limit. No new security defect was identified in this small routing change. Existing live-provider, current dependency-vulnerability and production-load limitations still apply. No commit, push or deployment.
+
+Final OAuth live verification: user completed Google sign-in after registering the callback. Protected /account displayed the signed-in profile, stayed authenticated after reload, and Log out returned to the guest homepage with a success notification. No browser tokens/storage were inspected. This is one manually verified existing-account flow, not a completed automated OAuth browser suite. Production app code remains e874caa; report-only changes follow.

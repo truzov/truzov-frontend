@@ -1,5 +1,9 @@
 # Frontend redesign review
 
+## OAuth focused review — 2026-10-30
+
+Independent Reviewer Agent used secure-code-review for e874caa and found no blocking source finding: shared internal redirect gate is applied at OAuth storage and restoration, URL-normalized control characters reject across existing auth callers, and malformed pending verifier/state rejects before exchange. State equality/single-use/S256 remain intact. No new dependency, backend code or migration. Fresh165 tests, TypeScript and changed-file lint pass. Full scope, ASVS/CWE mapping, deployment evidence, rollback and open demo-OTP/credential/dependency limitations are in docs/oauth-security-review-20261030.md. Real consent/session remains user-controlled and pending.
+
 Rechecked the current storefront changes against the supplied homepage spec. Static review only; visual and runtime checks belong in QA.
 
 ## Findings
@@ -214,3 +218,5 @@ Rechecked Task7 against the earlier selected-checkout requirement: summaries inc
 Follow-up validation: 154 storefront tests plus TypeScript passed; 22 panel tests plus TypeScript passed. The panel production build passed again (90 generated pages). Chromium checks against that production build passed at 375/768/1440px (3/3), including automatic /signin navigation and the visible global success notification. The storefront recovery regression verifies no navigation/notification on rejection and exactly one fixed /login navigation after confirmation. All three repository whitespace checks pass. Backend source is unchanged by this follow-up; the earlier 295-unit/384-integration results remain its validation. No fresh storefront production build was needed for this routing-only change after TypeScript and the complete storefront suite passed.
 
 Verification used the same isolated Docker controls described above. Initial panel build/browser attempts failed because the runner omitted cached native modules or selected an incompatible libc/SWC combination; the final runner used Node22 Alpine and the existing read-only exact dependency, native, shared binary and font caches. No packages were installed or changed. Follow-up source review was performed by the coordinating agent; a fresh delegated review was unavailable due to the account usage limit. No new security defect was identified in this small routing change. Existing live-provider, current dependency-vulnerability and production-load limitations still apply. No commit, push or deployment.
+
+OAuth live follow-through completed: Google consent/sign-in by user, protected account, reload persistence and logout verified manually. No outstanding source blocker found. Runtime demo OTP remains at user's explicit request; existing Spring image findings and screenshot credential rotation remain open deployment risks.
