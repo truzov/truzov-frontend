@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -8,7 +8,7 @@ import { VariantSelect } from '@/components/product/VariantSelect';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Rating } from '@/components/ui/Rating';
-import { useAddToCart } from '@/hooks/api/useCart';
+import { CartQuantityControl } from '@/components/product/CartQuantityControl';
 import { useIsWishlisted, useToggleWishlist } from '@/hooks/api/useWishlist';
 import { cn } from '@/lib/utils/cn';
 import { effectivePrice, formatCurrency } from '@/lib/utils/money';
@@ -41,7 +41,6 @@ export function ProductCard({
   variant?: 'default' | 'compact' | 'featured';
   priority?: boolean;
 }) {
-  const { add, isPending } = useAddToCart();
   const toggleWishlist = useToggleWishlist(`/products/${product.slug}`);
   const wished = useIsWishlisted(product.id);
 
@@ -55,7 +54,7 @@ export function ProductCard({
    * local is what makes the price, the saving guard and the add-to-cart `variantId` below all
    * fall out correctly with no further branching.
    */
-  const variants = (product.variants?.length ?? 0) >= 2 ? product.variants : undefined;
+  const variants = product.variants;
   // Derived, not stored: no reset effect is needed when the product changes, and there is no
   // toggle-off state that could leave a variant product with nothing selected.
   const [chosenVariantId, setChosenVariantId] = useState<string>();
@@ -72,21 +71,7 @@ export function ProductCard({
   const hasSaving = (selectedVariant?.priceModifier ?? 0) === 0 && product.mrp > product.price;
   // A variant product whose every variant is out of stock has nothing selectable, which is the
   // same dead end as a product that is out of stock — and gets the same "Out of Stock" label.
-  const purchasable = product.inStock && (!variants || selectedVariantId !== undefined);
-
-  const addToCart = () => {
-    // Guests add to the local bag (the hook handles both cases); the snapshot fields let the
-    // guest bag render, and the login-time merge re-prices everything server-side.
-    add({
-      productId: product.id,
-      productName: product.name,
-      // Absent for a simple product, so the server treats it as the base product.
-      variantId: selectedVariantId,
-      slug: product.slug,
-      imageUrl: image?.url,
-      unitPrice: product.price,
-    });
-  };
+  const purchasable = product.inStock && (!variants?.length || selectedVariantId !== undefined);
 
   return (
     <article
@@ -181,39 +166,19 @@ export function ProductCard({
         {/* Size dropdown, only when the listing carries 2+ variants. Omitted entirely for a
             simple product — the CTA below is pinned with `mt-auto`, so simple and variant cards
             still align. */}
-        {variants ? (
+        {(variants?.length ?? 0) >= 2 ? (
           <VariantSelect
             onSelect={setChosenVariantId}
             selectedId={selectedVariantId}
-            variants={variants}
+            variants={variants!}
           />
         ) : null}
         <div className="mt-auto">
-          {compact ? (
-            <Button
-              aria-label={`Add ${product.name}`}
-              className="w-full"
-              disabled={!purchasable || isPending}
-              loading={isPending}
-              size="sm"
-              variant="outline"
-              onClick={addToCart}
-            >
-              <ShoppingCart aria-hidden="true" className="h-4 w-4" />
-              Add
-            </Button>
-          ) : (
-            <Button
-              className="w-full"
-              disabled={!purchasable || isPending}
-              loading={isPending}
-              size="sm"
-              variant={purchasable ? 'outline' : 'secondary'}
-              onClick={addToCart}
-            >
-              {purchasable ? 'Add to Cart' : 'Out of Stock'}
-            </Button>
-          )}
+          <CartQuantityControl
+            disabled={!purchasable}
+            max={Math.min(product.stockCount ?? 20, selectedVariant?.stockCount ?? product.stockCount ?? 20)}
+            product={{ productId: product.id, productName: product.name, variantId: selectedVariantId, slug: product.slug, imageUrl: image?.url, unitPrice: displayPrice }}
+          />
         </div>
       </div>
     </article>

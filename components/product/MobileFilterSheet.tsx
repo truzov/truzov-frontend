@@ -49,7 +49,8 @@ export function MobileFilterSheet({
       search.set('q', filters.query);
     }
 
-    router.push(`${pathname}?${search.toString()}`);
+    const destination = pathname.startsWith('/category/') && draft.category !== filters.category ? '/products' : pathname;
+    router.push(`${destination}?${search.toString()}`);
     onClose();
   };
 
@@ -79,7 +80,7 @@ export function MobileFilterSheet({
         {renderControls(draft, setDraft)}
 
         <div className="sticky bottom-0 mt-6 flex gap-3 border-t border-surface-border bg-surface-base pt-4">
-          <Button className="flex-1" variant="outline" onClick={() => setDraft({ sort: draft.sort })}>
+          <Button className="flex-1" variant="outline" onClick={() => setDraft({})}>
             Clear
           </Button>
           <Button className="flex-1" onClick={apply}>

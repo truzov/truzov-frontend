@@ -206,8 +206,6 @@ footer details[open] summary .lucide-chevron-down { transform: rotate(180deg); }
 .auth-surface { color: #04342c; font-family: Inter, system-ui, sans-serif; }
 .auth-surface :is(h1, h2, h3) { font-family: Inter, system-ui, sans-serif; letter-spacing: -.035em; }
 .auth-surface :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { border-radius: 12px; border-color: #c4d6c8; background: #fff; }
-.auth-surface :is(input, select, textarea):focus { border-color: #d85a30; }
-.auth-surface :is(button, input, a):focus-visible, .checkout-shell :is(button, input, a):focus-visible { outline: 2px solid #d85a30; outline-offset: 2px; }
 .checkout-shell { color: #04342c; font-family: Inter, system-ui, sans-serif; }
 .checkout-shell :is(h1, h2, h3), .checkout-shell .font-heading { font-family: Inter, system-ui, sans-serif; letter-spacing: -.035em; font-weight: 500; }
 .checkout-shell .bg-surface-raised { background-color: #fdfbf7; }
@@ -218,7 +216,6 @@ footer details[open] summary .lucide-chevron-down { transform: rotate(180deg); }
 .checkout-shell .hover\:bg-brand-secondary:hover, .storefront .hover\:bg-brand-secondary:hover { background-color: #0b5143; }
 .checkout-shell :is(article, aside, section).rounded-md { border-radius: 14px; }
 .checkout-shell :is(article, aside, section).shadow-xs { box-shadow: 0 7px 28px #04342c0a; }
-.storefront :is(a, button, input):focus-visible { outline: 2px solid #d85a30; outline-offset: 3px; }
 .storefront .search-input,
 .storefront .search-input:focus,
 .storefront .search-input:focus-visible { border: 0; border-color: transparent; box-shadow: none; outline: none; }
@@ -406,4 +403,15 @@ footer details[open] summary .lucide-chevron-down { transform: rotate(180deg); }
   html { scroll-behavior: auto; }
   .storefront *, .storefront *::before, .storefront *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .storefront :is(.home-category, .home-product, .home-button, .home-process-steps li, article.group, header a, header button):hover { transform: none !important; }
+}
+
+/* Change this single value to none to restore source label casing. */
+:root { --navigation-label-case: lowercase; }
+.navigation-labels :is(a, button, summary, h2) { text-transform: var(--navigation-label-case); }
+@media (max-height: 450px) and (pointer: coarse) {
+  .mobile-account-nav { position: sticky; }
+}
+/* Keep controls above the software keyboard; navigation returns when editing ends. */
+@media (pointer: coarse) {
+  .storefront:has(:is(input, textarea, [contenteditable="true"]):focus) .mobile-account-nav { display: none; }
 }

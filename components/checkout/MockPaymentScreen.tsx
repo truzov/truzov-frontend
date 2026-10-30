@@ -3,6 +3,7 @@
 import { AlertCircle, FlaskConical, LogIn, ShieldOff } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Badge } from '@/components/ui/Badge';
+import { CheckoutItems } from '@/components/checkout/CheckoutItems';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState, InlineError } from '@/components/ui/ErrorState';
@@ -120,6 +121,7 @@ export function MockPaymentScreen() {
 
       <section className="mt-6 rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6">
         <h1 className="text-2xl font-medium leading-tight tracking-tight">Pay for order {order.orderNumber}</h1>
+        <div className="mt-4"><CheckoutItems items={order.items} /></div>
 
         <dl className="mt-4 grid gap-2 text-sm">
           <div className="flex items-baseline justify-between">
@@ -134,6 +136,12 @@ export function MockPaymentScreen() {
               </Badge>
             </dd>
           </div>
+        </dl>
+        <dl className="mt-4 grid gap-2 border-t border-surface-border pt-4 text-sm">
+          <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatCurrency(order.subtotal)}</dd></div>
+          <div className="flex justify-between"><dt>Discount{order.couponCode ? ` (${order.couponCode})` : ''}</dt><dd>−{formatCurrency(order.discountAmount ?? 0)}</dd></div>
+          <div className="flex justify-between"><dt>Shipping</dt><dd>{formatCurrency(order.deliveryFee)}</dd></div>
+          <div className="flex justify-between font-semibold"><dt>Total</dt><dd>{formatCurrency(order.totalAmount)}</dd></div>
         </dl>
 
         <p className="mt-4 flex items-start gap-2 text-sm text-text-secondary">

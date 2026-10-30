@@ -12,6 +12,7 @@ import { isValidRedirect } from '@/lib/auth/redirect';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/auth.store';
 import { useOtpModalStore } from '@/store/otp-modal.store';
+import { useAuthModalStore } from '@/store/auth-modal.store';
 
 export interface AuthFormProps {
   variant?: 'page' | 'modal';
@@ -165,6 +166,8 @@ export function LoginForm({
           </>
         )}
       </Button>
+
+      <Link className="inline-flex min-h-11 items-center justify-center text-sm underline" href="/forgot-password" onClick={() => useAuthModalStore.getState().closeAuthModal()}>Forgot password?</Link>
 
       <button
         className="min-h-11 rounded-lg text-center text-sm font-medium text-primary hover:bg-brand-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"

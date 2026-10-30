@@ -1,9 +1,8 @@
 'use client';
 
-import { ShieldCheck, CircleUserRound } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { AccountSidebar } from '@/components/screens/CustomerScreens';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { useAuthModalStore } from '@/store/auth-modal.store';
@@ -21,30 +20,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   const userEmail = user?.email;
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,246,1)_100%)]">
-        <div className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-8 lg:px-6">
-          <div className="grid w-full gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="rounded-3xl border border-surface-border bg-white p-5 shadow-sm">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="mt-3 h-8 w-40" />
-              <Skeleton className="mt-2 h-4 w-56" />
-              <div className="mt-5 grid gap-2">
-                <Skeleton className="h-10 w-full rounded-2xl" />
-                <Skeleton className="h-10 w-full rounded-2xl" />
-                <Skeleton className="h-10 w-full rounded-2xl" />
-              </div>
-            </div>
-            <div className="rounded-3xl border border-surface-border bg-white p-6 shadow-sm">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="mt-3 h-8 w-1/2" />
-              <Skeleton className="mt-2 h-4 w-2/3" />
-              <Skeleton className="mt-6 h-64 w-full rounded-2xl" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div aria-busy="true" role="status" className="mx-auto max-w-lg px-4 py-8"><Skeleton className="h-11 w-40" /><span className="sr-only">Loading account…</span></div>;
   }
 
   if (!isLoggedIn) {
@@ -55,14 +31,8 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-8 lg:px-6">
-        <EmptyState
-          action="Login / Signup"
-          icon={CircleUserRound}
-          message="Sign in to view orders, saved addresses, and your profile."
-          title="You're not signed in"
-          onAction={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}
-        />
+      <div className="mx-auto max-w-lg px-4 py-8">
+        <button className="min-h-11 rounded-lg bg-[#04342c] px-5 text-sm text-white" type="button" onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}>Login / Signup</button>
       </div>
     );
   }

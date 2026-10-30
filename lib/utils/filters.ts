@@ -11,16 +11,14 @@ import type { ProductListParams, ProductSort } from '@/lib/api/endpoints/catalog
 /**
  * Filter state as the UI thinks about it.
  *
- * Two deliberate differences from `ProductListParams`: prices are in RUPEES here because that
- * is what the URL and the price inputs show, and the text query is `query` rather than `q`
- * because that is the existing prop name across the screens. `toProductListParams` reconciles
- * both.
+ * Prices stay in integer rupees, matching the product database and API filters.
+ * The text query is `query` here and `q` on the API.
  */
 export interface ProductFilterState {
   category?: string;
   brand?: string;
   sort?: string;
-  /** RUPEES. Converted to paise on the way out. */
+  /** Integer rupees, matching the API/database price. */
   minPrice?: number;
   maxPrice?: number;
   tags?: string[];
@@ -56,13 +54,19 @@ export function parseFilters(params: URLSearchParams): ProductFilterState {
   };
 }
 
+export function parseFilterRecord(params: Record<string, string | string[] | undefined>): ProductFilterState {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) search.set(key, Array.isArray(value) ? value.join(',') : value);
+  }
+  return parseFilters(search);
+}
+
 /**
  * UI filter state -> documented API query parameters.
  *
- * THE ONE PLACE rupees become paise. The API reference is explicit and easy to miss: every
- * price on a product DTO is in integer rupees, but the `minPrice`/`maxPrice` *query
- * parameters* are in paise. Getting this wrong does not error — it silently filters by a
- * hundredth of the intended amount, so a "under 500" filter returns nothing at all.
+ * Prices are compared directly against the database's integer-rupee price column.
+ * Multiplying by 100 here turns a ₹500 ceiling into ₹50,000 and returns wrong results.
  */
 export function toProductListParams(
   filters: ProductFilterState,
@@ -72,8 +76,8 @@ export function toProductListParams(
     category: filters.category,
     brand: filters.brand,
     sort: normaliseSort(filters.sort),
-    minPrice: rupeesToPaise(filters.minPrice),
-    maxPrice: rupeesToPaise(filters.maxPrice),
+    minPrice: priceInRupees(filters.minPrice),
+    maxPrice: priceInRupees(filters.maxPrice),
     tags: filters.tags,
     inStock: filters.inStock,
     labVerified: filters.labVerified,
@@ -83,12 +87,12 @@ export function toProductListParams(
   };
 }
 
-function rupeesToPaise(rupees: number | undefined): number | undefined {
+function priceInRupees(rupees: number | undefined): number | undefined {
   if (rupees === undefined || !Number.isFinite(rupees)) {
     return undefined;
   }
 
-  return Math.round(rupees * 100);
+  return Math.round(rupees);
 }
 
 /** Drops an unrecognised `?sort=` rather than passing it through to a 400. */

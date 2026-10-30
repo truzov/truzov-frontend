@@ -3,6 +3,7 @@ import {
   activeFilterEntries,
   filtersToSearchParams,
   parseFilters,
+  parseFilterRecord,
   toProductListParams,
 } from '@/lib/utils/filters';
 import { isValidRedirect } from '@/lib/auth/redirect';
@@ -15,6 +16,13 @@ import { displayImages, humaniseSlug } from '@/lib/utils/product';
  */
 
 describe('filter URL <-> API query adapter', () => {
+  it('keeps composed category/search filters and page from route search parameters', () => {
+    const filters = parseFilterRecord({ category: 'honey', q: 'raw', page: '3', minPrice: '100', maxPrice: '900', labVerified: 'true', inStock: 'true' });
+    expect(toProductListParams(filters)).toMatchObject({ category: 'honey', q: 'raw', page: 3, minPrice: 100, maxPrice: 900, labVerified: true, inStock: true });
+    const withoutPage = filtersToSearchParams(filters);
+    expect(withoutPage.get('page')).toBeNull();
+    expect(withoutPage.get('category')).toBe('honey');
+  });
   it('parses the URL into UI filter state', () => {
     const filters = parseFilters(
       new URLSearchParams('category=honey&labVerified=true&sort=price_asc&minPrice=100')
@@ -38,14 +46,11 @@ describe('filter URL <-> API query adapter', () => {
     expect(parseFilters(new URLSearchParams('minPrice=abc')).minPrice).toBeUndefined();
   });
 
-  it('converts rupee price filters to paise', () => {
-    // The one unit mismatch in the whole API: product DTO prices are integer rupees, but the
-    // minPrice/maxPrice QUERY PARAMETERS are paise. Getting this wrong does not error - it filters
-    // by a hundredth of the intended amount and quietly returns nothing.
+  it('keeps price filters in rupees to match the database comparison', () => {
     const params = toProductListParams({ minPrice: 100, maxPrice: 500 });
 
-    expect(params.minPrice).toBe(10_000);
-    expect(params.maxPrice).toBe(50_000);
+    expect(params.minPrice).toBe(100);
+    expect(params.maxPrice).toBe(500);
   });
 
   it('maps the UI query field onto the API q field and trims it', () => {

@@ -5,7 +5,7 @@ import { Tag, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useCheckoutSelection } from '@/hooks/api/useCheckoutSelection';
-import { validateCoupon } from '@/lib/api/endpoints/coupons';
+import { getCheckoutQuote } from '@/lib/api/endpoints/coupons';
 import { errorMessage } from '@/lib/api/errors';
 import { formatCurrency } from '@/lib/utils/money';
 import { useCheckoutStore } from '@/store/checkout.store';
@@ -27,23 +27,24 @@ export function CheckoutPriceDetails({ ctaLabel = 'Continue', disabled, loading,
   const [draft, setDraft] = useState(couponCode);
   const quote = useQuery({
     queryKey: ['coupon-quote', owner, couponCode, cart.items.map((item) => [item.id, item.quantity, item.lineTotal])],
-    queryFn: ({ signal }) => validateCoupon(couponCode, cart.items.map((item) => item.id), signal),
-    enabled: !orderTotals && Boolean(couponCode) && cart.items.length > 0 && owner !== 'guest',
+    queryFn: ({ signal }) => getCheckoutQuote(couponCode, cart.items.map((item) => item.id), signal),
+    enabled: !orderTotals && cart.items.length > 0 && owner !== 'guest',
     retry: false,
     staleTime: 0,
   });
-  const activeQuote = couponCode && !quote.isFetching && !quote.isError ? quote.data : undefined;
+  const activeQuote = !quote.isFetching && !quote.isError ? quote.data : undefined;
   const subtotal = orderTotals?.subtotal ?? activeQuote?.subtotal ?? cart.subtotal;
   const discount = orderTotals?.discountAmount ?? activeQuote?.discountAmount ?? 0;
   const total = orderTotals?.totalAmount ?? activeQuote?.total;
-  const couponBlocked = !orderTotals && Boolean(couponCode) && (!activeQuote || quote.isFetching || quote.isError);
+  const couponBlocked = !orderTotals && owner !== 'guest' && (!activeQuote || quote.isFetching || quote.isError);
+  const deliveryFee = orderTotals?.deliveryFee ?? activeQuote?.deliveryFee;
 
   return <aside className="h-fit rounded-2xl border border-surface-border bg-surface-base p-5 shadow-xs sm:p-6 lg:sticky lg:top-6">
     <h2 className="text-xl font-medium tracking-tight text-[#04342c]">Price details</h2>
     <div className="mt-4 grid gap-3 border-b border-surface-border pb-4 text-sm">
       <PriceLine label={orderTotals ? 'Subtotal' : `Subtotal (${cart.itemCount} selected ${cart.itemCount === 1 ? 'unit' : 'units'})`} value={formatCurrency(subtotal)} />
       {discount > 0 && <PriceLine label={`Coupon (${orderTotals?.couponCode ?? activeQuote?.code})`} value={`−${formatCurrency(discount)}`} />}
-      {orderTotals && <PriceLine label="Delivery" value={orderTotals.deliveryFee === 0 ? 'Free' : formatCurrency(orderTotals.deliveryFee)} />}
+      {deliveryFee !== undefined && <PriceLine label="Shipping" value={deliveryFee === 0 ? 'Free' : formatCurrency(deliveryFee)} />}
     </div>
     {!orderTotals && <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); const code = draft.trim().toUpperCase(); if (code) { if (code === couponCode) void quote.refetch(); else setCouponCode(owner, code); } }}>
       <label className="flex items-center gap-2 text-sm font-medium" htmlFor="coupon-code"><Tag aria-hidden="true" size={18} />Have an offer or coupon?</label>
@@ -52,9 +53,9 @@ export function CheckoutPriceDetails({ ctaLabel = 'Continue', disabled, loading,
         <Button type="submit" variant="outline" disabled={!draft.trim() || !cart.items.length || quote.isFetching}>Apply</Button>
       </div>
       {couponCode && <button className="min-h-11 w-fit text-sm text-brand-primary underline" type="button" onClick={() => { setCouponCode(owner, ''); setDraft(''); }}>Remove coupon</button>}
-      {quote.isFetching && couponCode && <p className="text-sm text-text-secondary" role="status">Checking coupon…</p>}
-      {quote.isError && couponCode && <p className="text-sm text-text-danger" role="alert">{errorMessage(quote.error)}</p>}
-      {activeQuote && <p className="text-sm text-text-success" role="status">{activeQuote.code} applied. You save {formatCurrency(activeQuote.discountAmount)}.</p>}
+      {quote.isFetching && <p className="text-sm text-text-secondary" role="status">Checking totals…</p>}
+      {quote.isError && <p className="text-sm text-text-danger" role="alert">{errorMessage(quote.error)} <button type="button" className="underline" onClick={() => void quote.refetch()}>Retry totals</button></p>}
+      {activeQuote?.code && <p className="text-sm text-text-success" role="status">{activeQuote.code} applied. You save {formatCurrency(activeQuote.discountAmount)}.</p>}
     </form>}
     {total !== undefined ? <div className="flex items-center justify-between py-4 text-lg font-medium"><span>Total amount</span><span>{formatCurrency(total)}</span></div> : <p className="py-4 text-sm leading-6 text-text-secondary">Delivery charges, if any, are confirmed when you place the order.</p>}
     {helperText && <p className="mb-3 text-sm text-text-danger">{helperText}</p>}

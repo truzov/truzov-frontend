@@ -27,7 +27,7 @@ vi.mock('@/hooks/api/useCommerce', () => ({
 vi.mock('@/hooks/api/useWishlist', () => ({ useToggleWishlist: () => ({ toggle: vi.fn(), isPending: false }) }));
 vi.mock('@/hooks/api/useCatalog', () => ({ useCategories: () => ({ data: [] }) }));
 vi.mock('@/components/checkout/AddressFormModal', () => ({ AddressFormModal: () => null }));
-vi.mock('@/lib/api/endpoints/coupons', () => ({ validateCoupon: mocks.validate }));
+vi.mock('@/lib/api/endpoints/coupons', () => ({ getCheckoutQuote: mocks.validate }));
 
 import { BagScreen, PaymentScreen } from '@/components/checkout/CheckoutScreens';
 import { Header } from '@/components/layout/Header';
@@ -42,7 +42,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   useCheckoutStore.getState().resetCheckout();
   useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer', name: 'Buyer', phoneVerified: true } as never, logout: mocks.logout });
-  mocks.validate.mockResolvedValue({ code: 'SAVE', subtotal: 200, discountAmount: 20, total: 180 });
+  mocks.validate.mockImplementation(async (code: string) => ({ code: code || null, subtotal: 200, discountAmount: code ? 20 : 0, total: code ? 180 : 200, deliveryFee: 0 }));
 });
 afterEach(cleanup);
 
@@ -70,11 +70,11 @@ describe('quantity and checkout selection', () => {
     expect(selected.subtotal).toBe(345);
   });
 
-  it('unselecting an unavailable product enables checkout and updates summary', () => {
+  it('unselecting an unavailable product enables checkout and updates summary', async () => {
     mount(<BagScreen />);
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select Tea for checkout' }));
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
     expect(screen.getByText('Subtotal (2 selected units)')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select Honey for checkout' }));
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
@@ -85,6 +85,7 @@ describe('quantity and checkout selection', () => {
     useCheckoutStore.getState().setSelectedAddress('addr');
     useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
     mount(<PaymentScreen />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place order' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Place order' }));
     const first = mocks.placeOrder.mock.calls[0][0];
     expect(first.cartItemIds).toEqual(['line-a']);
@@ -92,6 +93,7 @@ describe('quantity and checkout selection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Place order' }));
     expect(mocks.placeOrder.mock.calls[1][0].idempotencyKey).toBe(first.idempotencyKey);
     fireEvent.change(screen.getByLabelText('Have an offer or coupon?'), { target: { value: 'SAVE' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(screen.getByText('SAVE applied. You save ₹20.')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Place order' }));
@@ -100,16 +102,17 @@ describe('quantity and checkout selection', () => {
   });
 
   it('invalid coupon blocks ordering until removed', async () => {
-    mocks.validate.mockRejectedValue(new Error('Coupon expired'));
+    mocks.validate.mockImplementation(async (code: string) => { if (code) throw new Error('Coupon expired'); return { code: null, subtotal: 200, discountAmount: 0, total: 200, deliveryFee: 0 }; });
     useCheckoutStore.getState().setSelectedAddress('addr');
     useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
     mount(<PaymentScreen />);
     fireEvent.change(screen.getByLabelText('Have an offer or coupon?'), { target: { value: 'OLD' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Place order' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Remove coupon' }));
-    expect(screen.getByRole('button', { name: 'Place order' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place order' })).toBeEnabled());
   });
 
   it('does not inherit another account selection or coupon', () => {
@@ -121,15 +124,17 @@ describe('quantity and checkout selection', () => {
   });
 
   it('can retry the same coupon after a temporary validation failure', async () => {
-    mocks.validate.mockRejectedValueOnce(new Error('Temporary error')).mockResolvedValue({ code: 'SAVE', subtotal: 200, discountAmount: 20, total: 180 });
+    let failed = false; mocks.validate.mockImplementation(async (code: string) => { if (code && !failed) { failed = true; throw new Error('Temporary error'); } return { code: code || null, subtotal: 200, discountAmount: code ? 20 : 0, total: code ? 180 : 200, deliveryFee: 0 }; });
     useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
     mount(<BagScreen />);
     fireEvent.change(screen.getByLabelText('Have an offer or coupon?'), { target: { value: 'save' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(screen.getByText('SAVE applied. You save ₹20.')).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
   });
 });
 
@@ -144,7 +149,7 @@ describe('account navigation', () => {
 
   it('removes account settings from the signed-in menu', () => {
     mount(<AccountMenu />);
-    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My Account' }));
     expect(screen.queryByRole('link', { name: 'settings' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'saved addresses' })).toBeInTheDocument();
   });

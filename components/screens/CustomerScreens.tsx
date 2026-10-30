@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -91,6 +91,7 @@ function FilterPanel({
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [pending, startTransition] = useTransition();
   useEffect(() => setMounted(true), []);
 
   const active = draft ?? filters;
@@ -110,29 +111,32 @@ function FilterPanel({
       return;
     }
 
-    router.push(`${pathname}?${search.toString()}`);
+    const destination = Object.hasOwn(patch, 'category') && pathname.startsWith('/category/') ? '/products' : pathname;
+    startTransition(() => router.push(`${destination}?${search.toString()}`));
   };
 
   const clear = () => {
     if (onDraftChange) {
-      onDraftChange({ sort: active.sort });
+      onDraftChange({});
       return;
     }
 
     if (filters.query) {
-      router.push(`${pathname}?q=${encodeURIComponent(filters.query)}`);
+      const query = filters.query;
+      startTransition(() => router.push(`${pathname}?q=${encodeURIComponent(query)}`));
       return;
     }
 
-    router.push(pathname);
+    startTransition(() => router.push(pathname.startsWith('/category/') ? '/products' : pathname));
   };
 
   return (
     <aside className="catalogue-filters rounded-lg border border-surface-border bg-surface-base p-4 lg:sticky lg:top-24">
+      <fieldset disabled={pending} aria-busy={pending} className="min-w-0">
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-2xl">Filters</h2>
         <button className="text-sm font-semibold text-brand-primary" type="button" onClick={clear}>
-          Clear
+          Clear all
         </button>
       </div>
       <div className="mt-5 grid gap-5 text-sm">
@@ -152,7 +156,7 @@ function FilterPanel({
             ) : isError ? (
               <p className="text-xs text-text-muted">Categories are unavailable right now.</p>
             ) : (
-              categories?.map((category) => (
+              categories?.filter((category) => category.isActive).map((category) => (
                 <button
                   key={category.slug}
                   className={cn(
@@ -172,6 +176,30 @@ function FilterPanel({
               ))
             )}
           </div>
+        </div>
+        <div>
+          <h3 className="font-semibold">Price (₹)</h3>
+          <form key={`${active.minPrice ?? ''}:${active.maxPrice ?? ''}`} className="mt-3 grid gap-2" onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            const min = String(data.get('min') ?? '');
+            const max = String(data.get('max') ?? '');
+            if (min && max && Number(max) < Number(min)) {
+              (event.currentTarget.elements.namedItem('max') as HTMLInputElement).setCustomValidity('Maximum price must be at least the minimum.');
+              event.currentTarget.reportValidity();
+              return;
+            }
+            commit({ minPrice: min ? Number(min) : undefined, maxPrice: max ? Number(max) : undefined });
+          }}>
+            <div className="grid grid-cols-2 gap-2">
+              <label>Min<input className="mt-1 min-h-11 w-full rounded border border-surface-border px-2" name="min" type="number" min="0" step="1" defaultValue={active.minPrice ?? ''} /></label>
+              <label>Max<input className="mt-1 min-h-11 w-full rounded border border-surface-border px-2" name="max" type="number" min="0" step="1" defaultValue={active.maxPrice ?? ''} onInput={(event) => event.currentTarget.setCustomValidity('')} /></label>
+            </div>
+            <button className="min-h-11 rounded border border-brand-primary text-brand-primary" type="submit">Set price</button>
+          </form>
+        </div>
+        <div>
+          <button aria-pressed={Boolean(active.inStock)} className="min-h-11 text-left font-semibold" type="button" onClick={() => commit({ inStock: active.inStock ? undefined : true })}>In stock only {active.inStock ? '✓' : ''}</button>
         </div>
         <div>
           <h3 className="font-semibold">Trust</h3>
@@ -208,6 +236,7 @@ function FilterPanel({
           </div>
         </div>
       </div>
+      </fieldset>
     </aside>
   );
 }
@@ -219,7 +248,15 @@ export function ProductListingScreen({
   title?: string;
   filters: ProductFilterState;
 }) {
-  const [page, setPage] = useState(filters.page ?? 1);
+  const page = Math.max(1, Math.trunc(filters.page ?? 1));
+  const router = useRouter();
+  const pathname = usePathname();
+  const setPage = (next: number) => {
+    const search = filtersToSearchParams(filters);
+    if (filters.query) search.set('q', filters.query);
+    if (next > 1) search.set('page', String(next));
+    router.push(`${pathname}?${search.toString()}`);
+  };
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   // Filtering, sorting and paging are the server's job now. `filterProducts` used to run over a
@@ -231,18 +268,6 @@ export function ProductListingScreen({
   );
 
   const { data, isLoading, isError, error, isFetching, refetch } = useProductList(params);
-
-  // Identity of the filter set, ignoring the page. Changing a filter must return to page 1 —
-  // otherwise switching category while on page 3 asks for a page that often does not exist and
-  // renders an empty grid that looks like "no products in this category".
-  const filterIdentity = useMemo(
-    () => JSON.stringify(toProductListParams(filters, { page: 1 })),
-    [filters]
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [filterIdentity]);
 
   const activeFilters = activeFilterEntries(filters);
   const items = data?.items ?? [];
@@ -315,7 +340,7 @@ export function ProductListingScreen({
                   <Button
                     disabled={page <= 1 || isFetching}
                     variant="outline"
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    onClick={() => setPage(Math.max(1, page - 1))}
                   >
                     Previous
                   </Button>
@@ -325,7 +350,7 @@ export function ProductListingScreen({
                   <Button
                     disabled={page >= lastPage || isFetching}
                     variant="outline"
-                    onClick={() => setPage((current) => Math.min(lastPage, current + 1))}
+                    onClick={() => setPage(Math.min(lastPage, page + 1))}
                   >
                     Next
                   </Button>
@@ -345,6 +370,7 @@ export function ProductListingScreen({
       </div>
 
       <MobileFilterSheet
+        key={filterSheetOpen ? JSON.stringify(filters) : 'closed'}
         filters={filters}
         open={filterSheetOpen}
         onClose={() => setFilterSheetOpen(false)}
@@ -356,7 +382,7 @@ export function ProductListingScreen({
   );
 }
 
-export function SearchScreen({ query }: { query?: string }) {
+export function SearchScreen({ query, filters }: { query?: string; filters?: ProductFilterState }) {
   const router = useRouter();
   const [draft, setDraft] = useState(query ?? '');
 
@@ -410,7 +436,7 @@ export function SearchScreen({ query }: { query?: string }) {
 
   return (
     <ProductListingScreen
-      filters={{ query, sort: 'relevance' }}
+      filters={{ ...filters, query }}
       title={`Search results for "${query}"`}
     />
   );

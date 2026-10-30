@@ -1,0 +1,14 @@
+/* One site-wide focus policy: preserve active states, show keyboard focus only. */
+:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+:focus-visible {
+  outline: 2px solid #64748b !important;
+  outline-offset: 3px !important;
+  --tw-ring-color: #64748b !important;
+}
+:is(input, textarea, select):focus {
+  border-color: #64748b !important;
+  box-shadow: none !important;
+}

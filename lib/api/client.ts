@@ -83,7 +83,8 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
     headers['Idempotency-Key'] = idempotencyKey;
   }
 
-  if (body !== undefined) {
+  const multipart = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body !== undefined && !multipart) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -107,7 +108,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
     return await fetch(`${env.apiBaseUrl}${path}${buildQuery(query)}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : multipart ? body as FormData : JSON.stringify(body),
       signal: timeout.signal,
     });
   } catch (error) {

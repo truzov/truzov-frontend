@@ -3,6 +3,7 @@
 import { ArrowRight, Ban, Droplets, Utensils, ClipboardCheck, FlaskConical, Handshake, ScanSearch, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { SellerLink } from '@/components/auth/SellerLink';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { HomeScreenSkeleton } from '@/components/ui/Skeleton';
 import { useHome, useLabReports, useProductList } from '@/hooks/api/useCatalog';
@@ -108,7 +109,7 @@ export function HomeScreen() {
 
       <section className="home-container home-gifts" aria-labelledby="gifts-title"><div className="home-gifts-image"><Image src="/truzov-gifts.webp" alt="A thoughtfully wrapped gift box with unbranded skincare and food products" fill sizes="(max-width: 767px) 100vw, 55vw" /></div><div className="home-gifts-copy"><span className="home-kicker">give with intention</span><h2 id="gifts-title">good things are better shared.</h2><p>Looking for something thoughtful? Explore products and brands that have gone through the truzov review process.</p><Link className="home-button home-button-gift" href="/products">find something to give <ArrowRight size={18} /></Link></div></section>
 
-      <section className="home-seller"><div className="home-container home-seller-grid"><div><span className="home-kicker">for thoughtful brands</span><h2>become a verified brand on truzov</h2><p>Join a marketplace built around product checks and clearer information.</p></div><Link className="home-button home-button-outline" href="/vendor/register">apply as a seller <ArrowRight aria-hidden="true" size={18} /></Link></div></section>
+      <section className="home-seller"><div className="home-container home-seller-grid"><div><span className="home-kicker">for thoughtful brands</span><h2>become a verified brand on truzov</h2><p>Join a marketplace built around product checks and clearer information.</p></div><SellerLink className="home-button home-button-outline">apply as a seller <ArrowRight aria-hidden="true" size={18} /></SellerLink></div></section>
     </div>
   );
 }

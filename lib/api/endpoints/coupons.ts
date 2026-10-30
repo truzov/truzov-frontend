@@ -5,6 +5,10 @@ export function validateCoupon(code: string, cartItemIds: string[], signal?: Abo
   return apiRequest<CouponQuote>('/coupons/validate', { method: 'POST', auth: true, body: { code, cartItemIds }, signal });
 }
 
+export function getCheckoutQuote(code: string, cartItemIds: string[], signal?: AbortSignal) {
+  return apiRequest<CouponQuote>('/coupons/quote', { method: 'POST', auth: true, body: { code, cartItemIds }, signal });
+}
+
 export interface Offer {
   code: string;
   title: string;

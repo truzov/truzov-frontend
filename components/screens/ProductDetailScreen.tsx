@@ -10,12 +10,11 @@ import {
   Microscope,
   Share2,
   ShieldCheck,
-  ShoppingCart,
   Zap,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -26,8 +25,9 @@ import { ProductGrid } from '@/components/product/ProductGrid';
 import { ProductImageLightbox } from '@/components/product/ProductImageLightbox';
 import { VariantPills } from '@/components/product/VariantPills';
 import { QuantitySelector } from '@/components/product/QuantitySelector';
+import { CartQuantityControl } from '@/components/product/CartQuantityControl';
 import { useCategories, useProduct, useProductReviews, useRelatedProducts } from '@/hooks/api/useCatalog';
-import { useAddToCart, useBuyNow } from '@/hooks/api/useCart';
+import { useBuyNow } from '@/hooks/api/useCart';
 import { useIsWishlisted, useToggleWishlist } from '@/hooks/api/useWishlist';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/utils/cn';
@@ -61,11 +61,13 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const [requestedQuantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showAllImages, setShowAllImages] = useState(false);
+  const touchStart = useRef<number | null>(null);
+  const swiped = useRef(false);
   // Only the user's explicit choice is stored; the effective selection is derived below, so
   // there is nothing to reset when the product changes and no toggle-off on a second click.
   const [chosenVariantId, setChosenVariantId] = useState<string>();
 
-  const { add, isPending: isAdding } = useAddToCart();
   const { buyNow, isPending: isBuyingNow } = useBuyNow();
   const wishlist = useToggleWishlist(`/products/${slug}`);
   const isInWishlist = useIsWishlisted(product?.id ?? '');
@@ -142,59 +144,30 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
     <div className="bg-background font-body text-on-surface">
       <div className="mx-auto max-w-[1440px] px-5 py-8 lg:px-6 lg:py-16">
         <div className="grid gap-8 lg:grid-cols-[5fr_4fr_3fr] lg:items-start">
-          <section className="order-1 grid gap-2 lg:col-start-1 lg:row-start-1 lg:row-span-2">
-            <div className="relative aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white">
-              {selectedImage ? (
-                <button
-                  aria-label={`View full image: ${selectedImage.alt}`}
-                  className="relative block h-full w-full"
-                  type="button"
-                  onClick={() => setLightboxOpen(true)}
-                >
-                  <Image
-                    alt={selectedImage.alt}
-                    className="object-cover"
-                    fill
-                    priority
-                    sizes="(min-width: 1024px) 40vw, 100vw"
-                    src={selectedImage.url}
-                  />
-                </button>
-              ) : (
-                <span className="grid h-full w-full place-items-center text-sm text-on-surface-variant">
-                  No image available
-                </span>
-              )}
-            </div>
-            {/* The gallery is exactly what the product has. It used to be padded to five tiles
-                with stock honeycomb photography, which meant every product appeared to ship
-                with honey imagery. */}
-            {gallery.length > 1 ? (
-              <div className="grid grid-cols-4 gap-2">
-                {gallery.slice(0, 4).map((image, index) => (
-                  <button
-                    key={`${image.url}-${index}`}
-                    aria-label={`View image ${index + 1}`}
-                    aria-pressed={selectedImageIndex === index}
-                    className={cn(
-                      'relative aspect-square overflow-hidden rounded-lg border bg-white',
-                      selectedImageIndex === index
-                        ? 'border-2 border-primary'
-                        : 'border-outline-variant'
-                    )}
-                    onClick={() => {
-                      setSelectedImageIndex(index);
-                      setLightboxOpen(true);
-                    }}
-                    type="button"
-                  >
-                    <Image alt={image.alt} className="object-cover" fill sizes="12vw" src={image.url} />
-                  </button>
-                ))}
+          <section className="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
+            <div className="relative grid gap-2 md:pl-[68px]">
+              <div className="relative order-1 aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white"
+                onTouchStart={(event) => { swiped.current = false; touchStart.current = event.touches[0]?.clientX ?? null; }}
+                onTouchEnd={(event) => {
+                  const end = event.changedTouches[0]?.clientX;
+                  if (touchStart.current !== null && end !== undefined && Math.abs(end - touchStart.current) > 40) {
+                    swiped.current = true;
+                    setSelectedImageIndex((index) => Math.min(gallery.length - 1, Math.max(0, index + (end < touchStart.current! ? 1 : -1))));
+                  }
+                  touchStart.current = null;
+                }}>
+                {selectedImage ? <button aria-label={`View full image: ${selectedImage.alt}`} className="relative block h-full w-full" onClick={() => { if (swiped.current) { swiped.current = false; return; } setLightboxOpen(true); }} type="button"><Image alt={selectedImage.alt} className="object-contain" fill priority sizes="(min-width: 1024px) 35vw, 100vw" src={selectedImage.url} /></button> : <span className="grid h-full place-items-center text-sm">No image available</span>}
+                <div className="absolute right-2 top-2 flex gap-2">
+                  <Button aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'} className="rounded-full bg-white/95" disabled={wishlist.isPending} size="icon" variant="ghost" onClick={() => wishlist.toggle(product.id)}><Heart aria-hidden="true" size={20} className={isInWishlist ? 'fill-current' : ''} /></Button>
+                  <Button aria-label="Share product" className="rounded-full bg-white/95" size="icon" variant="ghost" onClick={() => { const url = window.location.href; if (navigator.share) void navigator.share({ title: product.name, url }).catch(() => undefined); else void navigator.clipboard?.writeText(url).catch(() => undefined); }}><Share2 aria-hidden="true" size={20} /></Button>
+                </div>
               </div>
-            ) : null}
+              {gallery.length > 1 ? <div className="order-2 flex gap-2 overflow-x-auto md:absolute md:inset-y-0 md:left-0 md:w-[60px] md:flex-col md:overflow-y-auto">
+                {(showAllImages ? gallery : gallery.slice(0, gallery.length > 5 ? 4 : 5)).map((image, index) => <button key={`${image.url}-${index}`} aria-label={`View image ${index + 1}`} aria-pressed={selectedImageIndex === index} className={cn('relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-lg border bg-white', selectedImageIndex === index ? 'border-2 border-primary' : 'border-outline-variant')} onClick={() => setSelectedImageIndex(index)} type="button"><Image alt={image.alt} className="object-contain" fill sizes="60px" src={image.url} /></button>)}
+                {!showAllImages && gallery.length > 5 ? <button aria-label={`Show ${gallery.length - 4} more images`} className="h-[60px] w-[60px] shrink-0 rounded-lg border border-outline-variant bg-white font-semibold" onClick={() => setShowAllImages(true)} type="button">{gallery.length - 4}+</button> : null}
+              </div> : null}
+            </div>
           </section>
-
           <section className="order-2 grid gap-4 lg:col-start-2 lg:row-start-1">
             <nav className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
               <Link href="/products">Marketplace</Link>
@@ -278,6 +251,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               </div>
             )}
 
+
           </section>
           <aside className="order-3 grid gap-4 lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-36">
             <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-md">
@@ -318,25 +292,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               </div>
 
               <div className="mt-6 grid gap-3">
-                <Button
-                  className="h-12 w-full rounded-full bg-primary text-base text-on-primary hover:bg-primary/90"
-                  disabled={!product.inStock || isAdding || noSelectableVariant}
-                  loading={isAdding}
-                  onClick={() =>
-                    add({
-                      productId: product.id,
-                      productName: product.name,
-                      variantId: selectedVariantId,
-                      quantity,
-                      slug: product.slug,
-                      imageUrl: gallery[0]?.url,
-                      unitPrice: product.price,
-                    })
-                  }
-                >
-                  <ShoppingCart aria-hidden="true" className="h-5 w-5" />
-                  Add to Cart
-                </Button>
+                <CartQuantityControl className="w-full" disabled={!product.inStock || noSelectableVariant} max={maxQuantity} product={{ productId: product.id, productName: product.name, variantId: selectedVariantId, slug: product.slug, imageUrl: gallery[0]?.url, unitPrice: effectivePrice(product.price, selectedVariant) }} />
                 {/*
                   "Buy Now" adds to the cart and then goes to checkout, via useBuyNow(). It used
                   to call add(...) without ever navigating, so the user stayed on this page
@@ -359,43 +315,6 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   <Zap aria-hidden="true" className="h-5 w-5" />
                   Buy Now
                 </Button>
-                <div className="mt-2 grid grid-cols-2 gap-4">
-                  <Button
-                    className={cn(
-                      'h-auto rounded-lg border-primary/20 py-2 hover:bg-primary/5',
-                      isInWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'text-primary'
-                    )}
-                    disabled={wishlist.isPending}
-                    variant="outline"
-                    onClick={() => wishlist.toggle(product.id)}
-                  >
-                    <Heart
-                      aria-hidden="true"
-                      className={cn('h-4 w-4', isInWishlist && 'fill-current')}
-                    />
-                    <span className="leading-tight">
-                      {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
-                    </span>
-                  </Button>
-                  <Button
-                    className="h-auto rounded-lg border-primary/20 py-2 text-primary hover:bg-primary/5"
-                    variant="outline"
-                    onClick={() => {
-                      // Native share where available; clipboard is the universal fallback.
-                      // Both are best-effort, so a rejection (user dismissed the sheet, or no
-                      // clipboard permission) is intentionally not surfaced as an error.
-                      const url = window.location.href;
-                      if (navigator.share) {
-                        void navigator.share({ title: product.name, url }).catch(() => undefined);
-                        return;
-                      }
-                      void navigator.clipboard?.writeText(url).catch(() => undefined);
-                    }}
-                  >
-                    <Share2 aria-hidden="true" className="h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
               </div>
 
               <div className="mt-6 grid gap-4 border-t border-surface-container pt-5">
@@ -427,8 +346,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               </div>
             </div>
           </aside>
-
-          <section className="order-4 grid gap-4 lg:col-start-2 lg:row-start-2">
+          <section className="order-4 grid min-w-0 gap-4 lg:col-span-2 lg:col-start-1 lg:row-start-2">
             <div
               className="mt-2 flex gap-8 overflow-x-auto border-b border-outline-variant"
               role="tablist"
@@ -452,7 +370,7 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               ))}
             </div>
 
-            <div className="grid gap-4 py-2">
+            <div className="grid h-[26rem] content-start gap-4 overflow-y-auto py-2" role="tabpanel" aria-label={tab}>
               {tab === 'Product Details' ? (
                 <>
                   {product.description ? (
@@ -592,6 +510,8 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               ) : null}
             </div>
           </section>
+
+
 
 
         </div>

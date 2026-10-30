@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addCartItem,
   clearCart,
@@ -73,18 +73,24 @@ export function useAddToCart() {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const addToast = useUiStore((state) => state.addToast);
   const guestAdd = useGuestCartStore((state) => state.add);
+  const writes = useIsMutating({ mutationKey: ['cart-write'] });
 
   const mutation = useMutation({
-    mutationFn: (input: { productId: string; variantId?: string; quantity?: number }) =>
-      addCartItem({
+    mutationKey: ['cart-write'],
+    mutationFn: async (input: { productId: string; variantId?: string; quantity?: number; ownerId?: string }) => {
+      if (!useAuthStore.getState().isLoggedIn || useAuthStore.getState().user?.id !== input.ownerId) throw new Error('Your account changed. Please try again.');
+      const cart = await addCartItem({
         productId: input.productId,
         variantId: input.variantId,
         quantity: input.quantity ?? 1,
-      }),
-    onSuccess: (cart) => {
+      });
+      if (!useAuthStore.getState().isLoggedIn || useAuthStore.getState().user?.id !== input.ownerId) throw new Error('Your account changed. Please try again.');
+      return cart;
+    },
+    onSuccess: (cart, input) => {
       // The mutation returns the whole cart, so seed the cache directly instead of
       // invalidating — that keeps the header badge and cart page correct with no extra request.
-      queryClient.setQueryData(queryKeys.cart(), cart);
+      if (useAuthStore.getState().user?.id === input.ownerId) queryClient.setQueryData(queryKeys.cart(), cart);
     },
     onError: (error) => {
       // Surfaced rather than swallowed: the common failures here are meaningful to the user —
@@ -102,6 +108,7 @@ export function useAddToCart() {
     imageUrl?: string;
     unitPrice: number;
   }) => {
+    if (queryClient.isMutating({ mutationKey: ['cart-write'] })) return;
     if (!isLoggedIn) {
       guestAdd({
         productId: input.productId,
@@ -123,7 +130,7 @@ export function useAddToCart() {
     }
 
     mutation.mutate(
-      { productId: input.productId, variantId: input.variantId, quantity: input.quantity },
+      { productId: input.productId, variantId: input.variantId, quantity: input.quantity, ownerId: useAuthStore.getState().user?.id },
       {
         onSuccess: () => {
           addToast({
@@ -139,7 +146,11 @@ export function useAddToCart() {
   };
 
   // addAsync lets a caller await the POST before navigating (Buy Now); `add` stays fire-and-forget.
-  return { add, addAsync: mutation.mutateAsync, isPending: mutation.isPending };
+  const addAsync = (input: { productId: string; variantId?: string; quantity?: number }) => {
+    if (queryClient.isMutating({ mutationKey: ['cart-write'] })) return Promise.reject(new Error('A cart change is still saving. Please try again.'));
+    return mutation.mutateAsync({ ...input, ownerId: useAuthStore.getState().user?.id });
+  };
+  return { add, addAsync, isPending: mutation.isPending || Boolean(writes) };
 }
 
 /**
@@ -248,6 +259,7 @@ export function useUpdateCartItem() {
   const addToast = useUiStore((state) => state.addToast);
 
   return useMutation({
+    mutationKey: ['cart-write'],
     mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
       updateCartItem(itemId, { quantity }),
     onSuccess: (cart) => {
@@ -267,6 +279,7 @@ export function useRemoveCartItem() {
   const addToast = useUiStore((state) => state.addToast);
 
   return useMutation({
+    mutationKey: ['cart-write'],
     mutationFn: (itemId: string) => removeCartItem(itemId),
     onSuccess: (cart) => {
       queryClient.setQueryData(queryKeys.cart(), cart);
@@ -281,6 +294,7 @@ export function useClearCart() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ['cart-write'],
     mutationFn: () => clearCart(),
     onSuccess: () => {
       // 204 returns no body, so there is nothing to seed — write the known-empty state.
