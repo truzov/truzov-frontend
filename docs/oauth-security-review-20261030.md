@@ -61,4 +61,12 @@ Independent review found no blocking issue in the diff. State equality and singl
 | V9 Communication | Yes | Existing HTTPS Google endpoints retained |
 | V14 Configuration | Yes | Open demo OTP/dependency/credential/audience limitations above |
 
+## Hosted verification update
+
+Frontend e874caa is production READY (dpl_7rYgzWsM9typ1XjUSpN15bf72zea). Render settings deploy dep-dbicj79srm7s73dsjuug is LIVE; startup confirms Google sign-in enabled. A dummy authorization code is rejected401 without session tokens, rather than the prior unconfigured503. The persistent generated JWT key is in managed settings, with no value printed or committed. Changed-file ESLint also passed without warnings/errors.
+
+Manual in-app-browser checks confirmed the visible Google button, actual navigation to Google, cancellation returning to sign-in, and an unsolicited callback showing the local "start again" error. The initial400 redirect_uri_mismatch was resolved when the user registered the canonical callback and origin. The user completed real Google sign-in. The protected account page then displayed the signed-in profile, remained authenticated after a reload, and Log out returned to the guest homepage with success feedback. This verifies one real existing-account login/session/logout flow; fresh-account creation and all linking/conflict cases are covered by existing backend tests rather than separate live mutations.
+
+Approval review rejected writing two temporary browser-test helpers (including a narrowed public-only variant) with "blocked by policy" and no specific reason. Neither executed. Ordinary visible-page navigation was used for the manual observations above, without inspecting browser storage or selecting/consenting to an account. This is not a completed automated end-to-end OAuth test.
+
 Rollback: disable Google configuration and rebuild the frontend if activation fails; retain validation improvements. No database rollback needed. A persistent signing-key change requires reauthentication of pre-existing sessions.
