@@ -132,3 +132,15 @@ See docs/plans/review-fixes-20261008.md. Check existing work before editing; onl
 Inspect before edits; reuse existing offers, owner-scoped ticket APIs, public seller applications and cart/query stores. Frontend first: central neutral keyboard focus policy, one 1536px navigation account breakpoint with resolving-auth placeholder, compact guest account; gallery/tabs; URL filters/mobile Apply/Clear; shared cart stepper; order item thumbnails on review/payment; copy coupon; configurable seller destination; reset/support frontend. Then implement only missing secure backend reset/support contracts, then admin integration. Product management Task6 is investigation only. Verify locally in isolated Docker with dummy fixtures and no external network, empty allowlisted environment, readonly input/toolchain, scratch tmpfs and bounded resources. No deploy/push in this task.
 
 2026-10-29 remaining-work recheck: Task16 requires automatic return to login after recovery. Replace the manual-only success screen in both apps with their existing success notification and fixed local login route; test failures stay on recovery without success/navigation. No backend or dependency change.
+
+## Google OAuth activation — 2026-10-30
+
+Current release completed before this follow-up: backend3115733, storefront847204a, admin e43dd81 live; nine public browser checks and live private Cloudinary upload/cleanup passed.
+
+Architect: reuse existing Google authorization-code flow, browser S256 PKCE/state, backend Spring/Nimbus signature/issuer/audience/expiry checks, verified identity linking, and standard session store. No new dependency, backend endpoint, or migration.
+
+Developer (ponytail): validate restored pending-flow shape before use; gate the saved and restored destination with shared isValidRedirect. Harden that shared guard against URL-normalized control characters for every caller. Keep valid internal checkout/account routes. Add focused regression cases to existing suites.
+
+Reviewer (secure-code-review): TypeScript/React browser code and Java/Spring existing provider configuration. Trust boundaries: URL parameters, sessionStorage JSON, navigation target, provider authorization response, server-only secret and environment configuration. Applicable ASVS V2/V3/V4/V5/V7/V8/V9/V14. Existing state/PKCE and server identity verification must remain intact. The skill's referenced ../../../docs/fixer-policy.md is absent at its resolved path and named-file searches found no copy; no approval requirement is inferred. Fixes are narrow validation changes, independently reviewed, and reversible by reverting the frontend commit.
+
+QA: existing OAuth and redirect suites plus full storefront tests/typecheck; production build and deployed button, outbound parameters, cancellation and invalid-state handling. Real account consent remains user-controlled. Do not log credentials, authorization codes, state, PKCE verifiers or session tokens. Configure only the public client ID in Vercel; merge server credentials into existing Render settings. New frontend PR targets #12's branch; preserve earlier PRs.
