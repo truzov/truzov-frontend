@@ -22,6 +22,8 @@ export interface GuestCartItem {
   slug: string;
   imageUrl?: string;
   unitPrice: number;
+  /** Last observed stock, display-only; the server revalidates on merge/checkout. */
+  availableStock?: number;
   addedAt: number;
 }
 
@@ -91,10 +93,10 @@ export const useGuestCartStore = create<GuestCartState>()((set, get) => ({
       const items = existing
         ? state.items.map((item) =>
             sameLine(input, item)
-              ? { ...item, quantity: Math.min(item.quantity + input.quantity, MAX_ITEM_QUANTITY) }
+              ? { ...item, availableStock: input.availableStock ?? item.availableStock, quantity: Math.min(item.quantity + input.quantity, MAX_ITEM_QUANTITY, input.availableStock ?? item.availableStock ?? MAX_ITEM_QUANTITY) }
               : item
           )
-        : [...state.items, { ...input, addedAt: Date.now() }];
+        : [...state.items, { ...input, quantity: Math.min(input.quantity, MAX_ITEM_QUANTITY, input.availableStock ?? MAX_ITEM_QUANTITY), addedAt: Date.now() }];
       persist(items);
       return { items };
     });
@@ -105,7 +107,7 @@ export const useGuestCartStore = create<GuestCartState>()((set, get) => ({
       const items = state.items
         .map((item) =>
           sameLine({ productId, variantId }, item)
-            ? { ...item, quantity: Math.min(Math.max(quantity, 1), MAX_ITEM_QUANTITY) }
+            ? { ...item, quantity: Math.min(Math.max(quantity, 0), MAX_ITEM_QUANTITY, item.availableStock ?? MAX_ITEM_QUANTITY) }
             : item
         )
         // Quantity 0 means remove; the guest store has no separate delete semantics to keep.

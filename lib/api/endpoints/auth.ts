@@ -129,3 +129,13 @@ export function updateProfile(body: UpdateProfileRequest): Promise<UserProfileDt
 export function changePassword(body: ChangePasswordRequest): Promise<void> {
   return apiRequest<void>('/users/me/password', { method: 'POST', auth: true, body });
 }
+
+/** Neutral response for all identifiers; never call account/exists for password recovery. */
+export function requestPasswordReset(identifier: string): Promise<OtpSendResponse> {
+  const trimmed = identifier.trim();
+  return apiRequest('/auth/password-reset/send', { method: 'POST', body: { identifier: trimmed.includes('@') ? trimmed : trimmed.replace(/[^\d+]/g, '') } });
+}
+
+export function confirmPasswordReset(body: { otpSessionId: string; code: string; password: string }): Promise<void> {
+  return apiRequest('/auth/password-reset/confirm', { method: 'POST', body });
+}

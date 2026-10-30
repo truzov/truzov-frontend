@@ -1,10 +1,12 @@
 'use client';
 
-import { Minus, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { ShieldCheck, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { useRemoveCartItem, useUpdateCartItem } from '@/hooks/api/useCart';
+import { useRemoveCartItem } from '@/hooks/api/useCart';
+import { CartQuantityControl } from '@/components/product/CartQuantityControl';
+import { useIsMutating } from '@tanstack/react-query';
 import { useToggleWishlist } from '@/hooks/api/useWishlist';
 import { formatCurrency } from '@/lib/utils/money';
 import type { CartItemDto } from '@/types/api';
@@ -22,11 +24,11 @@ import type { CartItemDto } from '@/types/api';
  * lines through different variants, so a product-keyed update is ambiguous.
  */
 export function BagItemRow({ item, selected = true, onSelect }: { item: CartItemDto; selected?: boolean; onSelect?: (selected: boolean) => void }) {
-  const updateItem = useUpdateCartItem();
+  const writes = useIsMutating({ mutationKey: ['cart-write'] });
   const removeItem = useRemoveCartItem();
   const wishlist = useToggleWishlist();
 
-  const isBusy = updateItem.isPending || removeItem.isPending;
+  const isBusy = Boolean(writes) || removeItem.isPending;
   // `availableStock` is the server's number. The client does not clamp quantity — the server caps
   // it (truzov.commerce.max-item-quantity) and rejects what it will not accept.
   const lowStock = item.availableStock > 0 && item.availableStock <= 7;
@@ -56,6 +58,7 @@ export function BagItemRow({ item, selected = true, onSelect }: { item: CartItem
             <Link className="text-base font-medium leading-snug hover:text-brand-primary sm:text-lg" href={`/products/${item.slug}`}>
               {item.name}
             </Link>
+            {item.variantLabel && <p className="mt-1 text-sm text-text-secondary">{item.variantLabel}</p>}
             {!item.inStock ? (
               <p className="mt-1 text-sm font-semibold text-text-danger">
                 Out of stock — leave it unselected to continue
@@ -76,29 +79,7 @@ export function BagItemRow({ item, selected = true, onSelect }: { item: CartItem
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center rounded-xl border border-surface-border bg-surface-raised">
-            <Button
-              aria-label="Decrease quantity"
-              // At quantity 1 the decrement would be 0, which the server rejects; removing is the
-              // intended action, and it has its own button.
-              disabled={isBusy || item.quantity <= 1}
-              size="icon"
-              variant="ghost"
-              onClick={() => updateItem.mutate({ itemId: item.id, quantity: item.quantity - 1 })}
-            >
-              <Minus aria-hidden="true" className="h-4 w-4" />
-            </Button>
-            <span className="w-14 text-center text-sm font-medium">Qty: {item.quantity}</span>
-            <Button
-              aria-label="Increase quantity"
-              disabled={isBusy}
-              size="icon"
-              variant="ghost"
-              onClick={() => updateItem.mutate({ itemId: item.id, quantity: item.quantity + 1 })}
-            >
-              <Plus aria-hidden="true" className="h-4 w-4" />
-            </Button>
-          </div>
+          <CartQuantityControl disabled={!item.inStock} max={item.availableStock} product={{ productId: item.productId, variantId: item.variantId, productName: item.name, slug: item.slug, imageUrl: item.imageUrl, unitPrice: item.unitPrice }} />
           <span className="inline-flex items-center gap-1 text-sm text-text-secondary">
             <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-brand-primary" />
             {formatCurrency(item.unitPrice)} each

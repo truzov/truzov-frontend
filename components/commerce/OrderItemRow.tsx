@@ -43,6 +43,7 @@ export function OrderItemRow({ item }: { item: OrderItemDto }) {
             ) : (
               <span className="font-semibold">{item.productName}</span>
             )}
+            {item.variantLabel && <p className="mt-1 text-sm text-text-secondary">{item.variantLabel}</p>}
             <p className="mt-1 text-sm text-text-secondary">
               {formatCurrency(item.unitPrice)} × {item.quantity}
             </p>

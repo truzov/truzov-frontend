@@ -233,6 +233,10 @@ vi.mock('@/hooks/api/useCart', () => ({
   useBuyNow: () => ({ buyNow: buyNowMock, checkout: vi.fn(), isPending: false }),
 }));
 
+vi.mock('@/hooks/api/useCartQuantity', () => ({
+  useCartQuantity: (product: { productId: string; variantId?: string }) => ({ quantity: 0, pending: false, change: () => addMock(product) }),
+}));
+
 vi.mock('@/hooks/api/useWishlist', () => ({
   useIsWishlisted: () => false,
   useToggleWishlist: () => ({ toggle: vi.fn(), isPending: false }),
@@ -288,6 +292,19 @@ describe('variant rendering and selection (task 3.9)', () => {
   const cardSelect = () => screen.getByRole('combobox', { name: /select size/i }) as HTMLSelectElement;
 
   // 3.1
+  it('changes a thumbnail without opening zoom and reveals the remaining real images', async () => {
+    const user = userEvent.setup();
+    const product = buildProduct(500, []);
+    product.images = Array.from({ length: 8 }, (_, index) => ({ id: `image-${index}`, url: `/fixture-${index}.webp`, alt: `Fixture ${index}`, sortOrder: index }));
+    renderDetail(product);
+    await user.click(screen.getByRole('button', { name: 'View image 2' }));
+    expect(screen.getByRole('button', { name: 'View image 2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'View full image: Fixture 1' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show 4 more images' }));
+    expect(screen.getByRole('button', { name: 'View image 8' })).toBeInTheDocument();
+  });
+
   it('renders the selector on both the card and the detail page for a 2-variant product', () => {
     const product = buildProduct(500, twoVariants);
 
@@ -351,7 +368,7 @@ describe('variant rendering and selection (task 3.9)', () => {
     const { unmount } = renderCard(product);
 
     await user.selectOptions(cardSelect(), 'variant-1');
-    await user.click(screen.getByRole('button', { name: 'Add to Cart' }));
+    await user.click(screen.getByRole('button', { name: `Add ${product.name}` }));
 
     expect(addMock).toHaveBeenCalledTimes(1);
     expect(addMock.mock.calls[0][0]).toMatchObject({ variantId: 'variant-1' });
@@ -360,7 +377,7 @@ describe('variant rendering and selection (task 3.9)', () => {
     addMock.mockClear();
     const simple = buildProduct(500, []);
     render(<ProductCard product={simple} />);
-    await user.click(screen.getByRole('button', { name: 'Add to Cart' }));
+    await user.click(screen.getByRole('button', { name: `Add ${simple.name}` }));
 
     expect(addMock).toHaveBeenCalledTimes(1);
     expect(addMock.mock.calls[0][0].variantId).toBeUndefined();

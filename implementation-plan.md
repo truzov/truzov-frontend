@@ -127,3 +127,8 @@ Frontend/admin tests cover blank-to-number sort editing including zero, actual A
 
 ## Review fixes — 2026-10-08
 See docs/plans/review-fixes-20261008.md. Check existing work before editing; only missing fixes are in scope. FINDINGS.md records investigations before implementation.
+
+## UI fix checklist — 2026-10-27
+Inspect before edits; reuse existing offers, owner-scoped ticket APIs, public seller applications and cart/query stores. Frontend first: central neutral keyboard focus policy, one 1536px navigation account breakpoint with resolving-auth placeholder, compact guest account; gallery/tabs; URL filters/mobile Apply/Clear; shared cart stepper; order item thumbnails on review/payment; copy coupon; configurable seller destination; reset/support frontend. Then implement only missing secure backend reset/support contracts, then admin integration. Product management Task6 is investigation only. Verify locally in isolated Docker with dummy fixtures and no external network, empty allowlisted environment, readonly input/toolchain, scratch tmpfs and bounded resources. No deploy/push in this task.
+
+2026-10-29 remaining-work recheck: Task16 requires automatic return to login after recovery. Replace the manual-only success screen in both apps with their existing success notification and fixed local login route; test failures stay on recovery without success/navigation. No backend or dependency change.

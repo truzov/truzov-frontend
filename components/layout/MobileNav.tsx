@@ -17,6 +17,7 @@ const tabs = [
 export function MobileNav() {
   const pathname = usePathname();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const status = useAuthStore((state) => state.status);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
 
   if (pathname.startsWith('/checkout')) {
@@ -24,6 +25,7 @@ export function MobileNav() {
   }
 
   const accountActive = pathname.startsWith('/account');
+  const resolving = status === 'idle' || status === 'restoring';
 
   // Guests get a reduced bar: the full tab set (Home/Categories/Search/Wishlist) is only
   // useful once there is an account behind it — Wishlist and Account both need one, and
@@ -31,18 +33,9 @@ export function MobileNav() {
   // Two clear paths forward beat five tabs where three lead to the same login prompt.
   if (!isLoggedIn) {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white text-[#04342c] lg:hidden">
-        <div className="grid h-14 grid-cols-2">
-          <Link
-            className={cn(
-              'grid place-items-center gap-0.5 text-[11px] font-semibold',
-              accountActive ? 'text-brand-primary' : 'text-text-muted'
-            )}
-            href="/account"
-          >
-            <CircleUserRound aria-hidden="true" className="h-5 w-5" />
-            My Account
-          </Link>
+      <nav aria-label="Bottom navigation" className="navigation-labels mobile-account-nav fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white pb-[env(safe-area-inset-bottom)] text-[#04342c] min-[1536px]:hidden">
+        <div className="grid h-14">
+          {!resolving &&
           <button
             className="grid place-items-center gap-0.5 text-[11px] font-semibold text-text-muted"
             type="button"
@@ -50,14 +43,14 @@ export function MobileNav() {
           >
             <LogIn aria-hidden="true" className="h-5 w-5" />
             Login / Signup
-          </button>
+          </button>}
         </div>
       </nav>
     );
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white text-[#04342c] lg:hidden">
+    <nav aria-label="Bottom navigation" className="navigation-labels mobile-account-nav fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white pb-[env(safe-area-inset-bottom)] text-[#04342c] min-[1536px]:hidden">
       <div className="grid h-14 grid-cols-5">
         {tabs.map((tab) => {
           const active = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href));
@@ -86,7 +79,7 @@ export function MobileNav() {
           href="/account"
         >
           <CircleUserRound aria-hidden="true" className="h-5 w-5" />
-          Account
+          My Account
         </Link>
       </div>
     </nav>

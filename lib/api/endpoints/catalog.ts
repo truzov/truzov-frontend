@@ -15,8 +15,7 @@ import type {
  * Public storefront endpoints. None of these require a bearer token, so none pass `auth: true`.
  *
  * Parameters here mirror the documented query contract exactly, including its units and
- * bounds. The rupee -> paise conversion for the price filter happens one layer up, in
- * lib/utils/filters.ts, where the UI's rupee values live.
+ * bounds. Price filters use integer rupees, like products.price in the database.
  */
 
 /** Server-side bounds, mirrored so the client cannot send a request that fails validation. */
@@ -37,7 +36,7 @@ export interface ProductListParams {
   category?: string;
   brand?: string;
   sort?: ProductSort;
-  /** PAISE, not rupees — the one place in the API where the unit differs from the DTOs. */
+  /** Integer rupees, compared directly against product price. */
   minPrice?: number;
   maxPrice?: number;
   /** Any-of match. Max 20 tags. */

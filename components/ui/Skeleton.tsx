@@ -41,15 +41,15 @@ export function HomeScreenSkeleton() {
       {/* Hero */}
       <section className="bg-brand-primary">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 lg:grid-cols-[1fr_0.9fr] lg:py-20">
-          <div>
+          <div className="min-w-0">
             <Skeleton className="h-6 w-40 bg-brand-secondary/40" />
             <Skeleton className="mt-6 h-12 w-3/4 bg-brand-secondary/30" />
             <Skeleton className="mt-3 h-10 w-2/3 bg-brand-secondary/30" />
             <Skeleton className="mt-4 h-4 w-full max-w-lg bg-brand-secondary/20" />
             <Skeleton className="mt-2 h-4 w-3/4 max-w-lg bg-brand-secondary/20" />
-            <div className="mt-8 flex gap-3">
-              <Skeleton className="h-[52px] w-40 bg-brand-secondary/30" />
-              <Skeleton className="h-[52px] w-44 bg-brand-secondary/20" />
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Skeleton className="h-[52px] w-40 max-w-full bg-brand-secondary/30" />
+              <Skeleton className="h-[52px] w-44 max-w-full bg-brand-secondary/20" />
             </div>
           </div>
           <Skeleton className="aspect-[4/3] w-full rounded-xl bg-brand-secondary/30" />

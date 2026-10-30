@@ -73,5 +73,5 @@ export function humaniseSlug(slug: string): string {
  * every pill on the card.
  */
 export function defaultVariantId(variants: ProductVariantDto[] | undefined): string | undefined {
-  return variants?.find((variant) => variant.inStock !== false)?.id;
+  return variants?.find((variant) => variant.inStock !== false && variant.stockCount !== 0)?.id;
 }

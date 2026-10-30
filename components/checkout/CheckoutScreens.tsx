@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
 import { BagItemRow } from '@/components/checkout/BagItemRow';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
+import { CheckoutItems } from '@/components/checkout/CheckoutItems';
 import { OrderItemRow } from '@/components/commerce/OrderItemRow';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -268,7 +269,6 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
           <div className="inline-flex items-center rounded-xl border border-surface-border bg-surface-raised">
             <Button
               aria-label="Decrease quantity"
-              disabled={item.quantity <= 1}
               size="icon"
               variant="ghost"
               onClick={() => setQuantity(item.productId, item.variantId, item.quantity - 1)}
@@ -278,6 +278,7 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
             <span className="w-14 text-center text-sm font-medium">Qty: {item.quantity}</span>
             <Button
               aria-label="Increase quantity"
+              disabled={item.quantity >= Math.min(20, item.availableStock ?? 20)}
               size="icon"
               variant="ghost"
               onClick={() => setQuantity(item.productId, item.variantId, item.quantity + 1)}
@@ -545,22 +546,7 @@ export function PaymentScreen() {
           </p>
         </section>
 
-        <section className="grid gap-3">
-          {selectedCart.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start justify-between gap-4 rounded-2xl border border-surface-border bg-surface-base p-4 sm:p-5"
-            >
-              <div className="min-w-0">
-                <p className="font-medium leading-snug">{item.name}</p>
-                <p className="text-sm text-text-secondary">
-                  {formatCurrency(item.unitPrice)} × {item.quantity}
-                </p>
-              </div>
-              <span className="shrink-0 font-semibold">{formatCurrency(item.lineTotal)}</span>
-            </div>
-          ))}
-        </section>
+        <CheckoutItems items={selectedCart.items.map((item) => ({ ...item, productName: item.name, totalPrice: item.lineTotal }))} />
 
         {phoneUnverified ? (
           <div className="rounded-2xl border border-brand-accent bg-surface-base p-5 text-sm leading-6">

@@ -257,6 +257,8 @@ export interface ProductSummaryDto {
   rating: number;
   reviewCount: number;
   inStock: boolean;
+  /** Available product stock, additive on listing responses. */
+  stockCount?: number;
   isLabVerified: boolean;
   isBestseller: boolean;
   isOrganic: boolean;
@@ -402,6 +404,7 @@ export interface CartItemDto {
   id: string;
   productId: string;
   variantId?: string;
+  variantLabel?: string;
   name: string;
   slug: string;
   imageUrl?: string;
@@ -491,6 +494,7 @@ export interface OrderItemDto {
   id: string;
   productId: string;
   variantId?: string;
+  variantLabel?: string;
   productName: string;
   slug?: string;
   imageUrl?: string;
@@ -540,11 +544,12 @@ export interface CheckoutRequest {
 }
 
 export interface CouponQuote {
-  code: string;
+  code: string | null;
   discountAmount: number;
   subtotal: number;
   /** Server-confirmed total, including delivery. */
   total: number;
+  deliveryFee?: number;
 }
 
 /** Outcome of a payment attempt. Distinct from `PaymentStatus`, which describes the ORDER. */

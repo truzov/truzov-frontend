@@ -48,6 +48,15 @@ afterEach(() => {
 });
 
 describe('response envelope', () => {
+  it('passes multipart bodies intact and lets the browser supply their boundary', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(201, { data: { docId: 'support/user/image.png' } }));
+    const body = new FormData();
+    body.set('file', new File(['image'], 'image.png', { type: 'image/png' }));
+    await apiRequest('/support/attachments', { method: 'POST', auth: true, body });
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(request.body).toBe(body);
+    expect(request.headers).not.toHaveProperty('Content-Type');
+  });
   it('unwraps the data property', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { data: { slug: 'raw-forest-honey-500g' } }));
 

@@ -34,10 +34,11 @@ vi.mock('next/navigation', () => ({
  */
 vi.mock('@/components/auth/AuthForm', async () => {
   const { createElement } = await import('react');
+  const { useAuthStore } = await import('@/store/auth.store');
 
   return {
     AuthForm: ({ onSuccess }: { onSuccess?: () => void }) =>
-      createElement('button', { type: 'button', onClick: onSuccess }, 'login succeeded'),
+      createElement('button', { type: 'button', onClick: () => { useAuthStore.setState({ isLoggedIn: true, status: 'authenticated' }); onSuccess?.(); } }, 'login succeeded'),
   };
 });
 
@@ -281,6 +282,10 @@ describe('Buy Now unit paths', () => {
     });
     expect(buyNowPush).not.toHaveBeenCalled();
 
+    // Another click during the same complete-cart write must not enqueue a duplicate POST.
+    act(() => { result.current.buyNow({ productId: 'p-honey', quantity: 1 }); });
+    expect(fetch).toHaveBeenCalledTimes(1);
+
     await act(async () => {
       resolveFetch({
         ok: true,
@@ -381,7 +386,7 @@ describe('Buy Now unit paths', () => {
       )
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add to Cart' }));
+    fireEvent.click(screen.getByRole('button', { name: `Add ${SIMPLE_PRODUCT.name}` }));
 
     expect(buyNowPush).not.toHaveBeenCalled();
     expect(useAuthModalStore.getState().isOpen).toBe(false);

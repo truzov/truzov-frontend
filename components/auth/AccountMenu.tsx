@@ -16,7 +16,7 @@ const menuItems = [
 ];
 
 export function AccountMenu({ className }: { className?: string }) {
-  const { isLoggedIn, user, logout } = useAuthStore();
+  const { isLoggedIn, status, user, logout } = useAuthStore();
   const { openAuthModal } = useAuthModalStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -61,12 +61,15 @@ export function AccountMenu({ className }: { className?: string }) {
   const displayName = user?.name ?? 'Account';
   const displayEmail = user?.email ?? '';
 
+  if (status === 'idle' || status === 'restoring') return <div aria-busy="true" className={cn('h-11 w-28', className)} />;
+  if (!isLoggedIn) return <button className={cn('min-h-11 whitespace-nowrap rounded-md px-2 text-sm', className)} onClick={openAuth} type="button">Login / Signup</button>;
+
   return (
     <div ref={menuRef} className={cn('relative', className)}>
       <button
         ref={buttonRef}
         aria-expanded={isLoggedIn ? menuOpen : undefined}
-        aria-label="Account"
+        aria-label="My Account"
         aria-controls={isLoggedIn && menuOpen ? 'account-panel' : undefined}
         className="grid h-11 w-11 place-items-center rounded-full text-[#04342c] transition hover:bg-[#eaf3de]"
         type="button"
