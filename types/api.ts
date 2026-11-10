@@ -538,6 +538,7 @@ export interface OrderDto {
 }
 
 export interface CheckoutRequest {
+  buyNow?: { productId: string; variantId?: string; quantity: number };
   addressId: string;
   cartItemIds?: string[];
   couponCode?: string;

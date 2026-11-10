@@ -8,10 +8,11 @@ import { Modal } from '@/components/ui/Modal';
 import { sendPhoneChangeOtp, verifyPhoneChangeOtp } from '@/lib/api/endpoints/auth';
 import { errorMessage } from '@/lib/api/errors';
 import { setSession } from '@/lib/api/token-store';
+import { accountPhone } from '@/lib/auth/phone';
 import { useAuthStore } from '@/store/auth.store';
 
 /** Same rule the signup form enforces: 10 digits, or E.164 with a leading +. */
-const PHONE_PATTERN = /^(?:\d{10}|\+\d{8,15})$/;
+const PHONE_PATTERN = /^(?:\d{10}|\+[1-9]\d{7,14})$/;
 const CODE_LENGTH = 6;
 
 /**
@@ -24,9 +25,9 @@ const CODE_LENGTH = 6;
  * session (410 for anyone but the requester), and stamps the number verified in the
  * same write that adopts it.
  */
-export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function PhoneChangeModal({ open, onClose, onVerified }: { open: boolean; onClose: () => void; onVerified?: () => void }) {
   const refreshUser = useAuthStore((state) => state.refreshUser);
-  const currentPhone = useAuthStore((state) => state.user?.phone);
+  const currentPhone = useAuthStore((state) => accountPhone(state.user?.phone));
 
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [newPhone, setNewPhone] = useState('');
@@ -49,9 +50,10 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
   }
 
   async function sendCode() {
-    const normalised = newPhone.replace(/[^\d+]/g, '');
+    if (busy) return;
+    const normalised = newPhone.replace(/[\s().-]/g, '');
     if (!PHONE_PATTERN.test(normalised)) {
-      setError('Enter a valid 10 digit phone number');
+      setError('Enter a valid 10-digit or international mobile number.');
       return;
     }
 
@@ -63,6 +65,7 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
         purpose: 'phone_change',
       });
       setSessionId(response.otpSessionId);
+      setCode('');
       setNewPhone(normalised);
       setStep('code');
     } catch (caught) {
@@ -73,7 +76,7 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
   }
 
   async function verify() {
-    if (!sessionId || code.length !== CODE_LENGTH) {
+    if (busy || !sessionId || code.length !== CODE_LENGTH) {
       return;
     }
 
@@ -86,6 +89,7 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
       setSession(tokens);
       await refreshUser();
       close();
+      onVerified?.();
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -94,7 +98,7 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
   }
 
   return (
-    <Modal open={open} title="Change Mobile Number" onClose={close}>
+    <Modal open={open} title={currentPhone ? 'Change mobile number' : 'Add mobile number'} onClose={() => { if (!busy) close(); }}>
       <div className="grid gap-4">
         {step === 'phone' ? (
           <>
@@ -119,7 +123,7 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
         ) : (
           <>
             <p className="text-sm text-text-secondary">
-              Code sent to <span className="font-medium text-text-primary">{newPhone}</span>
+                Code sent to <span className="font-medium text-text-primary">{newPhone}</span>. Not verified yet.
             </p>
             <Input
               label="Verification Code"
@@ -131,6 +135,7 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
               onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH))}
             />
             <button
+              disabled={busy}
               className="text-left text-sm text-accent-link hover:underline"
               type="button"
               onClick={() => {
@@ -141,11 +146,14 @@ export function PhoneChangeModal({ open, onClose }: { open: boolean; onClose: ()
             >
               Use a different number
             </button>
+            <button type="button" disabled={busy} className="text-left text-sm text-accent-link hover:underline" onClick={() => void sendCode()}>
+              Resend code
+            </button>
           </>
         )}
 
         {error ? (
-          <p className="rounded-md border border-text-danger/30 bg-status-dangerBg p-3 text-sm text-text-danger">
+          <p role="alert" className="rounded-md border border-text-danger/30 bg-status-dangerBg p-3 text-sm text-text-danger">
             {error}
           </p>
         ) : null}

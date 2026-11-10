@@ -17,18 +17,30 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('auth-aware navigation', () => {
-  it('shows only guest login, then switches immediately after login/logout', () => {
-    const { rerender } = render(<MobileNav />);
+  it('keeps the four browsing tabs and switches the account tab immediately', () => {
+    render(<MobileNav />);
+    const navigation = within(screen.getByRole('navigation', { name: 'Bottom navigation' }));
+    const browsingTabs = [
+      ['Home', '/'],
+      ['Categories', '/products'],
+      ['Search', '/search'],
+      ['Wishlist', '/wishlist'],
+    ];
+    for (const [name, href] of browsingTabs) {
+      expect(navigation.getByRole('link', { name })).toHaveAttribute('href', href);
+    }
     expect(screen.queryByRole('link', { name: 'My Account' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Login / Signup' }));
     expect(useAuthModalStore.getState().isOpen).toBe(true);
     act(() => useAuthStore.setState({ status: 'authenticated', isLoggedIn: true }));
-    rerender(<MobileNav />);
     expect(screen.queryByRole('button', { name: 'Login / Signup' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'My Account' })).toHaveAttribute('href', '/account');
+    for (const [name, href] of browsingTabs) {
+      expect(navigation.getByRole('link', { name })).toHaveAttribute('href', href);
+    }
     act(() => useAuthStore.setState({ status: 'anonymous', isLoggedIn: false }));
-    rerender(<MobileNav />);
     expect(screen.queryByRole('link', { name: 'My Account' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Login / Signup' })).toBeVisible();
   });
 
   it('renders neither auth identity while restoring a session', () => {

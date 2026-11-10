@@ -9,6 +9,8 @@ import { sendPhoneChangeOtp, verifyPhoneChangeOtp } from '@/lib/api/endpoints/au
 import { errorMessage } from '@/lib/api/errors';
 import { setSession } from '@/lib/api/token-store';
 import { isValidRedirect } from '@/lib/auth/redirect';
+import { accountPhone } from '@/lib/auth/phone';
+import { PhoneChangeModal } from '@/components/auth/PhoneChangeModal';
 import { useAuthStore } from '@/store/auth.store';
 import { useOtpModalStore } from '@/store/otp-modal.store';
 
@@ -35,7 +37,7 @@ export function VerifyPhoneModal() {
   const redirectTo = useOtpModalStore((state) => state.redirectTo);
   const closeOtpModal = useOtpModalStore((state) => state.closeOtpModal);
 
-  const phone = useAuthStore((state) => state.user?.phone);
+  const phone = useAuthStore((state) => accountPhone(state.user?.phone));
   const phoneVerified = useAuthStore((state) => state.user?.phoneVerified);
   const refreshUser = useAuthStore((state) => state.refreshUser);
 
@@ -63,6 +65,11 @@ export function VerifyPhoneModal() {
       return;
     }
 
+    if (phone && phoneVerified) {
+      closeOtpModal();
+      return;
+    }
+
     if (!phone || sessionId || sendingRef.current) {
       return;
     }
@@ -84,7 +91,7 @@ export function VerifyPhoneModal() {
         setSending(false);
       }
     })();
-  }, [isOpen, phone, sessionId]);
+  }, [isOpen, phone, phoneVerified, sessionId, closeOtpModal]);
 
   const handleChange = (index: number, value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -164,9 +171,14 @@ export function VerifyPhoneModal() {
     return null;
   }
 
+  if (!phone) {
+    return <PhoneChangeModal open onClose={closeOtpModal} onVerified={() => {
+      if (redirectTo && isValidRedirect(redirectTo)) router.push(redirectTo);
+    }} />;
+  }
+
   // Already verified (e.g. verified in another tab, or a stale 403): nothing to do.
   if (phoneVerified) {
-    closeOtpModal();
     return null;
   }
 

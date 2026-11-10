@@ -90,3 +90,17 @@ Final local QA2026-10-29: 295backendunit+384IT,154storefront+22admin tests,16Chr
 * Release/OAuth (2026-10-30): backend3115733 and new migrations live; admin e43dd81 READY; storefront OAuth e874caa READY. New PR#13 stacks above#12. Reused Google flow, hardened pending/redirect boundaries;165 tests+tsc+lint and independent security review pass. Initial release9 public browser cases and real private Cloudinary upload/cleanup pass. User fixed callback registration; Google chooser reached, final user consent pending. Persistent generated JWT key configured; user explicitly retains demo OTP and supplied screenshot credentials. See docs/release-status-20261030.md and oauth-security-review-20261030.md.
 
 * OAuth live completion (2026-10-30): user registered canonical Google origin/callback and completed real login. Protected /account, reload persistence and logout verified manually. OAuth source e874caa is production READY. No further user login needed for this completed check; automated helper was blocked, so keep manual-versus-automated evidence distinct.
+
+* **Mobile navigation and saved addresses (2026-11-10, local):** Five shared slots with session-specific account action and neutral restoration. Saved-address DELETE is owner-scoped and promotes a replacement default in the same transaction when needed. Orders keep independent delivery snapshots. See qa-report.md for checks.
+
+* **Product viewer (2026-11-10, local):** Native dialog with fixed-body scroll restoration and same-page Back handling. Gallery/viewer share pointer-gated hover zoom. Viewer swipe, pinch, double-tap and pan use Pointer Events. See qa-report.md for checks.
+
+* Cart flow (2026-11-10): PDP ADD consumes the selected variant and quantity, resets after success, and keeps one selector. Buy Now uses an exact direct checkout intent and leaves the bag unchanged. See the current QA report.
+
+* **Bag selection and removal:** The Bag controls update the persisted checkout selection and remove only checked lines. Selected totals and continuation share that selection.
+
+* **Bag selection mode:** Full-bag checkout by default. Select all reveals explicit selection controls. Done restores the default, while Continue carries the chosen subset.
+
+* Catalog filters use server-computed facets and URL-backed state. Desktop commits selections immediately, while mobile drafts are scoped to the filter screen and commit on Apply.
+
+* Google sign-in verifies email independently. A Google account starts without a phone, and the authenticated phone-change OTP assigns a unique phone only after proof. Checkout offers the same add flow if needed.

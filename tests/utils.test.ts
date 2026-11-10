@@ -6,6 +6,13 @@ import {
   parseFilterRecord,
   toProductListParams,
 } from '@/lib/utils/filters';
+
+it('round-trips combined catalog filters and discount sort', () => {
+  const filters = parseFilters(new URLSearchParams('category=food,skincare&brand=One,Two&minRating=4&minDiscount=20&sort=discount'));
+  const expected = { category: 'food,skincare', brand: 'One,Two', minRating: 4, minDiscount: 20, sort: 'discount' };
+  expect(toProductListParams(filters)).toMatchObject(expected);
+  expect(parseFilters(filtersToSearchParams(filters))).toMatchObject(expected);
+});
 import { isValidRedirect } from '@/lib/auth/redirect';
 import { calculateDiscount, formatCurrency } from '@/lib/utils/money';
 import { displayImages, humaniseSlug } from '@/lib/utils/product';

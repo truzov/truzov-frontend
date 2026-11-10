@@ -119,3 +119,15 @@ Recovery follow-up validation passed: storefront154+TS; panel22+TS+90pageproduct
 2026-10-30: PRs remain stacked (#32 backend above#31;#12 storefront above#11;#3 admin above#2; OAuth#13 above#12). User authorized production releases and screenshot credential use. Backend, admin and OAuth frontend are live. Public9-case release/browser and private Cloudinary upload cleanup verified; OAuth165 tests, tsc and lint pass. Google redirect registration fixed by user; final consent/session check pending. No Google credentials committed. User chose temporary demo OTP retention.
 
 OAuth completion: Google actual existing-account sign-in, protected profile, reload and logout passed with user consent. Google callback mismatch resolved through user Console update. Production source e874caa and Render config deploy live; docs capture exact IDs and limits.
+
+## Mobile navigation and address deletion (2026-11-10, local)
+
+The bottom bar keeps Home, Categories, Search and Wishlist in all session states. Its fifth slot uses the existing login modal for guests, links to /account after sign-in, and shows a neutral Account label during restoration. Saved-address cards now confirm before deletion. Success updates the shared list and reloads the server default. Failure leaves the address available and shows an error toast. See qa-report.md for verification.
+
+## Product image viewer (2026-11-10, local)
+
+The product gallery and viewer share pointer-gated hover magnification with larger Next Image sources. The viewer adds a same-page history entry and supports keyboard navigation, swipe at fit, pinch up to 4×, double-tap, and bounded zoomed pan. See qa-report.md for verification.
+
+## Product detail cart flow
+
+PDP ADD uses the existing guest or server add path with a single pre-add selector. The header reads total units from the shared cart. Direct Buy Now sends only product ID, variant ID and quantity to server-priced checkout and quotes.

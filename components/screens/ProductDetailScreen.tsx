@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -25,10 +25,10 @@ import { ProductGrid } from '@/components/product/ProductGrid';
 import { ProductImageLightbox } from '@/components/product/ProductImageLightbox';
 import { VariantPills } from '@/components/product/VariantPills';
 import { QuantitySelector } from '@/components/product/QuantitySelector';
-import { CartQuantityControl } from '@/components/product/CartQuantityControl';
 import { useCategories, useProduct, useProductReviews, useRelatedProducts } from '@/hooks/api/useCatalog';
-import { useBuyNow } from '@/hooks/api/useCart';
+import { useAddToCart, useBuyNow } from '@/hooks/api/useCart';
 import { useIsWishlisted, useToggleWishlist } from '@/hooks/api/useWishlist';
+import { useImageHover } from '@/hooks/useImageHover';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/utils/cn';
 import { effectivePrice, formatCurrency } from '@/lib/utils/money';
@@ -38,6 +38,7 @@ import type { LabMetricStatus } from '@/types/api';
 type Tab = 'Product Details' | 'Lab Report' | 'Reviews';
 
 const TABS: Tab[] = ['Product Details', 'Lab Report', 'Reviews'];
+const VIEWER_HISTORY_KEY = 'truzovProductImageViewer';
 
 /**
  * Product detail page, driven by `GET /products/{slugOrId}`.
@@ -59,16 +60,28 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
 
   const [tab, setTab] = useState<Tab>('Product Details');
   const [requestedQuantity, setQuantity] = useState(1);
+  const submittedQuantity = useRef(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxProduct, setLightboxProduct] = useState<string | null>(null);
+  const closingViewer = useRef(false);
   const [showAllImages, setShowAllImages] = useState(false);
-  const touchStart = useRef<number | null>(null);
-  const swiped = useRef(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const galleryHover = useImageHover();
+
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      closingViewer.current = false;
+      setLightboxProduct(event.state?.[VIEWER_HISTORY_KEY] === slug ? slug : null);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [slug]);
   // Only the user's explicit choice is stored; the effective selection is derived below, so
   // there is nothing to reset when the product changes and no toggle-off on a second click.
   const [chosenVariantId, setChosenVariantId] = useState<string>();
 
   const { buyNow, isPending: isBuyingNow } = useBuyNow();
+  const { add, isPending: isAdding } = useAddToCart();
   const wishlist = useToggleWishlist(`/products/${slug}`);
   const isInWishlist = useIsWishlisted(product?.id ?? '');
 
@@ -114,14 +127,33 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
     );
   }
 
-  const selectedImage = gallery[selectedImageIndex] ?? gallery[0];
+  const imageIndex = Math.min(selectedImageIndex, Math.max(0, gallery.length - 1));
+  const selectedImage = gallery[imageIndex];
+  const openViewer = (trigger: HTMLButtonElement) => {
+    trigger.focus({ preventScroll: true });
+    closingViewer.current = false;
+    if (window.history.state?.[VIEWER_HISTORY_KEY] !== slug) {
+      window.history.pushState({ ...window.history.state, [VIEWER_HISTORY_KEY]: slug }, '');
+    }
+    setLightboxProduct(slug);
+  };
+  const closeViewer = () => {
+    if (closingViewer.current) return;
+    if (window.history.state?.[VIEWER_HISTORY_KEY] === slug) {
+      closingViewer.current = true;
+      window.history.back();
+    } else {
+      setLightboxProduct(null);
+    }
+  };
   const categoryName =
     categories?.find((category) => category.slug === product.categorySlug)?.name ??
     humaniseSlug(product.categorySlug);
 
   // Falls back to the first in-stock variant (R3.5), so Add to Cart is never blocked on a
   // product that has a selectable variant, and `undefined` when nothing is selectable.
-  const selectedVariantId = chosenVariantId ?? defaultVariantId(product.variants);
+  const selectedVariantId = product.variants?.some((variant) => variant.id === chosenVariantId)
+    ? chosenVariantId : defaultVariantId(product.variants);
   const selectedVariant = product.variants?.find((variant) => variant.id === selectedVariantId);
   /**
    * A variant product with nothing selectable cannot be added: there is no variant id to send.
@@ -137,8 +169,11 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const hasSaving = (selectedVariant?.priceModifier ?? 0) === 0 && product.mrp > product.price;
   // Stock ceiling for the quantity stepper. The server enforces its own per-line cap
   // (max-item-quantity) regardless; this only stops the obvious case locally.
-  const maxQuantity = Math.max(1, Math.min(20, product.stockCount || 1, selectedVariant?.stockCount ?? product.stockCount ?? 1));
+  const availableStock = Math.min(product.stockCount, selectedVariant?.stockCount ?? product.stockCount);
+  const maxQuantity = Math.max(1, Math.min(20, availableStock));
   const quantity = Math.min(requestedQuantity, maxQuantity);
+  const unavailable = !product.inStock || noSelectableVariant || availableStock < 1;
+  const purchasePending = isAdding || isBuyingNow;
 
   return (
     <div className="bg-background font-body text-on-surface">
@@ -146,24 +181,47 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
         <div className="grid gap-8 lg:grid-cols-[5fr_4fr_3fr] lg:items-start">
           <section className="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
             <div className="relative grid gap-2 md:pl-[68px]">
-              <div className="relative order-1 aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white"
-                onTouchStart={(event) => { swiped.current = false; touchStart.current = event.touches[0]?.clientX ?? null; }}
-                onTouchEnd={(event) => {
-                  const end = event.changedTouches[0]?.clientX;
-                  if (touchStart.current !== null && end !== undefined && Math.abs(end - touchStart.current) > 40) {
-                    swiped.current = true;
-                    setSelectedImageIndex((index) => Math.min(gallery.length - 1, Math.max(0, index + (end < touchStart.current! ? 1 : -1))));
-                  }
-                  touchStart.current = null;
-                }}>
-                {selectedImage ? <button aria-label={`View full image: ${selectedImage.alt}`} className="relative block h-full w-full" onClick={() => { if (swiped.current) { swiped.current = false; return; } setLightboxOpen(true); }} type="button"><Image alt={selectedImage.alt} className="object-contain" fill priority sizes="(min-width: 1024px) 35vw, 100vw" src={selectedImage.url} /></button> : <span className="grid h-full place-items-center text-sm">No image available</span>}
+              <div className="relative order-1 aspect-square overflow-hidden rounded-xl border border-outline-variant bg-white">
+                {selectedImage ? (
+                  <button
+                    {...galleryHover}
+                    aria-label={`View full image: ${selectedImage.alt}`}
+                    className="product-image-zoom relative block h-full w-full overflow-hidden [touch-action:pan-y_pinch-zoom]"
+                    data-zoom="auto"
+                    type="button"
+                    onTouchStart={({ touches }) => {
+                      const touch = touches[0];
+                      touchStart.current = touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;
+                    }}
+                    onTouchCancel={() => { touchStart.current = null; }}
+                    onTouchEnd={(event) => {
+                      const start = touchStart.current;
+                      const end = event.changedTouches[0];
+                      touchStart.current = null;
+                      if (!start || !end || event.touches.length) return;
+                      const dx = end.clientX - start.x;
+                      const dy = end.clientY - start.y;
+                      if (Math.abs(dx) > Math.max(40, Math.abs(dy))) {
+                        if (event.cancelable) event.preventDefault();
+                        setSelectedImageIndex(Math.min(gallery.length - 1, Math.max(0, imageIndex + (dx < 0 ? 1 : -1))));
+                      } else if (Math.hypot(dx, dy) < 10) {
+                        // Chromium may suppress the click from a tap immediately after a swipe.
+                        if (event.cancelable) event.preventDefault();
+                        openViewer(event.currentTarget);
+                      }
+                    }}
+                    onClick={(event) => openViewer(event.currentTarget)}
+                  >
+                    <Image alt={selectedImage.alt} className="object-contain" fill priority sizes="(min-width: 1024px) 70vw, (min-width: 768px) 150vw, 100vw" src={selectedImage.url} />
+                  </button>
+                ) : <span className="grid h-full place-items-center text-sm">No image available</span>}
                 <div className="absolute right-2 top-2 flex gap-2">
                   <Button aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'} className="rounded-full bg-white/95" disabled={wishlist.isPending} size="icon" variant="ghost" onClick={() => wishlist.toggle(product.id)}><Heart aria-hidden="true" size={20} className={isInWishlist ? 'fill-current' : ''} /></Button>
                   <Button aria-label="Share product" className="rounded-full bg-white/95" size="icon" variant="ghost" onClick={() => { const url = window.location.href; if (navigator.share) void navigator.share({ title: product.name, url }).catch(() => undefined); else void navigator.clipboard?.writeText(url).catch(() => undefined); }}><Share2 aria-hidden="true" size={20} /></Button>
                 </div>
               </div>
               {gallery.length > 1 ? <div className="order-2 flex gap-2 overflow-x-auto md:absolute md:inset-y-0 md:left-0 md:w-[60px] md:flex-col md:overflow-y-auto">
-                {(showAllImages ? gallery : gallery.slice(0, gallery.length > 5 ? 4 : 5)).map((image, index) => <button key={`${image.url}-${index}`} aria-label={`View image ${index + 1}`} aria-pressed={selectedImageIndex === index} className={cn('relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-lg border bg-white', selectedImageIndex === index ? 'border-2 border-primary' : 'border-outline-variant')} onClick={() => setSelectedImageIndex(index)} type="button"><Image alt={image.alt} className="object-contain" fill sizes="60px" src={image.url} /></button>)}
+                {(showAllImages ? gallery : gallery.slice(0, gallery.length > 5 ? 4 : 5)).map((image, index) => <button key={`${image.url}-${index}`} aria-label={`View image ${index + 1}`} aria-pressed={imageIndex === index} className={cn('relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-lg border bg-white', imageIndex === index ? 'border-2 border-primary' : 'border-outline-variant')} onClick={() => setSelectedImageIndex(index)} type="button"><Image alt={image.alt} className="object-contain" fill sizes="60px" src={image.url} /></button>)}
                 {!showAllImages && gallery.length > 5 ? <button aria-label={`Show ${gallery.length - 4} more images`} className="h-[60px] w-[60px] shrink-0 rounded-lg border border-outline-variant bg-white font-semibold" onClick={() => setShowAllImages(true)} type="button">{gallery.length - 4}+</button> : null}
               </div> : null}
             </div>
@@ -260,12 +318,12 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               </p>
               {/* Real stock state. This block previously read "In stock. Ready to ship."
                   unconditionally, including for products with stockCount 0. */}
-              {product.inStock && !noSelectableVariant ? (
+              {!unavailable ? (
                 <p className="mt-2 flex items-center gap-1 text-sm font-medium text-text-success">
                   <span className="h-2 w-2 rounded-full bg-text-success" />
                   In stock
-                  {product.stockCount > 0 && product.stockCount <= 10
-                    ? ` — only ${product.stockCount} left`
+                  {availableStock <= 10
+                    ? ` — only ${availableStock} left`
                     : ''}
                 </p>
               ) : (
@@ -279,7 +337,12 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
                   </span>
                   <div className="mt-2">
                     <VariantPills
-                      onSelect={setChosenVariantId}
+                      onSelect={(id) => {
+                        if (purchasePending || id === selectedVariantId) return;
+                        submittedQuantity.current = false;
+                        setChosenVariantId(id);
+                        setQuantity(1);
+                      }}
                       selectedId={selectedVariantId}
                       variants={product.variants}
                     />
@@ -288,20 +351,43 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
               ) : null}
 
               <div className="mt-5">
-                <QuantitySelector value={quantity} max={maxQuantity} disabled={!product.inStock || noSelectableVariant} onChange={setQuantity} />
+                <QuantitySelector key={selectedVariantId} value={quantity} max={maxQuantity} disabled={unavailable || purchasePending} onChange={(next) => {
+                  if (next !== quantity) submittedQuantity.current = false;
+                  setQuantity(next);
+                }} />
+                {!unavailable ? <p className="mt-1 text-xs text-text-secondary">Maximum {maxQuantity} per order for this option.</p> : null}
               </div>
 
               <div className="mt-6 grid gap-3">
-                <CartQuantityControl className="w-full" disabled={!product.inStock || noSelectableVariant} max={maxQuantity} product={{ productId: product.id, productName: product.name, variantId: selectedVariantId, slug: product.slug, imageUrl: gallery[0]?.url, unitPrice: effectivePrice(product.price, selectedVariant) }} />
-                {/*
-                  "Buy Now" adds to the cart and then goes to checkout, via useBuyNow(). It used
-                  to call add(...) without ever navigating, so the user stayed on this page
-                  after clicking it — that was the defect; useBuyNow() owns the add+navigate
-                  sequencing (and the auth-modal detour when logged out).
-                */}
+                <Button
+                  aria-label={unavailable ? 'Out of Stock' : `Add ${product.name}`}
+                  className="h-11 w-full rounded-lg"
+                  disabled={unavailable || purchasePending}
+                  loading={isAdding}
+                  variant="outline"
+                  type="button"
+                  onClick={async (event) => {
+                    if (event.detail > 1 && submittedQuantity.current) return;
+                    submittedQuantity.current = true;
+                    const added = await add({
+                      productId: product.id,
+                      productName: product.name,
+                      variantId: selectedVariantId,
+                      variantLabel: selectedVariant?.value,
+                      quantity,
+                      availableStock,
+                      slug: product.slug,
+                      imageUrl: gallery[0]?.url,
+                      unitPrice: effectivePrice(product.price, selectedVariant),
+                    });
+                    if (added) setQuantity(1);
+                  }}
+                >
+                  {unavailable ? 'Out of Stock' : 'ADD'}
+                </Button>
                 <Button
                   className="h-12 w-full rounded-full border-primary bg-surface-container text-base text-primary hover:bg-surface-container-high"
-                  disabled={!product.inStock || isBuyingNow || noSelectableVariant}
+                  disabled={unavailable || purchasePending}
                   loading={isBuyingNow}
                   variant="outline"
                   onClick={() =>
@@ -537,11 +623,11 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
         ) : null}
       </div>
 
-      {lightboxOpen ? (
+      {lightboxProduct === slug && selectedImage ? (
         <ProductImageLightbox
           images={gallery}
-          index={selectedImageIndex}
-          onClose={() => setLightboxOpen(false)}
+          index={imageIndex}
+          onClose={closeViewer}
           onIndexChange={setSelectedImageIndex}
         />
       ) : null}

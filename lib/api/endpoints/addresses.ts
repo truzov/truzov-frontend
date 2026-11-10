@@ -1,14 +1,6 @@
 import { apiRequest } from '@/lib/api/client';
 import type { AddressDto, CreateAddressRequest } from '@/types/api';
 
-/**
- * Saved delivery addresses for the authenticated user.
- *
- * List, create and edit. Delete remains absent server-side — an address referenced by a past
- * order is snapshotted into `orders.delivery_address`, but the address book row itself is kept
- * (no DELETE endpoint), so the UI offers no remove action.
- */
-
 export function getAddresses(signal?: AbortSignal): Promise<AddressDto[]> {
   return apiRequest<AddressDto[]>('/users/me/addresses', { auth: true, signal });
 }
@@ -43,5 +35,12 @@ export function updateAddress(
     method: 'PATCH',
     auth: true,
     body,
+  });
+}
+
+export function deleteAddress(addressId: string): Promise<void> {
+  return apiRequest<void>(`/users/me/addresses/${encodeURIComponent(addressId)}`, {
+    method: 'DELETE',
+    auth: true,
   });
 }
