@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 import { AccountSidebar } from '@/components/screens/CustomerScreens';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useAppSelector } from '@/store/redux';
 
 export function AccountShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,8 +14,8 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   // child routes (orders, addresses, settings) have no guest view and must keep redirecting.
   const isAccountIndex = pathname === '/account';
   const { isLoggedIn, isLoading } = useProtectedRoute(isAccountIndex ? false : '/login');
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const user = useAuthStore((state) => state.user);
+  const { openAuthModal } = useAuthModalActions();
+  const user = useAppSelector((state) => state.auth.user);
   const userName = user?.name ?? 'Account';
   const userEmail = user?.email;
 
@@ -32,7 +32,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
 
     return (
       <div className="mx-auto max-w-lg px-4 py-8">
-        <button className="min-h-11 rounded-lg bg-[#04342c] px-5 text-sm text-white" type="button" onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}>Login / Signup</button>
+        <button className="min-h-11 rounded-lg bg-[#04342c] px-5 text-sm text-white" type="button" onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}>Sign in</button>
       </div>
     );
   }

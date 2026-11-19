@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { renderWithRedux as render } from './redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OffersScreen } from '@/components/screens/OffersScreen';
 import { apiRequest } from '@/lib/api/client';

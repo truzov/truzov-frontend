@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { isValidRedirect } from '@/lib/auth/redirect';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useAppSelector } from '@/store/redux';
 
 /**
  * Auth is a popup, not a page (spec §3).
@@ -17,8 +17,8 @@ import { useAuthStore } from '@/store/auth.store';
  */
 export function AuthModalRedirect({ mode }: { mode: 'login' | 'signup' }) {
   const router = useRouter();
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const status = useAuthStore((state) => state.status);
+  const { openAuthModal } = useAuthModalActions();
+  const status = useAppSelector((state) => state.auth.status);
 
   useEffect(() => {
     // Wait for session restore to settle, so an already-signed-in visitor is never shown a

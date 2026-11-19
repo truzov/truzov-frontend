@@ -7,17 +7,18 @@ import { useEffect, useRef } from 'react';
 import { useBuyNow } from '@/hooks/api/useCart';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { isValidRedirect } from '@/lib/auth/redirect';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useAppSelector } from '@/store/redux';
+import { useAuthActions } from '@/store/auth.store';
 import { AuthForm } from './AuthForm';
 import { Logo } from '@/components/layout/Logo';
 
 export function AuthModal() {
   const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
-  const { isOpen, mode, redirectTo, buyNow, closeAuthModal, setAuthModalMode } =
-    useAuthModalStore();
-  const clearError = useAuthStore((state) => state.clearError);
+  const { isOpen, mode, redirectTo, buyNow } = useAppSelector((state) => state.authModal);
+  const { closeAuthModal, setAuthModalMode } = useAuthModalActions();
+  const { clearError } = useAuthActions();
   const { checkout } = useBuyNow();
 
   useFocusTrap(modalRef, isOpen, closeAuthModal);

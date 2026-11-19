@@ -266,3 +266,40 @@ No blocking finding remains in the changed flow. See `qa-report.md` for the inte
 ## Catalog filters and sorting — 2026-11-10
 
 Counts come from server-side aggregates across the matching catalog, independent of pagination. The same filter adapter drives both responsive layouts. Mobile applies drafts only through Apply. The legacy comma-separated brand parameter cannot represent a brand name containing a comma, and the search service's unfiltered full-text ranking can differ from the catalog facet matcher. Local seeded catalog verification passed.
+
+## Redux migration security baseline
+
+- Next.js 16.2.7 is in critical advisory ranges. The dependency audit flagged 21 package entries overall and seven excluding development dependencies, including one critical in each scan. Prioritize a patched Next.js release and verify deployment exposure. [Next.js advisory](https://github.com/vercel/next.js/security/advisories/GHSA-2464-fhr4-w9xw)
+- The product page emits seller-controlled text as JSON-LD without script-safe escaping. Escape the serialized output and verify deployed CSP. The existing refresh token is browser-readable in localStorage, which increases the impact of script injection. [Next.js JSON-LD guidance](https://nextjs.org/docs/app/guides/json-ld)
+- Session restoration, refresh and some cart mutation callbacks can finish after logout. A late response may restore stale client state. Test account switching and guard writes against session changes before relying on logout isolation.
+- Checkout and the guest cart trust persisted fields. Validate them during migration and keep valid legacy data readable. Preserve checkout idempotency and backend ownership checks. Keep credentials outside Redux and disable Redux DevTools.
+
+## Redux stage one review
+
+- The App Router provider creates its own Redux store for toasts and the two modal slices. Redux DevTools are disabled. The slices hold UI state in memory, and auth feedback crosses the existing event bridge without passing credentials to Redux.
+- Modal close handlers discard React events before dispatch. Existing redirect validation and logout cleanup of pending Buy Now state have regression coverage.
+- Redux Toolkit and React Redux were already in the lockfile. The full dependency audit again reported 21 affected package entries, including the existing critical Next.js entry.
+
+## Redux stage two review
+
+- Redux hydrates saved cart and checkout data on the client. It validates persisted fields and keeps valid cart lines when another entry is malformed. Hydration and tab sync do not write back to storage.
+- Current and previous builds share both storage formats. The two slices are cleared by the explicit logout event. Signed-in cart data, quote validation, address ownership, and order creation remain with the existing React Query and API paths.
+- Stage two added no dependencies. The latest npm audit reported 34 affected package entries, including one critical.
+
+## Redux stage three and final review
+
+- All shared client state now uses the provider's Redux Toolkit store. TanStack Query still owns server data. The storefront source, lockfile, and installed dependency tree contain no Zustand.
+- Auth uses closure thunks so passwords, verification codes, and OAuth credentials stay outside Redux payloads. Pending OTP challenge IDs stay in per-store memory, with only a readiness flag in Redux. Access and refresh token handling and API requests use the existing transport. Redux DevTools remain disabled.
+- React Redux uses the neutral server snapshot during hydration, including routes that hydrate after auth or storage has been restored. [React Redux Provider documentation](https://redux.js.org/react-redux/api/provider#react-18-ssr-usage)
+- The final dependency audit reported the same 34 affected entries as stage two, including the existing critical Next.js entry. The known late-response session races and browser-readable refresh token remain documented baseline risks.
+
+## Storefront header icons
+
+The icon controls have accessible names and 44px targets. Wishlist and cart retain link semantics. The account icon opens the existing sign-in dialog or account menu according to session state.
+
+Mobile search uses the bottom navigation. The Google callback keeps state validation, PKCE exchange, and error handling while removing the waiting screen.
+# Shared design review
+
+The storefront and admin build from local copies of the shared stylesheet and licensed fonts. The sync check verifies that both copies match. Text fields use a fill and glow for focus, including when reached with Tab. Links and buttons retain a visible keyboard outline, and forced-colors mode restores the field outline.
+
+Automatic sync runs with storefront development and watches the shared source files. The storefront can start when the admin checkout is unavailable.

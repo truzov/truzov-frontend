@@ -1,14 +1,17 @@
 // Property-test generator decision (task 1.1): Option A — fast-check, pinned exact in devDependencies; properties use fc.assert(fc.property(...), { numRuns: 100 }). Tasks 1.4, 2.2 and 3.4 follow this.
 
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fc from 'fast-check';
 import { Toaster } from '@/components/ui/Toaster';
 import { ApiError, ERROR_CODES, isApiError } from '@/lib/api/errors';
-import { loginFailureToast, useAuthStore } from '@/store/auth.store';
-import { useUiStore, type ToastMessage, type ToastType } from '@/store/ui.store';
+import { authActions, authChanged, loginFailureToast } from '@/store/auth.store';
+import { addToast, type ToastMessage, type ToastType } from '@/store/ui.store';
 import type { TokenResponse, UserProfileDto } from '@/types/api';
+import { makeStore } from '@/store/redux';
+import { onAuthEvent, type AuthEvent } from '@/lib/api/auth-events';
+import { renderWithRedux as render } from './redux';
 
 /** The only two strings the mapper is allowed to put in `title`. */
 const NETWORK_TITLE = 'Network error, please try again';
@@ -156,14 +159,13 @@ describe('ui.store toast queue', () => {
   it('holds at most the 3 most recently requested toasts, newest first, with unique ids', () => {
     fc.assert(
       fc.property(fc.array(toastRequestArb, { minLength: 1, maxLength: 12 }), (requests) => {
-        // The store is a module singleton, so each iteration starts from an empty queue.
-        useUiStore.setState({ toasts: [] });
+        const store = makeStore();
 
         for (const request of requests) {
-          useUiStore.getState().addToast(request);
+          store.dispatch(addToast(request));
         }
 
-        const { toasts } = useUiStore.getState();
+        const { toasts } = store.getState().ui;
         // 1.13: the newest 3 survive, oldest first out; newest-first order (1.12).
         const expected = requests.slice(-3).reverse();
 
@@ -229,97 +231,97 @@ function okEnvelope(data: unknown): Response {
   } as unknown as Response;
 }
 
-describe('auth toast wording', () => {
+describe('auth feedback events', () => {
+  const events: AuthEvent[] = [];
+  let store: ReturnType<typeof makeStore>;
+  let unsubscribe: () => void;
+
   beforeEach(() => {
+    events.length = 0;
+    unsubscribe = onAuthEvent((event) => events.push(event));
     window.localStorage.clear();
-    useUiStore.setState({ toasts: [] });
-    useAuthStore.getState().resetSession();
+    store = makeStore();
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.resolve(okEnvelope(TOKENS)))
+      vi.fn((url: string) => Promise.resolve(okEnvelope(url.endsWith('/auth/otp/send')
+        ? { otpSessionId: 'otp-session-1', channel: 'phone', expiresInSeconds: 300 }
+        : TOKENS)))
     );
   });
 
   afterEach(() => {
+    unsubscribe();
     vi.unstubAllGlobals();
   });
 
-  const onlyToast = () => {
-    const { toasts } = useUiStore.getState();
-    expect(toasts).toHaveLength(1);
-    return toasts[0];
-  };
 
   // 1.2: all three ways to become logged in toast, because the toast is raised in the store
   // rather than in whichever screen started the login.
   it('raises “Login successful” for a password login', async () => {
-    await useAuthStore.getState().loginWithPassword('9876543210', 'correct-horse-battery');
+    await store.dispatch(authActions.loginWithPassword('9876543210', 'correct-horse-battery'));
 
-    expect(useAuthStore.getState().isLoggedIn).toBe(true);
-    expect(onlyToast()).toMatchObject({ type: 'success', title: 'Login successful' });
+    expect(store.getState().auth.isLoggedIn).toBe(true);
+    expect(events).toEqual([{ type: 'toast', toast: { type: 'success', title: 'Login successful' } }]);
   });
 
   it('raises “Login successful” for an OTP login', async () => {
-    useAuthStore.setState({ otpSessionId: 'otp-session-1' });
+    await store.dispatch(authActions.sendOtp('9876543210'));
 
-    await useAuthStore.getState().verifyOtp('123456');
+    await store.dispatch(authActions.verifyOtp('123456'));
 
-    expect(useAuthStore.getState().isLoggedIn).toBe(true);
-    expect(onlyToast()).toMatchObject({ type: 'success', title: 'Login successful' });
+    expect(store.getState().auth.isLoggedIn).toBe(true);
+    expect(events).toEqual([{ type: 'toast', toast: { type: 'success', title: 'Login successful' } }]);
   });
 
   it('raises “Login successful” for a Google login', async () => {
-    await useAuthStore.getState().loginWithGoogle('google-auth-code', 'pkce-verifier');
+    await store.dispatch(authActions.loginWithGoogle('google-auth-code', 'pkce-verifier'));
 
-    expect(useAuthStore.getState().isLoggedIn).toBe(true);
-    expect(onlyToast()).toMatchObject({ type: 'success', title: 'Login successful' });
+    expect(store.getState().auth.isLoggedIn).toBe(true);
+    expect(events).toEqual([{ type: 'toast', toast: { type: 'success', title: 'Login successful' } }]);
   });
 
   // 1.6: the toast lives in `logout`'s `finally`, so a failed server-side revoke still confirms
   // the local teardown the user asked for. Rejecting the call is the harsher case on purpose.
   it('raises “Logged out” once the session is cleared, even when the revoke call fails', async () => {
-    useAuthStore.setState({ status: 'authenticated', isLoggedIn: true, user: TEST_USER });
+    store.dispatch(authChanged({ status: 'authenticated', isLoggedIn: true, user: TEST_USER }));
     vi.stubGlobal(
       'fetch',
       vi.fn(() => Promise.reject(new Error('offline in tests')))
     );
 
-    await useAuthStore.getState().logout();
+    await store.dispatch(authActions.logout());
 
-    expect(useAuthStore.getState().isLoggedIn).toBe(false);
-    expect(onlyToast()).toMatchObject({ type: 'success', title: 'Logged out' });
+    expect(store.getState().auth.isLoggedIn).toBe(false);
+    expect(events.at(-1)).toEqual({ type: 'logout-completed' });
   });
 
   // A silent session restore is not a login request, so it must stay silent. `status` moving off
   // `idle` is what proves the method ran rather than returning early for some other reason.
   it('raises nothing when a session is restored', async () => {
-    useAuthStore.setState({ status: 'idle' });
+    await store.dispatch(authActions.restoreSession());
 
-    await useAuthStore.getState().restoreSession();
-
-    expect(useAuthStore.getState().status).toBe('anonymous');
-    expect(useUiStore.getState().toasts).toStrictEqual([]);
+    expect(store.getState().auth.status).toBe('anonymous');
+    expect(events).toStrictEqual([]);
   });
 });
 
 const XSS_PAYLOAD = '<img src=x onerror=alert(1)>';
 
 describe('Toaster rendering', () => {
-  beforeEach(() => {
-    useUiStore.setState({ toasts: [] });
-  });
+  let store: ReturnType<typeof makeStore>;
+  beforeEach(() => { store = makeStore(); });
 
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
   });
 
-  const renderToaster = () => render(React.createElement(Toaster));
+  const renderToaster = () => render(React.createElement(Toaster), { store });
 
   /** Toasts are raised the way the app raises them — through the store, not through props. */
   const raise = (toast: Omit<ToastMessage, 'id'>) => {
     act(() => {
-      useUiStore.getState().addToast(toast);
+      store.dispatch(addToast(toast));
     });
   };
 
@@ -370,7 +372,7 @@ describe('Toaster rendering', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
 
     expect(screen.queryByText('Logged out')).not.toBeInTheDocument();
-    expect(useUiStore.getState().toasts).toStrictEqual([]);
+    expect(store.getState().ui.toasts).toStrictEqual([]);
   });
 
   // 1.14 / 5.5: `Toaster` renders `message` as a JSX text child, so markup arrives as characters.

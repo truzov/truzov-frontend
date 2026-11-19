@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { renderWithRedux as render } from './redux';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthForm } from '@/components/auth/AuthForm';
-import { useAuthStore } from '@/store/auth.store';
+import { authActions } from '@/store/auth.store';
+import { makeStore } from '@/store/redux';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/components/auth/GoogleSignInButton', () => ({ GoogleSignInButton: () => null }));
@@ -13,11 +15,6 @@ function LoginToSignup() {
 }
 
 describe('login identifier transfer', () => {
-  beforeEach(() => {
-    useAuthStore.getState().resetSession();
-    // An unrelated earlier OTP must not turn a form draft into verified ownership.
-    useAuthStore.setState({ verifiedOtpSessionId: 'old-session', otpSessionId: 'old-otp' });
-  });
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -29,27 +26,32 @@ describe('login identifier transfer', () => {
   ])(
     'prefills %s and still requires signup verification',
     async (identifier, field, expected, channel) => {
+      const store = makeStore();
       const fetchMock = vi.fn(
         async (url: string | URL | Request) =>
           new Response(
             JSON.stringify({
               data: String(url).endsWith('/account/exists')
                 ? { exists: false }
-                : { otpSessionId: 'signup-otp', otpChannel: channel, expiresInSeconds: 300 },
+                : String(url).endsWith('/otp/send')
+                  ? { otpSessionId: 'old-otp', channel, expiresInSeconds: 300 }
+                  : { otpSessionId: 'signup-otp', otpChannel: channel, expiresInSeconds: 300 },
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
           )
       );
       vi.stubGlobal('fetch', fetchMock);
 
-      render(<LoginToSignup />);
+      // An unrelated earlier challenge cannot make a form draft into verified ownership.
+      await store.dispatch(authActions.sendOtp('other@example.com'));
+      fetchMock.mockClear();
+      render(<LoginToSignup />, { store });
       fireEvent.change(screen.getByLabelText('Email or phone number'), {
         target: { value: identifier },
       });
       fireEvent.click(screen.getByRole('button', { name: 'Send code' }));
       await waitFor(() => expect(screen.getByLabelText(field)).toHaveValue(expected));
-      expect(useAuthStore.getState().verifiedOtpSessionId).toBeNull();
-      expect(useAuthStore.getState().otpSessionId).toBeNull();
+      expect(store.getState().auth.hasOtpSession).toBe(false);
       expect(fetchMock.mock.calls).toHaveLength(1);
 
       fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Asha Singh' } });
@@ -63,9 +65,9 @@ describe('login identifier transfer', () => {
         target: { value: 'secret123' },
       });
       fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
-      await waitFor(() => expect(useAuthStore.getState().otpSessionId).toBe('signup-otp'));
-      expect(useAuthStore.getState().isLoggedIn).toBe(false);
-      expect(useAuthStore.getState().pendingIdentifier).toBe(expected);
+      await waitFor(() => expect(store.getState().auth.hasOtpSession).toBe(true));
+      expect(store.getState().auth.isLoggedIn).toBe(false);
+      expect(store.getState().auth.pendingIdentifier).toBe(expected);
     }
   );
 });

@@ -8,8 +8,9 @@ import { Logo } from '@/components/layout/Logo';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
 import { cn } from '@/lib/utils/cn';
+import { useAppSelector } from '@/store/redux';
 
 const nav = {
   vendor: [
@@ -48,9 +49,9 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const logout = useAuthStore((state) => state.logout);
+  const { logout } = useAuthActions();
   const { isLoggedIn, isLoading } = useProtectedRoute('/login');
-  const user = useAuthStore((state) => state.user);
+  const user = useAppSelector((state) => state.auth.user);
 
   /**
    * Client-side role gate. Defence in depth, NOT the security boundary — the server enforces role

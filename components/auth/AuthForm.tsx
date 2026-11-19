@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { ERROR_CODES } from '@/lib/api/errors';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { LoginForm } from './LoginForm';
 import { OTPVerification } from './OTPVerification';
 import { SignupForm } from './SignupForm';
+import { useAppSelector } from '@/store/redux';
 
 type AuthMode = 'login' | 'signup';
 type AuthStep = 'form' | 'otp';
@@ -41,8 +42,8 @@ export function AuthForm({
   onSuccess,
   onModeChange,
 }: AuthFormProps) {
-  const clearError = useAuthStore((state) => state.clearError);
-  const errorCode = useAuthStore((state) => state.errorCode);
+  const { clearError } = useAuthActions();
+  const errorCode = useAppSelector((state) => state.auth.errorCode);
   const [step, setStep] = useState<AuthStep>('form');
 
   // Switching between login and signup resets the flow, so a stale OTP step or a previous

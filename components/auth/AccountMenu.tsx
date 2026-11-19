@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useAuthActions } from '@/store/auth.store';
 import { cn } from '@/lib/utils/cn';
 import { Heart, LogOut, MapPin, ReceiptText, CircleUserRound } from 'lucide-react';
+import { useAppSelector } from '@/store/redux';
+import { Button } from '@/components/ui/Button';
 
 const menuItems = [
   { label: 'my account', href: '/account', icon: CircleUserRound },
@@ -16,8 +18,9 @@ const menuItems = [
 ];
 
 export function AccountMenu({ className }: { className?: string }) {
-  const { isLoggedIn, status, user, logout } = useAuthStore();
-  const { openAuthModal } = useAuthModalStore();
+  const { isLoggedIn, status, user } = useAppSelector((state) => state.auth);
+  const { logout } = useAuthActions();
+  const { openAuthModal } = useAuthModalActions();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -61,22 +64,23 @@ export function AccountMenu({ className }: { className?: string }) {
   const displayName = user?.name ?? 'Account';
   const displayEmail = user?.email ?? '';
 
-  if (status === 'idle' || status === 'restoring') return <div aria-busy="true" className={cn('h-11 w-28', className)} />;
-  if (!isLoggedIn) return <button className={cn('min-h-11 whitespace-nowrap rounded-md px-2 text-sm', className)} onClick={openAuth} type="button">Login / Signup</button>;
+  if (status === 'idle' || status === 'restoring') return <div aria-busy="true" className={cn('h-11 w-11 shrink-0', className)} />;
 
   return (
-    <div ref={menuRef} className={cn('relative', className)}>
-      <button
+    <div ref={menuRef} className={cn('relative shrink-0', className)}>
+      <Button
         ref={buttonRef}
         aria-expanded={isLoggedIn ? menuOpen : undefined}
-        aria-label="My Account"
+        aria-label={isLoggedIn ? 'My Account' : 'Account'}
         aria-controls={isLoggedIn && menuOpen ? 'account-panel' : undefined}
-        className="grid h-11 w-11 place-items-center rounded-full text-[#04342c] transition hover:bg-[#eaf3de]"
+        className="h-11 w-11 text-[#04342c] hover:bg-[#eaf3de]"
+        size="icon"
         type="button"
+        variant="ghost"
         onClick={handleAccountClick}
       >
         <CircleUserRound aria-hidden="true" className="h-5 w-5" />
-      </button>
+      </Button>
 
       {menuOpen && isLoggedIn ? (
         <div id="account-panel" className="absolute right-0 top-[calc(100%+12px)] z-[70] w-[min(328px,calc(100vw-24px))] overflow-visible rounded-2xl border border-[#dce6d8] bg-[#fdfbf7] p-2 text-[#04342c] shadow-[0_22px_55px_#04342c26]">

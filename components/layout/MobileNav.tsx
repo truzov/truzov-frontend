@@ -4,8 +4,8 @@ import { Heart, Home, Search, LayoutGrid, CircleUserRound } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useAppSelector } from '@/store/redux';
 
 const tabs = [
   { href: '/', label: 'Home', icon: Home },
@@ -16,9 +16,9 @@ const tabs = [
 
 export function MobileNav() {
   const pathname = usePathname();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const status = useAuthStore((state) => state.status);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const status = useAppSelector((state) => state.auth.status);
+  const { openAuthModal } = useAuthModalActions();
 
   if (pathname.startsWith('/checkout')) {
     return null;
@@ -68,7 +68,7 @@ export function MobileNav() {
             onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}
           >
             {accountIcon}
-            <span>Login / Signup</span>
+            <span>Account</span>
           </button>
         )}
       </div>

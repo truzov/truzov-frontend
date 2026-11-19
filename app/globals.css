@@ -3,22 +3,6 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: Inter;
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url('/fonts/inter-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: Inter;
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
   font-family: Allura;
   font-style: normal;
   font-weight: 400;
@@ -63,11 +47,7 @@ body {
   margin: 0;
   background: theme('colors.surface.base');
   color: theme('colors.text.primary');
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--truzov-font);
   font-feature-settings:
     'kern' 1,
     'liga' 1;
@@ -133,26 +113,26 @@ footer details[open] summary .lucide-chevron-down { transform: rotate(180deg); }
 
 /* Customer storefront design system. Workspace screens keep their existing tokens. */
 .truzov-home {
-  --forest: #04342c;
-  --cream: #fdfbf7;
-  --sage: #eaf3de;
+  --forest: var(--truzov-ink);
+  --cream: var(--truzov-canvas);
+  --sage: var(--truzov-sage);
   --coral: #d85a30;
   color: #2c2c2a;
   background: var(--cream);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--truzov-font);
 }
-.storefront { background: #fdfbf7; }
-:is(.storefront, .checkout-shell, .auth-surface) { --customer-forest: #04342c; --customer-muted: #547064; --customer-sage: #eaf3de; --customer-border: #dce6d8; color: var(--customer-forest); font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.6; }
-:is(.storefront, .checkout-shell, .auth-surface) :is(h1, h2, h3, h4, h5, h6, .font-heading) { font-family: Inter, system-ui, sans-serif; font-weight: 500; line-height: 1.25; letter-spacing: -.035em; text-wrap: balance; }
+.storefront { background: var(--truzov-canvas); }
+:is(.storefront, .checkout-shell, .auth-surface) { --customer-forest: var(--truzov-ink); --customer-muted: var(--truzov-muted); --customer-sage: var(--truzov-sage); --customer-border: var(--truzov-border); font-size: 16px; line-height: 1.6; }
+:is(.storefront, .checkout-shell, .auth-surface) :is(h1, h2, h3, h4, h5, h6, .font-heading) { font-family: var(--truzov-font); font-weight: 500; line-height: 1.25; letter-spacing: -.035em; text-wrap: balance; }
 :is(.storefront, .checkout-shell, .auth-surface) :is(button, input, select, textarea) { font-family: inherit; }
 :is(.storefront, .checkout-shell, .auth-surface) :is(.text-text-primary, .text-on-surface, .text-on-primary-fixed) { color: var(--customer-forest); }
 :is(.storefront, .checkout-shell, .auth-surface) :is(.text-text-secondary, .text-text-muted, .text-on-surface-variant) { color: var(--customer-muted); }
 :is(.storefront, .checkout-shell, .auth-surface) .border-brand-primary { border-color: var(--customer-forest); }
 :is(.storefront, .checkout-shell, .auth-surface) .border-outline-variant { border-color: var(--customer-border); }
-:is(.storefront, .checkout-shell, .auth-surface) .bg-background { background-color: #fdfbf7; }
+:is(.storefront, .checkout-shell, .auth-surface) .bg-background { background-color: var(--truzov-canvas); }
 :is(.storefront, .checkout-shell, .auth-surface) .bg-brand-light { background-color: var(--customer-sage); }
-:is(.storefront, .checkout-shell, .auth-surface) .ui-button { min-height: 44px; border-radius: 12px; font-size: 14px; font-weight: 500; line-height: 1.4; }
-:is(.storefront, .checkout-shell, .auth-surface) .ui-button[data-size="icon"] { min-width: 44px; }
+:is(.storefront, .checkout-shell, .auth-surface) .ui-button { min-height: var(--truzov-control-height); border-radius: var(--truzov-control-radius); font-size: 14px; font-weight: 500; line-height: 1.4; }
+:is(.storefront, .checkout-shell, .auth-surface) .ui-button[data-size="icon"] { min-width: var(--truzov-control-height); }
 :is(.storefront, .checkout-shell, .auth-surface) .ui-badge { border-radius: 30px; font-size: 12px; font-weight: 500; line-height: 1.35; text-transform: none; }
 :is(.storefront, .checkout-shell, .auth-surface) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { font-size: 16px; }
 .customer-page { width: min(100% - 40px, 1240px); margin-inline: auto; padding-block: 32px 64px; }
@@ -192,33 +172,28 @@ footer details[open] summary .lucide-chevron-down { transform: rotate(180deg); }
   .account-shell .account-panel :is(dt, label, p.text-sm) { font-size: 15px; }
 }
 .storefront .font-heading { font-family: Inter, system-ui, sans-serif; font-weight: 500; }
-:is(.storefront, .auth-surface) .text-brand-primary { color: #04342c; }
-:is(.storefront, .auth-surface) .bg-brand-primary { background-color: #04342c; }
+:is(.storefront, .auth-surface) .text-brand-primary { color: var(--truzov-ink); }
+:is(.storefront, .auth-surface) .bg-brand-primary { background-color: var(--truzov-ink); }
 .storefront .bg-brand-light { background-color: #eaf3de; }
 .storefront .text-brand-accent { color: #d85a30; }
 .storefront .bg-brand-accent { background-color: #d85a30; }
-.storefront .text-primary, .auth-surface .text-primary { color: #04342c; }
-.storefront .bg-primary, .auth-surface .bg-primary { background-color: #04342c; }
+.storefront .text-primary, .auth-surface .text-primary { color: var(--truzov-ink); }
+.storefront .bg-primary, .auth-surface .bg-primary { background-color: var(--truzov-ink); }
 .storefront .hover\:bg-primary-container:hover, .auth-surface .hover\:bg-primary-container:hover { background-color: #0b5143; }
 .storefront .bg-surface-raised { background-color: #fdfbf7; }
 .storefront .bg-surface-base { background-color: #fff; }
 .storefront .border-surface-border { border-color: #dce6d8; }
-.auth-surface { color: #04342c; font-family: Inter, system-ui, sans-serif; }
 .auth-surface :is(h1, h2, h3) { font-family: Inter, system-ui, sans-serif; letter-spacing: -.035em; }
 .auth-surface :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { border-radius: 12px; border-color: #c4d6c8; background: #fff; }
-.checkout-shell { color: #04342c; font-family: Inter, system-ui, sans-serif; }
 .checkout-shell :is(h1, h2, h3), .checkout-shell .font-heading { font-family: Inter, system-ui, sans-serif; letter-spacing: -.035em; font-weight: 500; }
 .checkout-shell .bg-surface-raised { background-color: #fdfbf7; }
 .checkout-shell .bg-surface-base { background-color: #fff; }
 .checkout-shell .border-surface-border { border-color: #dce6d8; }
-.checkout-shell .text-brand-primary { color: #04342c; }
-.checkout-shell .bg-brand-primary { background-color: #04342c; }
-.checkout-shell .hover\:bg-brand-secondary:hover, .storefront .hover\:bg-brand-secondary:hover { background-color: #0b5143; }
+.checkout-shell .text-brand-primary { color: var(--truzov-ink); }
+.checkout-shell .bg-brand-primary { background-color: var(--truzov-ink); }
+.checkout-shell .hover\:bg-brand-secondary:hover, .storefront .hover\:bg-brand-secondary:hover { background-color: var(--truzov-hover); }
 .checkout-shell :is(article, aside, section).rounded-md { border-radius: 14px; }
 .checkout-shell :is(article, aside, section).shadow-xs { box-shadow: 0 7px 28px #04342c0a; }
-.storefront .search-input,
-.storefront .search-input:focus,
-.storefront .search-input:focus-visible { border: 0; border-color: transparent; box-shadow: none; outline: none; }
 .storefront main { scroll-margin-top: 75px; }
 .truzov-home h1, .truzov-home h2, .truzov-home h3 { font-family: inherit; font-weight: 500; letter-spacing: -.035em; }
 .home-container { width: min(100% - 40px, 1240px); margin-inline: auto; }

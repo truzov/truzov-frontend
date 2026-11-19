@@ -25,14 +25,14 @@ import {
   useOrder,
 } from '@/hooks/api/useCommerce';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
-import { useGuestCartStore, type GuestCartItem } from '@/lib/cart/guest-cart.store';
+import { removeGuestItem, removeGuestSelection, setGuestQuantity, type GuestCartItem } from '@/lib/cart/guest-cart.store';
 import { cartLineKey } from '@/lib/cart/selection';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency } from '@/lib/utils/money';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
-import { useCheckoutStore } from '@/store/checkout.store';
-import { useOtpModalStore } from '@/store/otp-modal.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { resetCheckout, setBagSelection, setBuyNow, setDirectAttempt, setLineSelected, setSelectedAddress } from '@/store/checkout.store';
+import { useAppDispatch, useAppSelector, useAppStore } from '@/store/redux';
+import { useOtpModalActions } from '@/store/otp-modal.store';
 import type { AddressDto } from '@/types/api';
 
 /**
@@ -52,7 +52,7 @@ function BagSelectionActions({ owner, lineKeys, selectedCount, editing, onEditin
   busy?: boolean;
   onRemove: () => void;
 }) {
-  const setBagSelection = useCheckoutStore((state) => state.setBagSelection);
+  const dispatch = useAppDispatch();
   const allSelected = selectedCount === lineKeys.length;
 
   return (
@@ -60,7 +60,7 @@ function BagSelectionActions({ owner, lineKeys, selectedCount, editing, onEditin
       {editing && <span aria-live="polite" className="mr-auto">{selectedCount} of {lineKeys.length} products selected</span>}
       <div className="flex flex-wrap items-center gap-x-4">
         <button className="min-h-11 text-brand-primary underline disabled:opacity-50" type="button" disabled={busy} onClick={() => {
-          setBagSelection(owner, editing && allSelected ? lineKeys : []);
+          dispatch(setBagSelection({ owner, excludedLineKeys: editing && allSelected ? lineKeys : [] }));
           onEditingChange(true);
         }}>
           {editing && allSelected ? 'Deselect all' : 'Select all'}
@@ -79,12 +79,12 @@ function BagSelectionActions({ owner, lineKeys, selectedCount, editing, onEditin
 export function BagScreen() {
   const router = useRouter();
   const { cart, isLoading, isLoadingError, error, refetch } = useCart();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const authStatus = useAuthStore((state) => state.status);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const authStatus = useAppSelector((state) => state.auth.status);
   const [editingSelection, setEditingSelection] = useState(false);
   const bagMode = editingSelection ? 'selected' : 'all';
   const { owner, cart: selected } = useCheckoutSelection(bagMode);
-  const setLineSelected = useCheckoutStore((state) => state.setLineSelected);
+  const dispatch = useAppDispatch();
   const removeItems = useRemoveCartItem();
   const cartBusy = Boolean(useIsMutating({ mutationKey: ['cart-write'] }));
 
@@ -151,7 +151,7 @@ export function BagScreen() {
 
             <div className="grid gap-3">
               {cart.items.map((item) => (
-                <BagItemRow key={item.id} item={item} selected={selected.items.some((line) => line.id === item.id)} onSelect={editingSelection ? (checked) => setLineSelected(owner, cartLineKey(item), checked) : undefined} />
+                <BagItemRow key={item.id} item={item} selected={selected.items.some((line) => line.id === item.id)} onSelect={editingSelection ? (checked) => dispatch(setLineSelected({ owner, key: cartLineKey(item), selected: checked })) : undefined} />
               ))}
             </div>
           </main>
@@ -165,9 +165,8 @@ export function BagScreen() {
             }
             termsText="By continuing, you agree to truzov's terms and verified marketplace policies."
             onCta={() => {
-              const checkout = useCheckoutStore.getState();
-              if (editingSelection) checkout.setBuyNow(owner);
-              else checkout.setBagSelection(owner, []);
+              if (editingSelection) dispatch(setBuyNow({ owner }));
+              else dispatch(setBagSelection({ owner, excludedLineKeys: [] }));
               router.push('/checkout/address');
             }}
           />
@@ -190,17 +189,11 @@ function GuestBagScreen({ editingSelection, setEditingSelection }: {
   editingSelection: boolean;
   setEditingSelection: (editing: boolean) => void;
 }) {
-  const items = useGuestCartStore((state) => state.items);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const selectionOwner = useCheckoutStore((state) => state.selectionOwner);
-  const excludedKeys = useCheckoutStore((state) => state.excludedLineKeys);
-  const setLineSelected = useCheckoutStore((state) => state.setLineSelected);
-  const removeSelected = useGuestCartStore((state) => state.removeSelected);
-
-  // Hydrate from localStorage once on the client; SSR renders an empty frame either way.
-  useEffect(() => {
-    useGuestCartStore.getState().hydrate();
-  }, []);
+  const items = useAppSelector((state) => state.guestCart.items);
+  const { openAuthModal } = useAuthModalActions();
+  const selectionOwner = useAppSelector((state) => state.checkout.selectionOwner);
+  const excludedKeys = useAppSelector((state) => state.checkout.excludedLineKeys);
+  const dispatch = useAppDispatch();
 
   if (items.length === 0) {
     return (
@@ -229,12 +222,12 @@ function GuestBagScreen({ editingSelection, setEditingSelection }: {
               <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">
                 {items.length} {items.length === 1 ? 'product' : 'products'} in your bag
               </h1>
-              <BagSelectionActions owner="guest" lineKeys={items.map(cartLineKey)} selectedCount={selected.length} editing={editingSelection} onEditingChange={setEditingSelection} onRemove={() => removeSelected(selected.map(cartLineKey))} />
+              <BagSelectionActions owner="guest" lineKeys={items.map(cartLineKey)} selectedCount={selected.length} editing={editingSelection} onEditingChange={setEditingSelection} onRemove={() => dispatch(removeGuestSelection(selected.map(cartLineKey)))} />
             </section>
 
             <div className="grid gap-3">
               {items.map((item) => (
-                <GuestBagItemRow key={cartLineKey(item)} item={item} selected={selected.includes(item)} onSelect={editingSelection ? (checked) => setLineSelected('guest', cartLineKey(item), checked) : undefined} />
+                <GuestBagItemRow key={cartLineKey(item)} item={item} selected={selected.includes(item)} onSelect={editingSelection ? (checked) => dispatch(setLineSelected({ owner: 'guest', key: cartLineKey(item), selected: checked })) : undefined} />
               ))}
             </div>
           </main>
@@ -258,7 +251,7 @@ function GuestBagScreen({ editingSelection, setEditingSelection }: {
               variant="primary"
               disabled={!selected.length}
               onClick={() => {
-                if (!editingSelection) useCheckoutStore.getState().setBagSelection('guest', []);
+                if (!editingSelection) dispatch(setBagSelection({ owner: 'guest', excludedLineKeys: [] }));
                 openAuthModal({ mode: 'login', redirectTo: '/cart' });
               }}
             >
@@ -276,8 +269,7 @@ function GuestBagScreen({ editingSelection, setEditingSelection }: {
 
 /** A guest line: same layout as the server row, local mutations, no stock/line id. */
 function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; selected: boolean; onSelect?: (selected: boolean) => void }) {
-  const setQuantity = useGuestCartStore((state) => state.setQuantity);
-  const remove = useGuestCartStore((state) => state.remove);
+  const dispatch = useAppDispatch();
 
   return (
     <article className="grid grid-cols-[80px_minmax(0,1fr)] gap-3 rounded-2xl border border-surface-border bg-surface-base p-4 shadow-xs sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-5 sm:p-5">
@@ -306,7 +298,7 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
             aria-label={`Remove ${item.name}`}
             size="icon"
             variant="ghost"
-            onClick={() => remove(item.productId, item.variantId)}
+            onClick={() => dispatch(removeGuestItem({ productId: item.productId, variantId: item.variantId }))}
           >
             <Trash2 aria-hidden="true" className="h-4 w-4" />
           </Button>
@@ -319,7 +311,7 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
               aria-label="Decrease quantity"
               size="icon"
               variant="ghost"
-              onClick={() => setQuantity(item.productId, item.variantId, item.quantity - 1)}
+              onClick={() => dispatch(setGuestQuantity({ productId: item.productId, variantId: item.variantId, quantity: item.quantity - 1 }))}
             >
               <Minus aria-hidden="true" className="h-4 w-4" />
             </Button>
@@ -329,7 +321,7 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
               disabled={item.quantity >= Math.min(20, item.availableStock ?? 20)}
               size="icon"
               variant="ghost"
-              onClick={() => setQuantity(item.productId, item.variantId, item.quantity + 1)}
+              onClick={() => dispatch(setGuestQuantity({ productId: item.productId, variantId: item.variantId, quantity: item.quantity + 1 }))}
             >
               <Plus aria-hidden="true" className="h-4 w-4" />
             </Button>
@@ -350,7 +342,7 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
           <button
             className="min-h-11 rounded-sm text-sm font-medium text-text-secondary hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             type="button"
-            onClick={() => remove(item.productId, item.variantId)}
+            onClick={() => dispatch(removeGuestItem({ productId: item.productId, variantId: item.variantId }))}
           >
             Remove
           </button>
@@ -368,11 +360,11 @@ export function AddressScreen() {
   const router = useRouter();
   const { cart } = useCart();
   const { cart: selectedCart, hasItems, isLoading: cartLoading } = useCheckoutSelection();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const authStatus = useAuthStore((state) => state.status);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
-  const setSelectedAddress = useCheckoutStore((state) => state.setSelectedAddress);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const authStatus = useAppSelector((state) => state.auth.status);
+  const { openAuthModal } = useAuthModalActions();
+  const selectedAddressId = useAppSelector((state) => state.checkout.selectedAddressId);
+  const dispatch = useAppDispatch();
   const { addresses, defaultAddress, isLoading, isError, error, refetch } = useAddresses();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -387,9 +379,9 @@ export function AddressScreen() {
   // Preselect the default. Re-runs if the list changes, e.g. right after adding the first address.
   useEffect(() => {
     if (!selectedAddress && defaultAddress) {
-      setSelectedAddress(defaultAddress.id);
+      dispatch(setSelectedAddress(defaultAddress.id));
     }
-  }, [defaultAddress, selectedAddress, setSelectedAddress]);
+  }, [defaultAddress, dispatch, selectedAddress]);
 
   if (authStatus === 'idle' || authStatus === 'restoring' || cartLoading) {
     return <CartScreenSkeleton />;
@@ -451,7 +443,7 @@ export function AddressScreen() {
                 inputId={`delivery-address-${address.id}`}
                 inputName="delivery-address"
                 selected={selectedAddressId === address.id}
-                onSelect={() => setSelectedAddress(address.id)}
+                onSelect={() => dispatch(setSelectedAddress(address.id))}
               />
             ))}
           </div>
@@ -484,12 +476,12 @@ export function AddressScreen() {
 export function PaymentScreen() {
   const router = useRouter();
   const { cart: selectedCart, couponCode, hasItems, isLoading: cartLoading, selection } = useCheckoutSelection();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const authStatus = useAuthStore((state) => state.status);
-  const user = useAuthStore((state) => state.user);
-  const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
-  const resetCheckout = useCheckoutStore((state) => state.resetCheckout);
-  const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const authStatus = useAppSelector((state) => state.auth.status);
+  const user = useAppSelector((state) => state.auth.user);
+  const selectedAddressId = useAppSelector((state) => state.checkout.selectedAddressId);
+  const store = useAppStore();
+  const { openOtpModal } = useOtpModalActions();
   const { addresses } = useAddresses();
   const placeOrder = useCheckout();
   const openPayment = useCreatePaymentSession();
@@ -547,18 +539,18 @@ export function PaymentScreen() {
   const submit = () => {
     let key = idempotencyKey;
     if (selection.buyNow) {
-      const { directAttempt, setDirectAttempt } = useCheckoutStore.getState();
+      const { directAttempt } = store.getState().checkout;
       if (directAttempt?.intent === checkoutIntent) {
         key = directAttempt.key;
       } else {
-        setDirectAttempt({ intent: checkoutIntent, key });
+        store.dispatch(setDirectAttempt({ intent: checkoutIntent, key }));
       }
     }
     placeOrder.mutate(
       { addressId: selectedAddress.id, ...selection, couponCode: couponCode || undefined, idempotencyKey: key },
       {
         onSuccess: (order) => {
-          resetCheckout();
+          store.dispatch(resetCheckout());
           // Open the payment attempt, then hand the customer to the provider's page. Done here
           // rather than inside the checkout call because paying is a separate, retryable step:
           // the order exists either way, and holding checkout open across a gateway round trip
@@ -655,7 +647,7 @@ export function ConfirmationScreen() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId') ?? '';
   const { data: order, isLoading, isError, error, refetch } = useOrder(orderId);
-  const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
+  const selectedAddressId = useAppSelector((state) => state.checkout.selectedAddressId);
   const { addresses } = useAddresses();
 
   /**
@@ -898,7 +890,7 @@ function BlockedCheckoutEmptyState() {
 }
 
 function BlockedCheckoutAuthState() {
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
+  const { openAuthModal } = useAuthModalActions();
 
   return (
     <div className="mx-auto max-w-4xl py-10">

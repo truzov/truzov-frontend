@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Providers } from './providers';
 import './globals.css';
-import './focus.css';
+import './truzov-design.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://truzov.com'),

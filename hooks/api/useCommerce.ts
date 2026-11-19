@@ -6,14 +6,14 @@ import { checkout, getOrder, listOrders, updateOrderStatus } from '@/lib/api/end
 import { completeMockPayment, createPaymentSession } from '@/lib/api/endpoints/payments';
 import { errorMessage } from '@/lib/api/errors';
 import { queryKeys } from '@/lib/api/queries';
-import { useAuthStore } from '@/store/auth.store';
-import { useUiStore } from '@/store/ui.store';
+import { useToastActions } from '@/store/ui.store';
 import type { AddressDto, CheckoutRequest, CreateAddressRequest } from '@/types/api';
+import { useAppSelector } from '@/store/redux';
 
 const EMPTY_ADDRESSES: AddressDto[] = [];
 
 export function useAddresses() {
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
 
   const query = useQuery({
     queryKey: queryKeys.addresses(),
@@ -34,7 +34,7 @@ export function useAddresses() {
 
 export function useCreateAddress() {
   const queryClient = useQueryClient();
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
 
   return useMutation({
     mutationFn: (body: CreateAddressRequest) => createAddress(body),
@@ -51,7 +51,7 @@ export function useCreateAddress() {
 /** Edits a saved address; the response updates the list cache in place. */
 export function useUpdateAddress() {
   const queryClient = useQueryClient();
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
 
   return useMutation({
     mutationFn: ({ addressId, body }: { addressId: string; body: CreateAddressRequest }) =>
@@ -70,7 +70,7 @@ export function useUpdateAddress() {
 
 export function useDeleteAddress() {
   const queryClient = useQueryClient();
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
   const queryKey = queryKeys.addresses();
 
   return useMutation({
@@ -163,7 +163,7 @@ export function useCompleteMockPayment() {
 }
 
 export function useOrders(page = 1) {
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
 
   return useQuery({
     queryKey: queryKeys.orderList(page),
@@ -174,7 +174,7 @@ export function useOrders(page = 1) {
 }
 
 export function useOrder(orderId: string) {
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
 
   return useQuery({
     queryKey: queryKeys.order(orderId),
@@ -186,7 +186,7 @@ export function useOrder(orderId: string) {
 /** Customer-facing cancellation. The server rejects it once the order is past fulfilment. */
 export function useCancelOrder() {
   const queryClient = useQueryClient();
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
 
   return useMutation({
     mutationFn: ({ orderId, reason }: { orderId: string; reason?: string }) =>

@@ -1,24 +1,27 @@
 import React from 'react';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { renderWithRedux as render } from './redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { makeStore } from '@/store/redux';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { AccountMenu } from '@/components/auth/AccountMenu';
 import { CheckoutItems } from '@/components/checkout/CheckoutItems';
-import { useAuthStore } from '@/store/auth.store';
-import { useAuthModalStore } from '@/store/auth-modal.store';
+import { authChanged } from '@/store/auth.store';
+
+let store: ReturnType<typeof makeStore>;
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
 vi.mock('next/image', () => ({ default: ({ fill: _fill, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => <img {...props} /> }));
 
 beforeEach(() => {
-  useAuthStore.setState({ status: 'anonymous', isLoggedIn: false, user: null });
-  useAuthModalStore.getState().closeAuthModal();
+  store = makeStore();
+  store.dispatch(authChanged({ status: 'anonymous', isLoggedIn: false, user: null }));
 });
 afterEach(cleanup);
 
 describe('auth-aware navigation', () => {
   it('keeps the four browsing tabs and switches the account tab immediately', () => {
-    render(<MobileNav />);
+    render(<MobileNav />, { store });
     const navigation = within(screen.getByRole('navigation', { name: 'Bottom navigation' }));
     const browsingTabs = [
       ['Home', '/'],
@@ -30,23 +33,23 @@ describe('auth-aware navigation', () => {
       expect(navigation.getByRole('link', { name })).toHaveAttribute('href', href);
     }
     expect(screen.queryByRole('link', { name: 'My Account' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Login / Signup' }));
-    expect(useAuthModalStore.getState().isOpen).toBe(true);
-    act(() => useAuthStore.setState({ status: 'authenticated', isLoggedIn: true }));
-    expect(screen.queryByRole('button', { name: 'Login / Signup' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(store.getState().authModal.isOpen).toBe(true);
+    act(() => store.dispatch(authChanged({ status: 'authenticated', isLoggedIn: true })));
+    expect(screen.queryByRole('button', { name: 'Account' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'My Account' })).toHaveAttribute('href', '/account');
     for (const [name, href] of browsingTabs) {
       expect(navigation.getByRole('link', { name })).toHaveAttribute('href', href);
     }
-    act(() => useAuthStore.setState({ status: 'anonymous', isLoggedIn: false }));
+    act(() => store.dispatch(authChanged({ status: 'anonymous', isLoggedIn: false })));
     expect(screen.queryByRole('link', { name: 'My Account' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Login / Signup' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Account' })).toBeVisible();
   });
 
   it('renders neither auth identity while restoring a session', () => {
-    useAuthStore.setState({ status: 'restoring', isLoggedIn: false });
-    render(<><MobileNav /><AccountMenu /></>);
-    expect(screen.queryByText('Login / Signup')).not.toBeInTheDocument();
+    store.dispatch(authChanged({ status: 'restoring', isLoggedIn: false }));
+    render(<><MobileNav /><AccountMenu /></>, { store });
+    expect(screen.queryByRole('button', { name: 'Account' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'My Account' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'My Account' })).not.toBeInTheDocument();
   });

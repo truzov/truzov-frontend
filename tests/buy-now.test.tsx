@@ -3,17 +3,19 @@
 
 import fc from 'fast-check';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, renderHook, screen, waitFor, act } from '@testing-library/react';
+import { fireEvent, renderHook, screen, waitFor, act } from '@testing-library/react';
+import { renderWithRedux as render, reduxWrapper } from './redux';
 import React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { makeStore } from '@/store/redux';
 import { addCartItem } from '@/lib/api/endpoints/cart';
-import { useAuthModalStore, type BuyNowIntent } from '@/store/auth-modal.store';
+import { openAuthModal, closeAuthModal, type BuyNowIntent } from '@/store/auth-modal.store';
 import { ApiError, ERROR_CODES } from '@/lib/api/errors';
-import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
-import { useAuthStore } from '@/store/auth.store';
-import { useUiStore } from '@/store/ui.store';
-import { useCheckoutStore } from '@/store/checkout.store';
+import { authChanged } from '@/store/auth.store';
 import type { ProductSummaryDto } from '@/types/api';
+
+let store: ReturnType<typeof makeStore>;
+beforeEach(() => { store = makeStore(); });
 
 /**
  * One stable `push` spy for the whole file, matching the pattern in `tests/auth-security.test.ts`:
@@ -35,11 +37,13 @@ vi.mock('next/navigation', () => ({
  */
 vi.mock('@/components/auth/AuthForm', async () => {
   const { createElement } = await import('react');
-  const { useAuthStore } = await import('@/store/auth.store');
+  const { useAppDispatch } = await import('@/store/redux');
 
   return {
-    AuthForm: ({ onSuccess }: { onSuccess?: () => void }) =>
-      createElement('button', { type: 'button', onClick: () => { useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never }); onSuccess?.(); } }, 'login succeeded'),
+    AuthForm: ({ onSuccess }: { onSuccess?: () => void }) => {
+      const dispatch = useAppDispatch();
+      return createElement('button', { type: 'button', onClick: () => { dispatch(authChanged({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never })); onSuccess?.(); } }, 'login succeeded');
+    },
   };
 });
 
@@ -130,7 +134,6 @@ describe('Buy_Now_Intent lifecycle', () => {
         document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       }
     });
-    useAuthModalStore.setState({ isOpen: false, mode: 'login', redirectTo: undefined, buyNow: undefined });
   });
 
   // Feature: auth-toast-buy-now-variant-selection, Property 3: A Buy_Now_Intent never outlives
@@ -147,16 +150,16 @@ describe('Buy_Now_Intent lifecycle', () => {
         // Before: the intent's product id is not already present by coincidence.
         expect(storageSnapshot().includes(intent.productId)).toBe(false);
 
-        useAuthModalStore.getState().openAuthModal({ mode: 'login', buyNow: intent });
+        store.dispatch(openAuthModal({ mode: 'login', buyNow: intent }));
 
         // While retained: the store holds it in memory, but no storage mechanism does (R2.11).
-        expect(useAuthModalStore.getState().buyNow).toStrictEqual(intent);
+        expect(store.getState().authModal.buyNow).toStrictEqual(intent);
         expect(storageSnapshot().includes(intent.productId)).toBe(false);
 
-        useAuthModalStore.getState().closeAuthModal();
+        store.dispatch(closeAuthModal());
 
         // After: the modal discarded the intent entirely (R2.6, R2.8), and it never touched storage.
-        expect(useAuthModalStore.getState().buyNow).toBeUndefined();
+        expect(store.getState().authModal.buyNow).toBeUndefined();
         expect(storageSnapshot().includes(intent.productId)).toBe(false);
       }),
       { numRuns: 100 },
@@ -227,10 +230,9 @@ describe('Buy Now unit paths', () => {
   beforeEach(() => {
     buyNowPush.mockClear();
     window.localStorage.clear();
-    useAuthModalStore.getState().closeAuthModal();
-    useAuthStore.setState({ isLoggedIn: false, status: 'anonymous', user: null });
-    useGuestCartStore.setState({ items: [], hydrated: true });
-    useCheckoutStore.getState().resetCheckout();
+    store.dispatch(closeAuthModal());
+    store.dispatch(authChanged({ isLoggedIn: false, status: 'anonymous', user: null }));
+
   });
 
   afterEach(() => {
@@ -241,23 +243,23 @@ describe('Buy Now unit paths', () => {
   it('guest click opens the modal, retains the intent, and leaves the guest bag and its localStorage key untouched', () => {
     const queryClient = newQueryClient();
     const { result } = renderHook(() => useBuyNow(), {
-      wrapper: wrapWithQueryClient(queryClient),
+      wrapper: reduxWrapper(store, wrapWithQueryClient(queryClient)),
     });
 
     act(() => {
       result.current.buyNow({ productId: 'p-honey', quantity: 1 });
     });
 
-    expect(useAuthModalStore.getState().isOpen).toBe(true);
-    expect(useAuthModalStore.getState().buyNow).toStrictEqual({ productId: 'p-honey', quantity: 1 });
-    expect(useGuestCartStore.getState().items).toStrictEqual([]);
+    expect(store.getState().authModal.isOpen).toBe(true);
+    expect(store.getState().authModal.buyNow).toStrictEqual({ productId: 'p-honey', quantity: 1 });
+    expect(store.getState().guestCart.items).toStrictEqual([]);
     expect(window.localStorage.getItem(GUEST_CART_STORAGE_KEY)).toBeNull();
     expect(buyNowPush).not.toHaveBeenCalled();
   });
 
   // 2.5: an authenticated click must not navigate until the mutation resolves, then pushes once.
   it('authenticated click does not navigate until a deferred mutation resolves, then pushes exactly once', async () => {
-    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never });
+    store.dispatch(authChanged({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never }));
 
     let resolveFetch!: (value: Response) => void;
     vi.stubGlobal(
@@ -272,7 +274,7 @@ describe('Buy Now unit paths', () => {
 
     const queryClient = newQueryClient();
     const { result } = renderHook(() => useBuyNow(), {
-      wrapper: wrapWithQueryClient(queryClient),
+      wrapper: reduxWrapper(store, wrapWithQueryClient(queryClient)),
     });
 
     act(() => {
@@ -317,35 +319,36 @@ describe('Buy Now unit paths', () => {
       })
     );
 
-    useAuthModalStore.getState().openAuthModal({
+    store.dispatch(openAuthModal({
       mode: 'login',
       buyNow: { productId: 'p-honey', quantity: 1 },
-    });
+    }));
 
     const queryClient = newQueryClient();
     render(
-      React.createElement(QueryClientProvider, { client: queryClient }, React.createElement(AuthModal))
+      React.createElement(QueryClientProvider, { client: queryClient }, React.createElement(AuthModal)),
+      { store },
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'login succeeded' }));
 
     await waitFor(() => expect(buyNowPush).toHaveBeenCalledTimes(1));
     expect(capturedBody).toBeUndefined();
-    expect(useCheckoutStore.getState().buyNow).toMatchObject({ productId: 'p-honey', quantity: 1 });
+    expect(store.getState().checkout.buyNow).toMatchObject({ productId: 'p-honey', quantity: 1 });
     expect(buyNowPush.mock.calls).toStrictEqual([['/checkout/address']]);
   });
 
   // 2.8: dismissing the modal discards the intent and stays on the page.
   it('dismissal discards the intent and stays on the page', () => {
-    useAuthModalStore.getState().openAuthModal({
+    store.dispatch(openAuthModal({
       mode: 'login',
       buyNow: { productId: 'p-honey', quantity: 1 },
-    });
+    }));
 
-    useAuthModalStore.getState().closeAuthModal();
+    store.dispatch(closeAuthModal());
 
-    expect(useAuthModalStore.getState().buyNow).toBeUndefined();
-    expect(useAuthModalStore.getState().isOpen).toBe(false);
+    expect(store.getState().authModal.buyNow).toBeUndefined();
+    expect(store.getState().authModal.isOpen).toBe(false);
     expect(buyNowPush).not.toHaveBeenCalled();
   });
 
@@ -354,13 +357,13 @@ describe('Buy Now unit paths', () => {
     ['ApiError(409)', new ApiError({ code: ERROR_CODES.CONFLICT, message: 'Out of stock', status: 409 })],
     ['ApiError(TIMEOUT)', new ApiError({ code: ERROR_CODES.TIMEOUT, message: 'Request timed out', status: 0 })],
   ])('%s toasts and does not navigate', async (_label, thrown) => {
-    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never });
-    useUiStore.setState({ toasts: [] });
+    store.dispatch(authChanged({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never }));
+
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(thrown)));
 
     const queryClient = newQueryClient();
     const { result } = renderHook(() => useBuyNow(), {
-      wrapper: wrapWithQueryClient(queryClient),
+      wrapper: reduxWrapper(store, wrapWithQueryClient(queryClient)),
     });
 
     await act(async () => {
@@ -368,8 +371,8 @@ describe('Buy Now unit paths', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    await waitFor(() => expect(useUiStore.getState().toasts).toHaveLength(1));
-    expect(useUiStore.getState().toasts[0]).toMatchObject({ type: 'error' });
+    await waitFor(() => expect(store.getState().ui.toasts).toHaveLength(1));
+    expect(store.getState().ui.toasts[0]).toMatchObject({ type: 'error' });
     expect(buyNowPush).not.toHaveBeenCalled();
   });
 
@@ -379,19 +382,20 @@ describe('Buy Now unit paths', () => {
 
   // 2.12: Add to Cart still does not navigate.
   it('Add to Cart still does not navigate', () => {
-    useAuthStore.setState({ isLoggedIn: false, status: 'anonymous' });
+    store.dispatch(authChanged({ isLoggedIn: false, status: 'anonymous' }));
     const queryClient = newQueryClient();
     render(
       React.createElement(
         QueryClientProvider,
         { client: queryClient },
         React.createElement(ProductCard, { product: SIMPLE_PRODUCT })
-      )
+      ),
+      { store },
     );
 
     fireEvent.click(screen.getByRole('button', { name: `Add ${SIMPLE_PRODUCT.name}` }));
 
     expect(buyNowPush).not.toHaveBeenCalled();
-    expect(useAuthModalStore.getState().isOpen).toBe(false);
+    expect(store.getState().authModal.isOpen).toBe(false);
   });
 });

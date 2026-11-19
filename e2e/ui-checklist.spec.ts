@@ -42,26 +42,41 @@ async function fixtureApi(page: Page, override?: (route: Route, pathname: string
   });
 }
 
-test('one guest login control through narrow-to-wide resizing and neutral keyboard focus', async ({ page }) => {
+test('one guest account control through narrow-to-wide resizing and neutral keyboard focus', async ({ page }) => {
   await fixtureApi(page);
   await page.goto('/');
   await expect(page.locator('.home-hero')).toBeVisible();
+  const header = page.getByRole('banner');
+  await expect(header.getByRole('button', { name: 'Search', exact: true })).toHaveCount(0);
   for (const width of [320, 375, 425, 768, 1024, 1280, 1440, 1535, 1536, 1920, 375]) {
     await page.setViewportSize({ width, height: 900 });
-    await expect(page.getByRole('button', { name: /login \/ signup/i, exact: true }), `width ${width}`).toHaveCount(1);
+    const accountButton = page.getByRole('button', { name: 'Account', exact: true });
+    await expect(accountButton, `width ${width}`).toHaveCount(1);
     await expect(page.getByRole('link', { name: 'My Account', exact: true })).toHaveCount(0);
     const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll('body *')].filter(node => node.getBoundingClientRect().right > innerWidth + 1).slice(0, 6).map(node => ({ tag: node.tagName, cls: node.className, right: node.getBoundingClientRect().right })) }));
     expect(overflow.scroll, JSON.stringify(overflow)).toBeLessThanOrEqual(width);
     const bottom = page.getByRole('navigation', { name: 'Bottom navigation' });
     if (width < 1536) {
       await expect(bottom).toBeVisible();
+      await expect(header.getByRole('search')).toHaveCount(0);
+      await expect(bottom.getByRole('link', { name: 'Search', exact: true })).toHaveAttribute('href', '/search');
       await expect(bottom.getByRole('link')).toHaveText(['Home', 'Categories', 'Search', 'Wishlist']);
-      const login = bottom.getByRole('button', { name: 'Login / Signup' });
+      const login = bottom.getByRole('button', { name: 'Account', exact: true });
       expect(await login.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
       const tab = (await bottom.getByRole('link', { name: 'Home', exact: true }).boundingBox())!;
       const account = (await login.boundingBox())!;
       expect(Math.abs(account.width - tab.width)).toBeLessThanOrEqual(1);
-    } else await expect(bottom).toBeHidden();
+    } else {
+      await expect(bottom).toBeHidden();
+      const search = header.getByRole('search');
+      const input = search.getByRole('textbox', { name: 'Search products' });
+      await input.click();
+      await expect(input).toHaveCSS('outline-style', 'none');
+      await expect(search).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      await expect(search).not.toHaveCSS('box-shadow', 'none');
+      await expect(accountButton).toHaveText('');
+      await expect(accountButton.locator('svg')).toBeVisible();
+    }
   }
   const menu = page.getByRole('button', { name: 'Open menu' });
   await menu.focus();
@@ -71,8 +86,60 @@ test('one guest login control through narrow-to-wide resizing and neutral keyboa
   expect(await page.getByRole('button', { name: 'Close menu' }).evaluate((node) => getComputedStyle(node).outlineStyle)).toBe('none');
   await page.getByRole('button', { name: 'Close menu' }).click();
   await page.getByRole('navigation', { name: 'Bottom navigation' })
-    .getByRole('button', { name: 'Login / Signup' }).click();
+    .getByRole('button', { name: 'Account', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Welcome back' })).toBeVisible();
+  const identifier = page.getByRole('textbox', { name: 'Email or phone number' });
+  await identifier.click();
+  await expect(identifier).toHaveCSS('outline-style', 'none');
+  await expect(identifier).toHaveCSS('background-color', 'rgb(227, 239, 218)');
+  await page.keyboard.press('Escape');
+  await page.getByRole('navigation', { name: 'Bottom navigation' })
+    .getByRole('link', { name: 'Search', exact: true }).click();
+  await expect(page).toHaveURL(/\/search$/);
+  const search = page.getByRole('search', { name: 'Search catalogue' });
+  const searchInput = search.getByRole('textbox', { name: 'Search products' });
+  await expect(searchInput).toBeFocused();
+  await expect(searchInput).toHaveCSS('outline-style', 'none');
+  await expect(search).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+});
+
+test('Google callback opens the account without showing a waiting screen', async ({ page }) => {
+  const pending = { state: 's'.repeat(22), verifier: 'v'.repeat(128), redirectTo: '/account' };
+  await page.addInitScript((flow) => {
+    if (location.pathname === '/auth/google/callback') {
+      sessionStorage.setItem('truzov.googleOAuthPending', JSON.stringify(flow));
+    }
+  }, pending);
+
+  let finishExchange!: () => void;
+  const pendingExchange = new Promise<void>((resolve) => { finishExchange = resolve; });
+  await fixtureApi(page, async (route, path) => {
+    if (!path.endsWith('/auth/oauth/google')) return false;
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: corsHeaders });
+      return true;
+    }
+    await pendingExchange;
+    await route.fulfill({ headers: corsHeaders, json: { data: {
+      accessToken: 'fixture-access',
+      refreshToken: 'fixture-refresh',
+      user: { id: 'buyer', name: 'Test Buyer', role: 'customer', emailVerified: true },
+    } } });
+    return true;
+  });
+
+  const exchange = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === '/api/v1/auth/oauth/google' && request.method() === 'POST'
+  );
+  try {
+    await page.goto(`/auth/google/callback?code=fixture-code&state=${pending.state}`);
+    expect((await exchange).postDataJSON()).toEqual({ code: 'fixture-code', codeVerifier: pending.verifier });
+    await expect(page.getByText(/signing you in|completing sign-in/i)).toHaveCount(0);
+  } finally {
+    finishExchange();
+  }
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole('heading', { name: 'Profile details' })).toBeVisible();
 });
 
 test('saved addresses confirm, survive a failed delete, and disappear on success', async ({ page }) => {
@@ -119,10 +186,10 @@ test('saved addresses confirm, survive a failed delete, and disappear on success
   await page.goto('/account/addresses');
   const nav = page.getByRole('navigation', { name: 'Bottom navigation' });
   await expect(nav.getByText('Account', { exact: true })).toBeVisible();
-  await expect(nav.getByRole('button', { name: 'Login / Signup' })).toHaveCount(0);
+  await expect(nav.getByRole('button', { name: 'Account', exact: true })).toHaveCount(0);
   finishRestore();
   await expect(nav.getByRole('link', { name: 'My Account' })).toHaveAttribute('href', '/account');
-  await expect(nav.getByRole('button', { name: 'Login / Signup' })).toHaveCount(0);
+  await expect(nav.getByRole('button', { name: 'Account', exact: true })).toHaveCount(0);
   const home = page.getByRole('article').filter({ hasText: 'Home recipient' });
   const work = page.getByRole('article').filter({ hasText: 'Work recipient' });
   const dialog = page.getByRole('dialog', { name: 'Delete this address?' });

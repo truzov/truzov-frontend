@@ -1,16 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { renderWithRedux as render } from './redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * One stable `push` spy for the whole file: the redirect tests below assert on the argument the
  * navigation actually receives, which a fresh `vi.fn()` per `useRouter()` call would throw away.
  */
-const { push, openOtpModal } = vi.hoisted(() => ({
-  push: vi.fn<(href: string) => void>(),
-  openOtpModal: vi.fn<(options?: { redirectTo?: string }) => void>(),
-}));
+const push = vi.hoisted(() => vi.fn<(href: string) => void>());
 
 /**
  * `AuthEventBridge` is a client component built on the App Router's hooks, which jsdom does not
@@ -39,32 +37,18 @@ vi.mock('@/components/auth/AuthForm', async () => {
   };
 });
 
-/**
- * The deleted `/verify-otp` page is replaced by a popup: the page-variant OTP path now calls
- * `openOtpModal({ redirectTo })` off this store instead of `router.push`. The mock mirrors the
- * real selector-based usage in `LoginForm` (`useOtpModalStore((state) => state.openOtpModal)`),
- * so the component receives the hoisted spy as its opener.
- */
-vi.mock('@/store/otp-modal.store', () => ({
-  useOtpModalStore: (
-    selector: (state: {
-      openOtpModal: typeof openOtpModal;
-      closeOtpModal: () => void;
-      isOpen: boolean;
-      redirectTo?: string;
-    }) => unknown
-  ) => selector({ openOtpModal, closeOtpModal: vi.fn(), isOpen: false, redirectTo: undefined }),
-}));
-
 import { AuthEventBridge } from '@/components/auth/AuthEventBridge';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { onAuthEvent, type AuthEvent } from '@/lib/api/auth-events';
-import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
-import { useCheckoutStore } from '@/store/checkout.store';
-import { useUiStore } from '@/store/ui.store';
+import { addGuestItem } from '@/lib/cart/guest-cart.store';
+import { closeAuthModal, openAuthModal } from '@/store/auth-modal.store';
+import { authActions, authChanged } from '@/store/auth.store';
+import { setSelectedAddress } from '@/store/checkout.store';
+import { makeStore } from '@/store/redux';
+
+let store: ReturnType<typeof makeStore>;
+beforeEach(() => { store = makeStore(); });
 
 const GUEST_CART_KEY = 'truzov.guestCart';
 const CHECKOUT_KEY = 'truzov-checkout';
@@ -72,11 +56,7 @@ const CHECKOUT_KEY = 'truzov-checkout';
 describe('logout teardown', () => {
   beforeEach(() => {
     window.localStorage.clear();
-    useGuestCartStore.setState({ items: [], hydrated: true });
-    useCheckoutStore.setState({ selectedAddressId: undefined });
-    useUiStore.setState({ toasts: [] });
-    useAuthModalStore.getState().closeAuthModal();
-    useAuthStore.getState().resetSession();
+
 
     // `POST /auth/logout` is a real network call. Rejecting it is the harsher case on purpose:
     // a failed revoke must still tear everything down locally, or a user who clicks "log out"
@@ -108,59 +88,58 @@ describe('logout teardown', () => {
         QueryClientProvider,
         { client: queryClient },
         React.createElement(AuthEventBridge)
-      )
+      ), { store }
     );
 
-    useAuthStore.setState({ status: 'authenticated', isLoggedIn: true });
+    store.dispatch(authChanged({ status: 'authenticated', isLoggedIn: true }));
 
-    useGuestCartStore.getState().add({
+    store.dispatch(addGuestItem({
       productId: 'p-honey',
       quantity: 2,
       name: 'Raw Forest Honey 500g',
       slug: 'raw-forest-honey-500g',
       unitPrice: 599,
-    });
-    useCheckoutStore.getState().setSelectedAddress('addr-1');
+    }));
+    store.dispatch(setSelectedAddress('addr-1'));
     // A retained Buy_Now_Intent, as if the auth modal were opened from a Buy Now click.
-    useAuthModalStore.getState().openAuthModal({
+    store.dispatch(openAuthModal({
       mode: 'login',
       buyNow: { productId: 'p-honey', quantity: 1 },
-    });
+    }));
     // Everything cached was fetched as the user who is about to log out.
     queryClient.setQueryData(['cart'], { items: [{ productId: 'p-honey' }], subtotal: 1198 });
     queryClient.setQueryData(['orders'], [{ id: 'order-1' }]);
     queryClient.setQueryData(['addresses'], [{ id: 'addr-1', line1: '12 Residency Road' }]);
 
     // The seeds are real, so an "everything is empty" assertion below cannot pass vacuously.
-    expect(useGuestCartStore.getState().items).toHaveLength(1);
+    expect(store.getState().guestCart.items).toHaveLength(1);
     expect(window.localStorage.getItem(GUEST_CART_KEY)).toContain('p-honey');
-    expect(useCheckoutStore.getState().selectedAddressId).toBe('addr-1');
+    expect(store.getState().checkout.selectedAddressId).toBe('addr-1');
     expect(window.localStorage.getItem(CHECKOUT_KEY)).toContain('addr-1');
-    expect(useAuthModalStore.getState().buyNow).toStrictEqual({
+    expect(store.getState().authModal.buyNow).toStrictEqual({
       productId: 'p-honey',
       quantity: 1,
     });
     expect(queryClient.getQueryCache().getAll()).toHaveLength(3);
 
-    await useAuthStore.getState().logout();
+    await store.dispatch(authActions.logout());
 
     // Auth_Session.
-    expect(useAuthStore.getState().isLoggedIn).toBe(false);
-    expect(useAuthStore.getState().status).toBe('anonymous');
-    expect(useAuthStore.getState().user).toBeNull();
+    expect(store.getState().auth.isLoggedIn).toBe(false);
+    expect(store.getState().auth.status).toBe('anonymous');
+    expect(store.getState().auth.user).toBeNull();
 
     // Guest_Bag — in memory and in its localStorage key.
-    expect(useGuestCartStore.getState().items).toStrictEqual([]);
-    expect(useGuestCartStore.getState().itemCount()).toBe(0);
+    expect(store.getState().guestCart.items).toStrictEqual([]);
     expect(window.localStorage.getItem(GUEST_CART_KEY)).not.toContain('p-honey');
 
     // Persisted checkout state.
-    expect(useCheckoutStore.getState().selectedAddressId).toBeUndefined();
+    expect(store.getState().checkout.selectedAddressId).toBeUndefined();
     expect(window.localStorage.getItem(CHECKOUT_KEY) ?? '').not.toContain('addr-1');
 
     // Retained Buy_Now_Intent (Requirement 5.9).
-    expect(useAuthModalStore.getState().buyNow).toBeUndefined();
-    expect(useAuthModalStore.getState().isOpen).toBe(false);
+    expect(store.getState().authModal.buyNow).toBeUndefined();
+    expect(store.getState().authModal.isOpen).toBe(false);
 
     // Cached query data — the live defect. This is only empty because `clearSession('logout')`
     // now emits, which is the sole trigger for the bridge's `queryClient.clear()`.
@@ -169,8 +148,11 @@ describe('logout teardown', () => {
     expect(queryClient.getQueryData(['orders'])).toBeUndefined();
     expect(queryClient.getQueryData(['addresses'])).toBeUndefined();
 
-    // The event itself, emitted exactly once with the logout reason.
-    expect(events).toStrictEqual([{ type: 'session-cleared', reason: 'logout' }]);
+    expect(store.getState().ui.toasts).toMatchObject([{ type: 'success', title: 'Logged out' }]);
+    expect(events).toStrictEqual([
+      { type: 'session-cleared', reason: 'logout' },
+      { type: 'logout-completed' },
+    ]);
 
     unsubscribe();
   });
@@ -204,19 +186,29 @@ describe('AuthModal.handleSuccess redirect', () => {
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
     render(
-      React.createElement(QueryClientProvider, { client: queryClient }, React.createElement(AuthModal))
+      React.createElement(QueryClientProvider, { client: queryClient }, React.createElement(AuthModal)), { store }
     );
   }
 
   beforeEach(() => {
     push.mockClear();
-    useAuthModalStore.getState().closeAuthModal();
+  });
+
+  it('closes from the button without passing the click event to Redux', () => {
+    store.dispatch(openAuthModal());
+    const dispatch = vi.spyOn(store, 'dispatch');
+    renderAuthModal();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close account dialog' }));
+
+    expect(dispatch).toHaveBeenCalledWith(closeAuthModal());
+    expect(store.getState().authModal.isOpen).toBe(false);
   });
 
   for (const target of REJECTED_TARGETS) {
     // 5.8: `openAuthModal` is callable from anywhere, so `redirectTo` is untrusted input.
     it(`discards redirectTo ${JSON.stringify(target)} and navigates to /`, () => {
-      useAuthModalStore.getState().openAuthModal({ mode: 'login', redirectTo: target });
+      store.dispatch(openAuthModal({ mode: 'login', redirectTo: target }));
       renderAuthModal();
 
       fireEvent.click(screen.getByRole('button', { name: 'login succeeded' }));
@@ -228,7 +220,7 @@ describe('AuthModal.handleSuccess redirect', () => {
   for (const target of ACCEPTED_TARGETS) {
     // 5.7: a same-origin relative route is passed through untouched.
     it(`navigates to redirectTo ${target} as given`, () => {
-      useAuthModalStore.getState().openAuthModal({ mode: 'login', redirectTo: target });
+      store.dispatch(openAuthModal({ mode: 'login', redirectTo: target }));
       renderAuthModal();
 
       fireEvent.click(screen.getByRole('button', { name: 'login succeeded' }));
@@ -241,23 +233,17 @@ describe('AuthModal.handleSuccess redirect', () => {
 describe('LoginForm.resolveRedirect', () => {
   beforeEach(() => {
     push.mockClear();
-    openOtpModal.mockClear();
     window.history.replaceState({}, '', '/login');
-    // Only the two network-backed actions are replaced. `resolveRedirect` and both pushes are the
-    // component's own code and run for real.
-    useAuthStore.setState({
-      sendOtp: vi.fn(async () => {}),
-      checkAccountExists: vi.fn(async () => true),
-      loginWithPassword: vi.fn(async () => {}),
-      isLoading: false,
-      error: null,
-      errorCode: null,
-    });
+    vi.spyOn(authActions, 'sendOtp').mockReturnValue(async () => {});
+    vi.spyOn(authActions, 'checkAccountExists').mockReturnValue(async () => true);
+    vi.spyOn(authActions, 'loginWithPassword').mockReturnValue(async () => {});
   });
+
+  afterEach(() => vi.restoreAllMocks());
 
   /** Renders the page variant (no `onSuccess`), so the component performs the navigation itself. */
   function renderLoginForm(redirectTo?: string) {
-    render(React.createElement(LoginForm, { redirectTo }));
+    render(React.createElement(LoginForm, { redirectTo }), { store });
     fireEvent.change(screen.getByLabelText('Email or phone number'), {
       target: { value: 'shopper@example.com' },
     });
@@ -266,7 +252,7 @@ describe('LoginForm.resolveRedirect', () => {
   async function submitOtpLogin(redirectTo?: string) {
     renderLoginForm(redirectTo);
     fireEvent.click(screen.getByRole('button', { name: /send code/i }));
-    await waitFor(() => expect(openOtpModal).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(store.getState().otpModal.isOpen).toBe(true));
   }
 
   async function submitPasswordLogin(redirectTo?: string) {
@@ -292,8 +278,8 @@ describe('LoginForm.resolveRedirect', () => {
       await submitOtpLogin(target);
 
       expect(push).not.toHaveBeenCalled();
-      expect(openOtpModal).toHaveBeenCalledTimes(1);
-      expect(openOtpModal).toHaveBeenCalledWith({ redirectTo: undefined });
+      expect(store.getState().otpModal.isOpen).toBe(true);
+      expect(store.getState().otpModal.redirectTo).toBeUndefined();
     });
   }
 
@@ -308,7 +294,7 @@ describe('LoginForm.resolveRedirect', () => {
       await submitOtpLogin(target);
 
       expect(push).not.toHaveBeenCalled();
-      expect(openOtpModal).toHaveBeenCalledWith({ redirectTo: target });
+      expect(store.getState().otpModal.redirectTo).toBe(target);
     });
   }
 
@@ -319,7 +305,7 @@ describe('LoginForm.resolveRedirect', () => {
     await submitOtpLogin();
 
     expect(push).not.toHaveBeenCalled();
-    expect(openOtpModal).toHaveBeenCalledWith({ redirectTo: undefined });
+    expect(store.getState().otpModal.redirectTo).toBeUndefined();
   });
 
   it('carries a safe ?redirect= query parameter through', async () => {
@@ -328,6 +314,6 @@ describe('LoginForm.resolveRedirect', () => {
     await submitOtpLogin();
 
     expect(push).not.toHaveBeenCalled();
-    expect(openOtpModal).toHaveBeenCalledWith({ redirectTo: '/cart' });
+    expect(store.getState().otpModal.redirectTo).toBe('/cart');
   });
 });

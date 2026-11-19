@@ -118,3 +118,15 @@ Use one five-column mobile bottom bar and let session state change only the fift
 Use a slug-tagged, same-URL history entry that preserves the router's existing state. The close control consumes the viewer entry and popstate synchronizes the open state, so browser Back dismisses the viewer before navigating away.
 
 - Buy Now quotes and orders use a separate direct purchase selection. The existing idempotency table protects retries, and cart lines stay intact even when the same variant is already in the bag.
+
+## Redux stage one (2026-11-17)
+
+Use Redux Toolkit 2.12.0 and React Redux 9.3.0 with a store per provider and DevTools disabled. Keep UI slices in memory, reuse `AuthEventBridge` for auth notifications, and keep credentials in the dedicated token store. Auth, checkout, and guest cart still use Zustand.
+
+## Redux stage two (2026-11-17)
+
+Keep checkout and guest cart storage formats readable by earlier builds. Persist checkout mutations synchronously so Buy Now retries survive reload. Keep the signed-in cart in React Query and clear both stored slices on explicit logout.
+
+## Redux stage three (2026-11-17)
+
+Use closure thunks for auth and dispatch UI-safe state only. Keep pending OTP challenge IDs in the per-store thunk argument and leave session tokens in the dedicated token store. Remove Zustand.

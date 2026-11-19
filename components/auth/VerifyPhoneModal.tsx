@@ -11,8 +11,9 @@ import { setSession } from '@/lib/api/token-store';
 import { isValidRedirect } from '@/lib/auth/redirect';
 import { accountPhone } from '@/lib/auth/phone';
 import { PhoneChangeModal } from '@/components/auth/PhoneChangeModal';
-import { useAuthStore } from '@/store/auth.store';
-import { useOtpModalStore } from '@/store/otp-modal.store';
+import { useAuthActions } from '@/store/auth.store';
+import { useAppSelector } from '@/store/redux';
+import { useOtpModalActions } from '@/store/otp-modal.store';
 
 /** This deployment issues 6-digit codes (`truzov.auth.otp.length`). */
 const CODE_LENGTH = 6;
@@ -33,13 +34,12 @@ const CODE_LENGTH = 6;
  */
 export function VerifyPhoneModal() {
   const router = useRouter();
-  const isOpen = useOtpModalStore((state) => state.isOpen);
-  const redirectTo = useOtpModalStore((state) => state.redirectTo);
-  const closeOtpModal = useOtpModalStore((state) => state.closeOtpModal);
+  const { isOpen, redirectTo } = useAppSelector((state) => state.otpModal);
+  const { closeOtpModal } = useOtpModalActions();
 
-  const phone = useAuthStore((state) => accountPhone(state.user?.phone));
-  const phoneVerified = useAuthStore((state) => state.user?.phoneVerified);
-  const refreshUser = useAuthStore((state) => state.refreshUser);
+  const phone = useAppSelector((state) => accountPhone(state.auth.user?.phone));
+  const phoneVerified = useAppSelector((state) => state.auth.user?.phoneVerified);
+  const { refreshUser } = useAuthActions();
 
   const [otp, setOtp] = useState<string[]>(() => Array(CODE_LENGTH).fill(''));
   const [sessionId, setSessionId] = useState<string | null>(null);

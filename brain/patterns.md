@@ -47,33 +47,12 @@ To maintain consistency and code reuse across the application, developers should
 
 ---
 
-## 3. Zustand Persistent Store Pattern
-* **Rule:** Stores that must survive page reloads (e.g. user authentication tokens, persistent cart/wishlist state) must implement Zustand's `persist` middleware. All custom properties must handle undefined states cleanly to prevent hydration errors during Next.js rendering.
-* **Key Guidelines:**
-  * Define explicit TS interfaces for the state and actions.
-  * Access local storage safely (avoiding reference errors during server-side compilation).
-* **Example:**
-  ```typescript
-  import { create } from 'zustand';
-  import { persist } from 'zustand/middleware';
+## 3. Storefront State and Token Storage
 
-  interface AuthState {
-    token: string | null;
-    setToken: (token: string | null) => void;
-  }
-
-  export const useAuthStore = create<AuthState>()(
-    persist(
-      (set) => ({
-        token: null,
-        setToken: (token) => set({ token }),
-      }),
-      {
-        name: 'truzov-auth',
-      }
-    )
-  );
-  ```
+* Create the Redux store per provider. Keep DevTools disabled and keep toasts, auth and phone verification modals, and pending Buy Now intent in memory.
+* Use `AuthEventBridge` for auth feedback outside React. Bind no-argument actions through callbacks such as `() => dispatch(closeAuthModal())` to discard React event arguments.
+* Keep credentials in `lib/api/token-store.ts`. Access tokens live in memory. Refresh tokens live under `truzov.refreshToken` in JavaScript-readable browser storage. Preserve SSR-safe storage access.
+* Checkout persists `truzov-checkout` as `{ state, version: 0 }`. The guest cart persists a raw array under `truzov.guestCart`. Validate on client hydrate and write only on Redux mutations so cross-tab reads do not echo writes.
 
 ---
 
@@ -175,3 +154,7 @@ Use the native modal dialog for the browser top layer. In its mount lifecycle, f
 * **Bag selection:** Toggle all/none through the same owner-scoped exclusions that feed checkout. Selected removal uses the existing line-scoped guest and server actions, preserving unchecked lines and reporting any partial failure.
 
 Bag selection mode is opt-in. Keep default checkout implicit and show row checkboxes and bulk controls only after Select all opens the mode. Done clears explicit exclusions. Continue retains them for the next checkout steps.
+
+## Shared visual styles
+
+Use `app/truzov-design.css` for the shared palette, typeface, controls, and focus states. The storefront is the source. Storefront `npm run dev` syncs the shared files to admin so each app can build from its own checkout. Use `npm run design:sync` for manual sync and parity checks. Search wrappers use `.search-field` with a transparent `.search-input` inside. Text fields and search show a fill and glow on focus, with a solid outline in forced-colors mode.

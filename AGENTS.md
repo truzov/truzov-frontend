@@ -67,3 +67,9 @@ graph TD
     Brain -. "Reads Context" .-> Architect
     Brain -. "Reads Context" .-> Dev
 ```
+
+## Storefront and admin design
+
+Use `app/truzov-design.css` as the source for shared visual tokens and states. Apply changes to corresponding admin controls when a shared pattern changes. The admin app lives at `ADMIN/Main_File/Sellzy_Dashboard` in the local workspace.
+
+Storefront `npm run dev` syncs the shared files at startup and after saves. Run admin in development mode to see updates in the browser. Set `TRUZOV_ADMIN_PATH` if the admin checkout is elsewhere. Include the synced files in the admin changes and verify parity with `npm run design:sync -- "<admin app root>" --check`. The command without `--check` also works for a one-time sync.

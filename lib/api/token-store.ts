@@ -25,9 +25,7 @@ import { emitAuthEvent } from './auth-events';
  */
 
 /**
- * Dedicated key. The token deliberately does NOT live in the Zustand `truzov-auth` blob any
- * more — the old client JSON-parsed that persisted store to fish the token out, which coupled
- * the network layer to a UI store's serialisation format.
+ * Dedicated key for session restoration across reloads, independent of the UI store.
  */
 const REFRESH_TOKEN_KEY = 'truzov.refreshToken';
 

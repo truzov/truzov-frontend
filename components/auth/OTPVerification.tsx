@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ERROR_CODES } from '@/lib/api/errors';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
 import { isValidRedirect } from '@/lib/auth/redirect';
+import { useAppSelector } from '@/store/redux';
 
 /** This deployment issues 6-digit codes (`truzov.auth.otp.length`). */
 const CODE_LENGTH = 6;
@@ -34,15 +35,14 @@ export function OTPVerification({
   onSwitchMode?: (mode: 'login' | 'signup') => void;
 } = {}) {
   const router = useRouter();
-  const verifyOtp = useAuthStore((state) => state.verifyOtp);
-  const sendOtp = useAuthStore((state) => state.sendOtp);
-  const isLoading = useAuthStore((state) => state.isLoading);
-  const error = useAuthStore((state) => state.error);
-  const errorCode = useAuthStore((state) => state.errorCode);
-  const pendingIdentifier = useAuthStore((state) => state.pendingIdentifier);
-  const otpChannel = useAuthStore((state) => state.otpChannel);
-  const otpSessionId = useAuthStore((state) => state.otpSessionId);
-  const otpExpiresInSeconds = useAuthStore((state) => state.otpExpiresInSeconds);
+  const { verifyOtp, sendOtp } = useAuthActions();
+  const isLoading = useAppSelector((state) => state.auth.isLoading);
+  const error = useAppSelector((state) => state.auth.error);
+  const errorCode = useAppSelector((state) => state.auth.errorCode);
+  const pendingIdentifier = useAppSelector((state) => state.auth.pendingIdentifier);
+  const otpChannel = useAppSelector((state) => state.auth.otpChannel);
+  const hasOtpSession = useAppSelector((state) => state.auth.hasOtpSession);
+  const otpExpiresInSeconds = useAppSelector((state) => state.auth.otpExpiresInSeconds);
 
   const [otp, setOtp] = useState<string[]>(() => Array(CODE_LENGTH).fill(''));
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -64,7 +64,7 @@ export function OTPVerification({
   //     auth store is in-memory.
   // The recovery UI below offers a resend AND a signup link, because it does not know which of
   // the first two applies and only the user does.
-  const sessionExpired = errorCode === ERROR_CODES.OTP_EXPIRED || !otpSessionId;
+  const sessionExpired = errorCode === ERROR_CODES.OTP_EXPIRED || !hasOtpSession;
   // NOT part of sessionExpired, and answered with its own status (404, not 410): the code was
   // CORRECT, so only whoever received it could have typed it, and the identifier simply has no
   // account. AuthForm (the parent) reacts to this by switching straight to signup, so this

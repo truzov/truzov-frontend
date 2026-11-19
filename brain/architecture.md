@@ -8,7 +8,7 @@ This document outlines the architecture, technology stack, data flow, and core s
 
 * **Core Framework:** Next.js (using TypeScript and App Router standard directories).
 * **Styling:** Vanilla Tailwind CSS with `tailwind-merge` and `clsx` for dynamic CSS class generation, and `class-variance-authority` (CVA) for styling reusable components (e.g. `Badge.tsx`, `Button.tsx`).
-* **State Management:** Zustand stores with JSON persistence to local storage.
+* **State Management:** Provider-scoped Redux Toolkit for auth, checkout, guest cart and UI. Checkout and guest cart persist in browser storage. TanStack Query manages server data.
 * **API Integration:** Standard `fetch` API wrapped in a custom client helper (`lib/api/client.ts`) with request timeouts, content headers, and token injection.
 * **Local Development & Mocking:** MSW (Mock Service Worker) intercepts browser-level network requests during local development to emulate backend responses.
 * **Charts/Visualization:** Recharts is used for vendor dashboard revenue trends and admin metrics.
@@ -39,7 +39,7 @@ c:\Users\piyus\OneDrive\Desktop\zshivam/
 │   ├── data/             # Static fixture data (fixtures.ts)
 │   ├── utils/            # Formatting and utility functions
 │   └── validations/      # Zod validation schemas
-├── store/                # Zustand stores (Auth, Cart, UI, Wishlist, Checkout)
+├── store/                # Redux auth, checkout and UI slices
 ├── mocks/                # MSW browser configuration and handler definitions
 └── types/                # Unified TypeScript type definitions
 ```
@@ -49,21 +49,21 @@ c:\Users\piyus\OneDrive\Desktop\zshivam/
 ## 3. Data Flow & Authentication Architecture
 
 ### Authentication State Persistence
-* The authorization credentials (token, user roles, etc.) are managed by the Zustand `auth.store.ts`.
-* Zustand writes this state to `localStorage` under the key `truzov-auth`.
+* Redux holds session status and user data in memory. Auth thunks use per-store memory for the pending OTP challenge ID. `lib/api/token-store.ts` holds the access token in memory and stores the refresh token under `truzov.refreshToken` in JavaScript-readable local storage for session restoration.
+* `AuthEventBridge` dispatches auth feedback to the provider's Redux store. The UI slices carry toast and modal state in memory.
 
-### API Fetch Client (`apiFetch`)
+### API Fetch Client (`apiRequest`)
 * Defined in `lib/api/client.ts`.
 * Safe client/server operation: Checks `typeof window === 'undefined'` to avoid server-side errors.
-* Auto-token extraction: Parses the `truzov-auth` JSON object from `localStorage` and attaches the `Authorization: Bearer <token>` header dynamically if the user is authenticated.
+* Authenticated requests attach the in-memory access token as a Bearer header when available.
 * Request Timeout: Aborts any request taking longer than 10 seconds via `AbortController`.
 
 ```
 [Component / Hook]
-       │ (calls apiFetch)
+       │ (calls apiRequest)
        ▼
-[apiFetch (lib/api/client.ts)]
-       │ 1. Reads `truzov-auth` token from localStorage
+[apiRequest (lib/api/client.ts)]
+       │ 1. Reads the in-memory access token from token-store
        │ 2. Appends Bearer Auth header
        │ 3. Sets 10-second timeout signal
        ▼

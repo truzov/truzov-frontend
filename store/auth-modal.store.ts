@@ -1,13 +1,14 @@
 'use client';
 
-import { create } from 'zustand';
+import { bindActionCreators, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 
 export type AuthModalMode = 'login' | 'signup';
 
 /**
  * Buy Now intent held while the auth modal is open. Memory only — never written to
- * localStorage, sessionStorage, cookies, or URL params (Requirement 2.11). This store
- * has no `persist` middleware; do not add one.
+ * localStorage, sessionStorage, cookies, or URL params (Requirement 2.11).
  */
 export interface BuyNowIntent {
   productId: string;
@@ -22,27 +23,41 @@ interface AuthModalState {
   mode: AuthModalMode;
   redirectTo?: string;
   buyNow?: BuyNowIntent;
-  openAuthModal: (options?: {
-    mode?: AuthModalMode;
-    redirectTo?: string;
-    buyNow?: BuyNowIntent;
-  }) => void;
-  closeAuthModal: () => void;
-  setAuthModalMode: (mode: AuthModalMode) => void;
 }
 
-export const useAuthModalStore = create<AuthModalState>((set) => ({
-  isOpen: false,
-  mode: 'login',
-  redirectTo: undefined,
-  buyNow: undefined,
-  openAuthModal: (options) =>
-    set({
-      isOpen: true,
-      mode: options?.mode ?? 'login',
-      redirectTo: options?.redirectTo,
-      buyNow: options?.buyNow,
-    }),
-  closeAuthModal: () => set({ isOpen: false, redirectTo: undefined, buyNow: undefined }),
-  setAuthModalMode: (mode) => set({ mode }),
-}));
+const initialState: AuthModalState = { isOpen: false, mode: 'login' };
+type OpenOptions = Partial<Omit<AuthModalState, 'isOpen'>>;
+
+const authModal = createSlice({
+  name: 'authModal',
+  initialState,
+  reducers: {
+    openAuthModal(_, { payload }: PayloadAction<OpenOptions | undefined>): AuthModalState {
+      return {
+        isOpen: true,
+        mode: payload?.mode ?? 'login',
+        redirectTo: payload?.redirectTo,
+        buyNow: payload?.buyNow,
+      };
+    },
+    closeAuthModal(state) {
+      state.isOpen = false;
+      state.redirectTo = undefined;
+      state.buyNow = undefined;
+    },
+    setAuthModalMode(state, { payload }: PayloadAction<AuthModalMode>) {
+      state.mode = payload;
+    },
+  },
+});
+
+export const authModalReducer = authModal.reducer;
+export const { openAuthModal, closeAuthModal, setAuthModalMode } = authModal.actions;
+
+export function useAuthModalActions() {
+  const dispatch = useDispatch();
+  return useMemo(() => ({
+    ...bindActionCreators(authModal.actions, dispatch),
+    closeAuthModal: () => { dispatch(closeAuthModal()); },
+  }), [dispatch]);
+}

@@ -10,8 +10,8 @@ import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { CartScreenSkeleton } from '@/components/ui/Skeleton';
 import { useCompleteMockPayment, useOrder } from '@/hooks/api/useCommerce';
 import { formatCurrency } from '@/lib/utils/money';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useAppSelector } from '@/store/redux';
 
 /**
  * The mock gateway's payment page.
@@ -37,9 +37,9 @@ export function MockPaymentScreen() {
   const sessionId = params?.sessionId ?? '';
   const orderId = searchParams.get('orderId') ?? '';
 
-  const authStatus = useAuthStore((state) => state.status);
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
+  const authStatus = useAppSelector((state) => state.auth.status);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const { openAuthModal } = useAuthModalActions();
 
   const { data: order, isLoading, isError, error, refetch } = useOrder(orderId);
   const complete = useCompleteMockPayment();

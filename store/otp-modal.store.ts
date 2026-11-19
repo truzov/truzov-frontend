@@ -1,6 +1,8 @@
 'use client';
 
-import { create } from 'zustand';
+import { bindActionCreators, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 
 /**
  * Drives the phone-verification popup (components/auth/VerifyPhoneModal).
@@ -15,13 +17,26 @@ import { create } from 'zustand';
 interface OtpModalState {
   isOpen: boolean;
   redirectTo?: string;
-  openOtpModal: (options?: { redirectTo?: string }) => void;
-  closeOtpModal: () => void;
 }
 
-export const useOtpModalStore = create<OtpModalState>((set) => ({
-  isOpen: false,
-  redirectTo: undefined,
-  openOtpModal: (options) => set({ isOpen: true, redirectTo: options?.redirectTo }),
-  closeOtpModal: () => set({ isOpen: false, redirectTo: undefined }),
-}));
+const initialState: OtpModalState = { isOpen: false };
+
+const otpModal = createSlice({
+  name: 'otpModal',
+  initialState,
+  reducers: {
+    openOtpModal(_, { payload }: PayloadAction<{ redirectTo?: string } | undefined>) {
+      return { isOpen: true, redirectTo: payload?.redirectTo };
+    },
+    closeOtpModal: () => initialState,
+  },
+});
+
+export const otpModalReducer = otpModal.reducer;
+export function useOtpModalActions() {
+  const dispatch = useDispatch();
+  return useMemo(() => ({
+    ...bindActionCreators(otpModal.actions, dispatch),
+    closeOtpModal: () => { dispatch(otpModal.actions.closeOtpModal()); },
+  }), [dispatch]);
+}

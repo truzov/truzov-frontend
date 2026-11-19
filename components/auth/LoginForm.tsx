@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { isValidRedirect } from '@/lib/auth/redirect';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
-import { useAuthStore } from '@/store/auth.store';
-import { useOtpModalStore } from '@/store/otp-modal.store';
-import { useAuthModalStore } from '@/store/auth-modal.store';
+import { useAuthActions } from '@/store/auth.store';
+import { useOtpModalActions } from '@/store/otp-modal.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useAppSelector } from '@/store/redux';
 
 export interface AuthFormProps {
   variant?: 'page' | 'modal';
@@ -34,14 +35,12 @@ export function LoginForm({
   onOtpSent,
 }: LoginFormProps) {
   const router = useRouter();
-  const sendOtp = useAuthStore((state) => state.sendOtp);
-  const checkAccountExists = useAuthStore((state) => state.checkAccountExists);
-  const loginWithPassword = useAuthStore((state) => state.loginWithPassword);
-  const isLoading = useAuthStore((state) => state.isLoading);
-  const error = useAuthStore((state) => state.error);
-  const clearError = useAuthStore((state) => state.clearError);
-  const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
-  const pendingIdentifier = useAuthStore((state) => state.pendingIdentifier);
+  const { sendOtp, checkAccountExists, loginWithPassword, clearError } = useAuthActions();
+  const isLoading = useAppSelector((state) => state.auth.isLoading);
+  const error = useAppSelector((state) => state.auth.error);
+  const { closeAuthModal } = useAuthModalActions();
+  const { openOtpModal } = useOtpModalActions();
+  const pendingIdentifier = useAppSelector((state) => state.auth.pendingIdentifier);
 
   /**
    * Both documented sign-in paths are offered because they suit different accounts.
@@ -167,7 +166,7 @@ export function LoginForm({
         )}
       </Button>
 
-      <Link className="inline-flex min-h-11 items-center justify-center text-sm underline" href="/forgot-password" onClick={() => useAuthModalStore.getState().closeAuthModal()}>Forgot password?</Link>
+      <Link className="inline-flex min-h-11 items-center justify-center text-sm underline" href="/forgot-password" onClick={closeAuthModal}>Forgot password?</Link>
 
       <button
         className="min-h-11 rounded-lg text-center text-sm font-medium text-primary hover:bg-brand-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
