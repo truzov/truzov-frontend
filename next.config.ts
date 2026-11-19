@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import { imageHosts } from './lib/config/image-hosts';
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   distDir: process.env.VERCEL ? '.next' : '.next-build',
   turbopack: {
     root: process.cwd(),
