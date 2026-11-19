@@ -1,5 +1,9 @@
 # Frontend redesign review
 
+## OAuth focused review — 2026-10-30
+
+Independent Reviewer Agent used secure-code-review for e874caa and found no blocking source finding: shared internal redirect gate is applied at OAuth storage and restoration, URL-normalized control characters reject across existing auth callers, and malformed pending verifier/state rejects before exchange. State equality/single-use/S256 remain intact. No new dependency, backend code or migration. Fresh165 tests, TypeScript and changed-file lint pass. Full scope, ASVS/CWE mapping, deployment evidence, rollback and open demo-OTP/credential/dependency limitations are in docs/oauth-security-review-20261030.md. Real consent/session remains user-controlled and pending.
+
 Rechecked the current storefront changes against the supplied homepage spec. Static review only; visual and runtime checks belong in QA.
 
 ## Findings
@@ -214,3 +218,51 @@ Rechecked Task7 against the earlier selected-checkout requirement: summaries inc
 Follow-up validation: 154 storefront tests plus TypeScript passed; 22 panel tests plus TypeScript passed. The panel production build passed again (90 generated pages). Chromium checks against that production build passed at 375/768/1440px (3/3), including automatic /signin navigation and the visible global success notification. The storefront recovery regression verifies no navigation/notification on rejection and exactly one fixed /login navigation after confirmation. All three repository whitespace checks pass. Backend source is unchanged by this follow-up; the earlier 295-unit/384-integration results remain its validation. No fresh storefront production build was needed for this routing-only change after TypeScript and the complete storefront suite passed.
 
 Verification used the same isolated Docker controls described above. Initial panel build/browser attempts failed because the runner omitted cached native modules or selected an incompatible libc/SWC combination; the final runner used Node22 Alpine and the existing read-only exact dependency, native, shared binary and font caches. No packages were installed or changed. Follow-up source review was performed by the coordinating agent; a fresh delegated review was unavailable due to the account usage limit. No new security defect was identified in this small routing change. Existing live-provider, current dependency-vulnerability and production-load limitations still apply. No commit, push or deployment.
+
+OAuth live follow-through completed: Google consent/sign-in by user, protected account, reload persistence and logout verified manually. No outstanding source blocker found. Runtime demo OTP remains at user's explicit request; existing Spring image findings and screenshot credential rotation remain open deployment risks.
+
+## Mobile navigation and address deletion — 2026-11-10
+
+- **Mobile navigation — DONE.** The same four destination links render across session states. The fifth slot follows the shared auth store and renders a neutral placeholder during restore. Guests open the existing login modal. Signed-in users link to their account. The mobile breakpoint and navigation casing follow existing storefront conventions.
+- **Saved address deletion — DONE.** The confirmation dialog uses the shared modal and disables confirmation while the request is pending. The shared address cache removes the row after success and refetches the authoritative default. Failure keeps the row and shows an error. The protected DELETE route uses the JWT subject and owner-scoped lookup, returning the same 403 for foreign and missing IDs. The per-owner database lock serializes address writes while promotion and deletion commit together. Order history reads a stored delivery snapshot independent of the saved address.
+
+Focused review found no blocking issue. All eight address endpoint integration tests passed on a disposable PostgreSQL 18.4 database after applying all 17 Flyway migrations. The runner substituted a local database for Testcontainers because Docker was stopped. The tests checked the order remained readable and its shipping snapshot stayed intact. Browser verification is recorded in `qa-report.md`.
+
+## Product image viewer — 2026-11-10
+
+- The native modal keeps the storefront inert. The scroll lock preserves the scrollbar gutter and restores the saved scroll coordinates with an instant scroll after cleanup. Viewer history entries support Back dismissal and keep repeat close actions from skipping a history entry.
+- Desktop mouse zoom follows the pointer. Review caught that a click on a magnified pixel outside the fitted bounds could dismiss the dialog. The corrected click hit test uses the painted scale, origin and translation. Touch gestures keep pinch and zoomed pan separate from fit-mode navigation.
+- Chromium’s native dialog tab order can hand focus to browser chrome at the end of the button list. Explicit forward and reverse wrapping keeps keyboard focus inside the viewer. A loading status covers the initial high-resolution request and an error status covers failed images.
+- On the gallery, Chromium can omit the synthetic click for a tap immediately after a swipe. The touch-end handler now opens the viewer for a short tap and handles a horizontal swipe separately. The existing button click still handles mouse and keyboard activation.
+
+No blocking source findings remain. See `qa-report.md` for browser results and device coverage.
+
+## Add to cart and Buy Now — 2026-11-10
+
+The PDP uses the same selected variant and quantity for ADD and Buy Now. Successful ADD clears the pre-add quantity and failures leave it intact. Guest persistence retains variant display labels and the header shows total units. Server cart upserts reject an over-limit merged total atomically. Quotes and direct orders validate the exact selection server-side, and direct orders use the existing idempotency table and leave the cart unchanged. The mobile bar delays reappearance after quantity input blur so it cannot intercept the tap that dismissed the keyboard.
+
+## Bag selection and removal — 2026-11-10
+
+- Guest and account bags derive the toggle label and removal visibility from the current checked lines. Existing owner-scoped selection storage carries the exclusions into checkout. Each variant retains its own selection.
+- Guest removal filters the stored lines once. Account removal reuses the authenticated, owner-checked cart-line endpoint and applies each returned cart. The requests are sequential. If a later request fails, earlier successful removals stay applied, remaining rows stay visible, and the bag shows an error while revalidating. Controls are disabled while an account cart write is pending.
+- Scoped review checked account identity across asynchronous requests and server ownership of the submitted line IDs. No blocking finding remains. The focused Vitest run passed all four cart tests, including a successful deletion followed by a network failure.
+
+### Opt-in bag selection follow-up
+
+- Default view hides selection controls other than Select all and includes the current bag in price details. Select all opens selection mode with every current line checked. Done restores full-bag pricing and hides the checkboxes and removal actions. Coupon quotes use the same mode as the visible bag summary.
+- Continue uses the existing owner-scoped exclusions from selection mode and clears them from the default view. Bag quotes ignore any prior direct purchase, and continuing from the bag clears it. Buy Now retains its separate checkout path.
+- Same-page guest sign-in can carry the active selection mode into the merged account bag. A full-page entry, including return from Google sign-in, intentionally starts in default mode. The existing checkout exclusions remain dynamic. A new line arriving after Continue is eligible unless excluded.
+
+No blocking finding remains within the opt-in selection scope.
+
+## Google sign-in and optional phone — 2026-11-10
+
+- Google-created profiles store a null phone. The migration clears only the historical generated value on Google-linked accounts and preserves real phone numbers and email verification. The existing unique constraint still applies to every present phone.
+- Profile and checkout render missing or legacy placeholder numbers as absent. Checkout offers the same add-and-verify form as the profile, and its server guard requires a present, verified phone. The form validates the same international format as the server and keeps a rejected code available for retry or resend.
+- Phone adoption still uses the existing authenticated OTP flow. The server checks account activity, session ownership, and target uniqueness before adopting the number and marking it verified. Google sign-in still verifies the email independently.
+
+No blocking finding remains in the changed flow. See `qa-report.md` for the integration and browser verification scope.
+
+## Catalog filters and sorting — 2026-11-10
+
+Counts come from server-side aggregates across the matching catalog, independent of pagination. The same filter adapter drives both responsive layouts. Mobile applies drafts only through Apply. The legacy comma-separated brand parameter cannot represent a brand name containing a comma, and the search service's unfiltered full-text ranking can differ from the catalog facet matcher. Local seeded catalog verification passed.

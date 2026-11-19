@@ -25,21 +25,22 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PhoneChangeModal } from '@/components/auth/PhoneChangeModal';
 import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 import {
   AddressesScreenSkeleton,
   LabReportsScreenSkeleton,
   OrderDetailScreenSkeleton,
   OrdersScreenSkeleton,
-  Skeleton,
 } from '@/components/ui/Skeleton';
 import { OrderItemRow } from '@/components/commerce/OrderItemRow';
 import { ProductGrid } from '@/components/product/ProductGrid';
-import { MobileFilterSheet } from '@/components/product/MobileFilterSheet';
+import { useQuery } from '@tanstack/react-query';
+import { MobileCatalogControls, MobileFilterSheet, type MobileFilterGroupKey } from '@/components/product/MobileFilterSheet';
 import { formatAddress } from '@/components/checkout/CheckoutScreens';
 import { useCategories, useLabReports, useProductList, useProductsByIds } from '@/hooks/api/useCatalog';
 import { useWishlist } from '@/hooks/api/useWishlist';
-import { useAddresses, useCancelOrder, useOrder, useOrders } from '@/hooks/api/useCommerce';
-import { DEFAULT_PRODUCT_LIMIT } from '@/lib/api/endpoints/catalog';
+import { useAddresses, useCancelOrder, useDeleteAddress, useOrder, useOrders } from '@/hooks/api/useCommerce';
+import { DEFAULT_PRODUCT_LIMIT, getProductFacets, type ProductFacets } from '@/lib/api/endpoints/catalog';
 import { ORDER_PAGE_LIMIT } from '@/lib/api/endpoints/orders';
 import { ERROR_CODES, isApiError } from '@/lib/api/errors';
 import type { AddressDto } from '@/types/api';
@@ -50,6 +51,8 @@ import {
   type ProductFilterState,
 } from '@/lib/utils/filters';
 import { formatCurrency } from '@/lib/utils/money';
+import { humaniseSlug } from '@/lib/utils/product';
+import { accountPhone } from '@/lib/auth/phone';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
@@ -57,186 +60,123 @@ import type { OrderStatus } from '@/types/api';
 
 export { HomeScreen } from './HomeScreen';
 
-const SORT_OPTIONS: Array<[string, string]> = [
-  ['price_asc', 'Price: Low to High'],
-  ['price_desc', 'Price: High to Low'],
-  ['best_rated', 'Best Rated'],
-  ['best_selling', 'Best Selling'],
-];
+const SORT_OPTIONS = [
+  ['relevance', 'Recommended'], ['newest', "What's new"], ['best_selling', 'Popularity'],
+  ['discount', 'Discount'], ['price_desc', 'Price: high to low'], ['price_asc', 'Price: low to high'],
+  ['best_rated', 'Customer rating'],
+] as const;
 
-/**
- * Desktop sidebar filter controls. Also reused inside the mobile filter sheet (see
- * `MobileFilterSheet` below) via the `draft`/`onDraftChange` props.
- *
- * Two modes:
- *  - Uncontrolled (desktop, `draft`/`onDraftChange` omitted): every control commits immediately
- *    by navigating to a new URL built from the *current* filters plus the one field being
- *    changed, via `filtersToSearchParams`. This replaces the old per-control hrefs, which were
- *    either absolute (`/products?labVerified=true`, wiping every other filter and navigating
- *    away from `/search` or `/category/[slug]`) or relative (`?sort=price_asc`, which replaces
- *    the whole query string in Next.js and silently drops sibling params).
- *  - Controlled (mobile sheet, `draft`/`onDraftChange` provided): controls mutate the draft
- *    object only; nothing navigates until the sheet's own Apply button commits it.
- */
-function FilterPanel({
-  filters,
-  draft,
-  onDraftChange,
-}: {
-  filters: ProductFilterState;
-  draft?: ProductFilterState;
-  onDraftChange?: (next: ProductFilterState) => void;
+const FILTER_GROUPS = [
+  { key: 'category', label: 'Categories', count: (f: ProductFilterState) => f.category?.split(',').length ?? 0 },
+  { key: 'brand', label: 'Brands', count: (f: ProductFilterState) => f.brand?.split(',').length ?? 0 },
+  { key: 'price', label: 'Price', count: (f: ProductFilterState) => Number(f.minPrice !== undefined || f.maxPrice !== undefined) },
+  { key: 'rating', label: 'Customer rating', count: (f: ProductFilterState) => Number(f.minRating !== undefined) },
+  { key: 'discount', label: 'Discount', count: (f: ProductFilterState) => Number(f.minDiscount !== undefined) },
+  { key: 'availability', label: 'Availability and trust', count: (f: ProductFilterState) => Number(Boolean(f.inStock)) + Number(Boolean(f.labVerified)) },
+] satisfies { key: MobileFilterGroupKey; label: string; count: (filters: ProductFilterState) => number }[];
+
+function FilterOptions({ options, searchable }: {
+  options: { label: string; count?: number; checked: boolean; toggle: () => void }[];
+  searchable?: boolean;
 }) {
-  const { data: categories, isLoading, isError } = useCategories();
-  const pathname = usePathname();
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [pending, startTransition] = useTransition();
-  useEffect(() => setMounted(true), []);
-
-  const active = draft ?? filters;
-
-  const commit = (patch: Partial<ProductFilterState>) => {
-    const next: ProductFilterState = { ...active, ...patch };
-    const search = filtersToSearchParams(next);
-
-    // filtersToSearchParams deliberately excludes `q` (see its doc comment) — reattach it here
-    // so a category/sort click on /search does not silently drop the in-flight search text.
-    if (filters.query) {
-      search.set('q', filters.query);
-    }
-
-    if (onDraftChange) {
-      onDraftChange(next);
-      return;
-    }
-
-    const destination = Object.hasOwn(patch, 'category') && pathname.startsWith('/category/') ? '/products' : pathname;
-    startTransition(() => router.push(`${destination}?${search.toString()}`));
-  };
-
-  const clear = () => {
-    if (onDraftChange) {
-      onDraftChange({});
-      return;
-    }
-
-    if (filters.query) {
-      const query = filters.query;
-      startTransition(() => router.push(`${pathname}?q=${encodeURIComponent(query)}`));
-      return;
-    }
-
-    startTransition(() => router.push(pathname.startsWith('/category/') ? '/products' : pathname));
-  };
-
+  const [expanded, setExpanded] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const matching = options.filter(({ label }) => label.toLowerCase().includes(query.trim().toLowerCase()));
+  const visible = expanded || query.trim() ? matching : matching.slice(0, 8);
   return (
-    <aside className="catalogue-filters rounded-lg border border-surface-border bg-surface-base p-4 lg:sticky lg:top-24">
-      <fieldset disabled={pending} aria-busy={pending} className="min-w-0">
-      <div className="flex items-center justify-between">
-        <h2 className="font-heading text-2xl">Filters</h2>
-        <button className="text-sm font-semibold text-brand-primary" type="button" onClick={clear}>
-          Clear all
-        </button>
+    <div className="grid gap-1">
+      {searchable && <button type="button" aria-label="Search brands" aria-expanded={searchOpen} className="ml-auto grid min-h-11 w-11 place-items-center text-brand-primary" onClick={() => { setSearchOpen(!searchOpen); setQuery(''); }}><Search aria-hidden="true" size={17} /></button>}
+      {searchOpen && <input aria-label="Brand name" className="mb-2 min-h-11 w-full rounded border border-surface-border px-2" value={query} onChange={(event) => setQuery(event.target.value)} />}
+      {visible.map(({ label, count, checked, toggle }) => (
+        <label key={label} className="flex min-h-11 cursor-pointer items-center gap-2 lg:min-h-8">
+          <input type="checkbox" checked={checked} onChange={toggle} className="h-4 w-4 shrink-0 accent-brand-primary" />
+          <span className="min-w-0 break-words">{label}</span>
+          {count !== undefined && <span className="ml-auto text-xs text-text-secondary">({count.toLocaleString('en-IN')})</span>}
+        </label>
+      ))}
+      {!visible.length && <p className="py-2 text-sm text-text-secondary">No options found</p>}
+      {!expanded && !query.trim() && matching.length > 8 && <button type="button" className="min-h-11 text-left font-semibold text-brand-primary" onClick={() => setExpanded(true)}>+ {matching.length - 8} more</button>}
+    </div>
+  );
+}
+
+function PriceFilter({ active, bounds, commit }: {
+  active: ProductFilterState;
+  bounds?: ProductFacets['price'];
+  commit: (patch: Partial<ProductFilterState>) => void;
+}) {
+  const min = Math.min(bounds?.min ?? 0, active.minPrice ?? Infinity, active.maxPrice ?? Infinity);
+  const max = Math.max(bounds?.max ?? 0, active.minPrice ?? 0, active.maxPrice ?? 0);
+  const [low, setLow] = useState(active.minPrice ?? min);
+  const [high, setHigh] = useState(active.maxPrice ?? max);
+  const percentage = (value: number) => 100 * (value - min) / Math.max(1, max - min);
+  const apply = () => {
+    const minPrice = low === min ? undefined : low;
+    const maxPrice = high === max ? undefined : high;
+    if (minPrice !== active.minPrice || maxPrice !== active.maxPrice) commit({ minPrice, maxPrice });
+  };
+  return (
+    <div>
+      <p className="my-2 font-medium">₹{low.toLocaleString('en-IN')} – ₹{high.toLocaleString('en-IN')}</p>
+      <div className="catalogue-price-range relative h-11" onPointerUp={apply}>
+        <div aria-hidden="true" className="absolute inset-x-2.5 top-1/2 h-0.5 bg-[#dce6d8]">
+          <div className="absolute h-full bg-brand-primary" style={{ left: `${percentage(low)}%`, right: `${100 - percentage(high)}%` }} />
+        </div>
+        <input aria-label="Minimum price" type="range" className={low === max ? 'z-10' : undefined} min={min} max={max} value={low} disabled={min === max} onChange={(event) => setLow(Math.min(Number(event.target.value), high))} onKeyUp={apply} onBlur={apply} />
+        <input aria-label="Maximum price" type="range" min={min} max={max} value={high} disabled={min === max} onChange={(event) => setHigh(Math.max(Number(event.target.value), low))} onKeyUp={apply} onBlur={apply} />
       </div>
-      <div className="mt-5 grid gap-5 text-sm">
-        <div>
-          <h3 className="font-semibold">Category</h3>
-          <div className="mt-3 grid gap-2">
-            {/* Categories load separately from the product list, so this block degrades on its
-                own. A failure here must not block the grid: browsing by URL still works
-                without the sidebar, so the category list is simply omitted rather than
-                escalated into a page-level error. */}
-            {isLoading || !mounted ? (
-              <>
-                <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-5 w-28" />
-              </>
-            ) : isError ? (
-              <p className="text-xs text-text-muted">Categories are unavailable right now.</p>
-            ) : (
-              categories?.filter((category) => category.isActive).map((category) => (
-                <button
-                  key={category.slug}
-                  className={cn(
-                    'filter-choice text-left',
-                    active.category === category.slug
-                      ? 'font-semibold text-brand-primary'
-                      : 'text-text-secondary'
-                  )}
-                  type="button"
-                  aria-pressed={active.category === category.slug}
-                  onClick={() =>
-                    commit({ category: active.category === category.slug ? undefined : category.slug })
-                  }
-                >
-                  {category.name}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-        <div>
-          <h3 className="font-semibold">Price (₹)</h3>
-          <form key={`${active.minPrice ?? ''}:${active.maxPrice ?? ''}`} className="mt-3 grid gap-2" onSubmit={(event) => {
-            event.preventDefault();
-            const data = new FormData(event.currentTarget);
-            const min = String(data.get('min') ?? '');
-            const max = String(data.get('max') ?? '');
-            if (min && max && Number(max) < Number(min)) {
-              (event.currentTarget.elements.namedItem('max') as HTMLInputElement).setCustomValidity('Maximum price must be at least the minimum.');
-              event.currentTarget.reportValidity();
-              return;
-            }
-            commit({ minPrice: min ? Number(min) : undefined, maxPrice: max ? Number(max) : undefined });
-          }}>
-            <div className="grid grid-cols-2 gap-2">
-              <label>Min<input className="mt-1 min-h-11 w-full rounded border border-surface-border px-2" name="min" type="number" min="0" step="1" defaultValue={active.minPrice ?? ''} /></label>
-              <label>Max<input className="mt-1 min-h-11 w-full rounded border border-surface-border px-2" name="max" type="number" min="0" step="1" defaultValue={active.maxPrice ?? ''} onInput={(event) => event.currentTarget.setCustomValidity('')} /></label>
-            </div>
-            <button className="min-h-11 rounded border border-brand-primary text-brand-primary" type="submit">Set price</button>
-          </form>
-        </div>
-        <div>
-          <button aria-pressed={Boolean(active.inStock)} className="min-h-11 text-left font-semibold" type="button" onClick={() => commit({ inStock: active.inStock ? undefined : true })}>In stock only {active.inStock ? '✓' : ''}</button>
-        </div>
-        <div>
-          <h3 className="font-semibold">Trust</h3>
-          <button
-            className={cn(
-              'mt-3 flex w-full items-center justify-between rounded-md p-3 text-left font-semibold',
-              active.labVerified ? 'bg-brand-primary text-white' : 'bg-brand-light text-brand-primary'
-            )}
-            type="button"
-            aria-pressed={Boolean(active.labVerified)}
-            onClick={() => commit({ labVerified: active.labVerified ? undefined : true })}
-          >
-            Lab Verified Only
-            <ShieldCheck aria-hidden="true" className="h-4 w-4" />
-          </button>
-        </div>
-        <div>
-          <h3 className="font-semibold">Sort</h3>
-          <div className="mt-3 grid gap-2 text-text-secondary">
-            {SORT_OPTIONS.map(([value, label]) => (
-              <button
-                key={value}
-                className={cn(
-                  'filter-choice text-left',
-                  active.sort === value ? 'font-semibold text-brand-primary' : undefined
-                )}
-                type="button"
-                aria-pressed={active.sort === value}
-                onClick={() => commit({ sort: value })}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+    </div>
+  );
+}
+
+function FilterPanel({ active, facets, categories, commit, clear, group }: {
+  active: ProductFilterState;
+  facets?: ProductFacets;
+  categories: { slug: string; name: string }[];
+  commit: (patch: Partial<ProductFilterState>) => void;
+  clear: () => void;
+  group?: MobileFilterGroupKey;
+}) {
+  const list = (key: 'category' | 'brand', values: { value: string; count?: number }[]) => {
+    const selected = active[key]?.split(',') ?? [];
+    return [...values, ...selected.filter((value) => !values.some((entry) => entry.value === value)).map((value) => ({ value, count: 0 }))].map(({ value, count }) => ({
+      label: key === 'category' ? categories.find((category) => category.slug === value)?.name ?? humaniseSlug(value) : value,
+      count,
+      checked: selected.includes(value),
+      toggle: () => commit({ [key]: (selected.includes(value) ? selected.filter((entry) => entry !== value) : [...selected, value]).join(',') || undefined }),
+    }));
+  };
+  const thresholds = (key: 'minRating' | 'minDiscount', values: { value: number; count: number }[]) => values.map(({ value, count }) => ({
+    label: key === 'minRating' ? value + ' stars and above' : value + '% and above',
+    count,
+    checked: active[key] === value,
+    toggle: () => commit({ [key]: active[key] === value ? undefined : value }),
+  }));
+  const controls = {
+    category: <FilterOptions options={list('category', facets?.categories ?? categories.map(({ slug }) => ({ value: slug })))} />,
+    brand: <FilterOptions searchable options={list('brand', facets?.brands ?? [])} />,
+    price: <PriceFilter key={JSON.stringify([active.minPrice, active.maxPrice, facets?.price])} active={active} bounds={facets?.price} commit={commit} />,
+    rating: <FilterOptions options={thresholds('minRating', facets?.ratings ?? [])} />,
+    discount: <FilterOptions options={thresholds('minDiscount', facets?.discounts ?? [])} />,
+    availability: <FilterOptions options={[
+      { label: 'In stock only', count: facets?.inStock, checked: Boolean(active.inStock), toggle: () => commit({ inStock: active.inStock ? undefined : true }) },
+      { label: 'Lab verified only', count: facets?.labVerified, checked: Boolean(active.labVerified), toggle: () => commit({ labVerified: active.labVerified ? undefined : true }) },
+    ]} />,
+  };
+  if (group) return controls[group];
+  return (
+    <aside className="catalogue-filters rounded-lg border border-surface-border bg-surface-base lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
+      <div className="flex items-center justify-between p-4">
+        <h2 className="font-heading text-xl">Filters</h2>
+        <button type="button" className="min-h-11 text-sm font-semibold text-brand-primary" onClick={clear}>Clear all</button>
       </div>
-      </fieldset>
+      {FILTER_GROUPS.map(({ key, label }) => (
+        <section key={key} className="border-t border-surface-border p-4 text-sm">
+          <h3 className="mb-2 font-semibold">{label}</h3>
+          {controls[key]}
+        </section>
+      ))}
     </aside>
   );
 }
@@ -258,6 +198,23 @@ export function ProductListingScreen({
     router.push(`${pathname}?${search.toString()}`);
   };
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [navigationPending, startNavigation] = useTransition();
+  const { data: categories = [] } = useCategories();
+  const availableCategories = categories.filter((category) => category.isActive);
+  const facetParams = toProductListParams({ ...filters, page: undefined, sort: undefined });
+  const { data: facets } = useQuery({
+    queryKey: ['product-facets', facetParams],
+    queryFn: ({ signal }) => getProductFacets(facetParams, signal),
+    placeholderData: (previous) => previous,
+  });
+  const apply = (next: ProductFilterState) => {
+    const search = filtersToSearchParams(next);
+    if (filters.query) search.set('q', filters.query);
+    const destination = pathname.startsWith('/category/') && next.category !== filters.category ? '/products' : pathname;
+    startNavigation(() => router.push(search.size ? destination + '?' + search : destination, { scroll: false }));
+  };
+  const change = (patch: Partial<ProductFilterState>) => apply({ ...filters, ...patch });
+  const clear = () => apply({ sort: filters.sort });
 
   // Filtering, sorting and paging are the server's job now. `filterProducts` used to run over a
   // fixture array in the browser; doing that over one page of API results would silently
@@ -276,7 +233,7 @@ export function ProductListingScreen({
   const lastPage = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="customer-page">
+    <div className="customer-page pb-14 lg:pb-0">
       <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap gap-2 text-sm text-text-secondary">
         <Link className="hover:underline" href="/">Home</Link> <span aria-hidden="true">/</span> <span aria-current="page">{title}</span>
       </nav>
@@ -290,16 +247,12 @@ export function ProductListingScreen({
             {isLoading ? 'Loading products...' : `Showing ${items.length} of ${total} products`}
           </p>
         </div>
-        <button
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-primary bg-white px-4 text-sm font-medium text-brand-primary lg:hidden"
-          type="button"
-          onClick={() => setFilterSheetOpen(true)}
-        >
-          Filters
-          {activeFilters.length ? (
-            <Badge variant="info">{activeFilters.length}</Badge>
-          ) : null}
-        </button>
+        <label className="hidden items-center gap-2 rounded border border-surface-border bg-surface-base px-3 lg:flex">
+          <span>Sort by</span>
+          <select className="min-h-11 bg-transparent font-semibold" disabled={navigationPending} value={params.sort ?? 'relevance'} onChange={(event) => change({ sort: event.target.value })}>
+            {SORT_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
       </div>
       {activeFilters.length ? (
         <div className="mb-5 flex flex-wrap gap-2">
@@ -311,9 +264,9 @@ export function ProductListingScreen({
         </div>
       ) : null}
       <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <div className="hidden lg:block">
-          <FilterPanel filters={filters} />
-        </div>
+        <fieldset disabled={navigationPending} className="hidden min-w-0 lg:block">
+          <FilterPanel active={filters} facets={facets} categories={availableCategories} commit={change} clear={clear} />
+        </fieldset>
         <div className="catalogue-results min-w-0">
           {isError ? (
             <ErrorState
@@ -358,26 +311,22 @@ export function ProductListingScreen({
               ) : null}
             </>
           ) : (
-            <EmptyState
-              action="Clear Filters"
-              href="/products"
-              icon={Search}
-              message="No products found matching your filters."
-              title="No matching products"
-            />
+            <EmptyState icon={Search} message="Try changing your filters." title="No products found" action="Clear filters" onAction={clear} />
           )}
         </div>
       </div>
 
-      <MobileFilterSheet
-        key={filterSheetOpen ? JSON.stringify(filters) : 'closed'}
+      <MobileCatalogControls filters={filters} filterCount={activeFilters.length} sortOptions={SORT_OPTIONS} onChange={change} onOpenFilters={() => setFilterSheetOpen(true)} />
+      {filterSheetOpen && <MobileFilterSheet
         filters={filters}
-        open={filterSheetOpen}
+        open
         onClose={() => setFilterSheetOpen(false)}
-        renderControls={(draft, setDraft) => (
-          <FilterPanel draft={draft} filters={filters} onDraftChange={setDraft} />
+        onApply={apply}
+        groups={FILTER_GROUPS}
+        renderControls={(draft, setDraft, group) => (
+          <FilterPanel active={draft} facets={facets} categories={availableCategories} commit={(patch) => setDraft({ ...draft, ...patch })} clear={() => setDraft({ sort: draft.sort })} group={group} />
         )}
-      />
+      />}
     </div>
   );
 }
@@ -591,14 +540,15 @@ export function AccountScreen() {
     }
   }
 
+  const phone = accountPhone(user?.phone);
   const profileRows = [
     { label: 'Full name', value: user?.name || '—' },
     {
       label: 'Mobile number',
-      value: user?.phone || '— not added —',
+      value: phone ?? 'Not added',
       // Surfaced because it is not cosmetic: an unverified phone blocks checkout with a
       // 403 PHONE_NOT_VERIFIED, so the user needs to see it before they hit that wall.
-      verified: user?.phone ? user.phoneVerified : undefined,
+      verified: phone ? user?.phoneVerified : undefined,
     },
     { label: 'Email address', value: user?.email || '— not added —', verified: user?.email ? user.emailVerified : undefined },
   ];
@@ -625,14 +575,14 @@ export function AccountScreen() {
               <span className="text-sm font-medium text-text-primary">Mobile Number</span>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-text-secondary">
-                  {user?.phone || '— not added —'}
+                  {phone ?? 'Not added'}
                 </span>
                 <Button
                   className="min-h-11"
                   variant="outline"
                   onClick={() => setPhoneModalOpen(true)}
                 >
-                  Change
+                  {phone ? 'Change mobile number' : 'Add mobile number'}
                 </Button>
               </div>
               <p className="text-xs text-text-secondary">
@@ -678,6 +628,7 @@ export function AccountScreen() {
                     {value}
                     {verified === true ? <Badge variant="success">Verified</Badge> : null}
                     {verified === false ? <Badge variant="info">Not verified</Badge> : null}
+                    {label === 'Mobile number' && <Button variant="outline" size="sm" onClick={() => setPhoneModalOpen(true)}>{phone ? 'Change mobile number' : 'Add mobile number'}</Button>}
                   </dd>
                 </div>
               ))}
@@ -959,9 +910,11 @@ export function OrderDetailScreen({ id }: { id: string }) {
 }
 
 export function AddressesScreen() {
-  const { addresses, isLoading, isError, error, refetch } = useAddresses();
+  const { addresses, isLoading, isLoadingError, error, refetch } = useAddresses();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AddressDto | undefined>(undefined);
+  const [deleting, setDeleting] = useState<AddressDto | null>(null);
+  const deleteAddress = useDeleteAddress();
 
   const openCreate = () => {
     setEditing(undefined);
@@ -986,7 +939,7 @@ export function AddressesScreen() {
       >
         {isLoading ? (
           <AddressesScreenSkeleton />
-        ) : isError ? (
+        ) : isLoadingError ? (
           <ErrorState
             error={error}
             title="We could not load your addresses"
@@ -1040,12 +993,18 @@ export function AddressesScreen() {
                   </div>
                 </div>
 
-                {/* PATCH /users/me/addresses/{id} — owner-checked server-side. A past order is
-                    unaffected: it snapshotted the address it shipped to. */}
                 <div className="mt-4 flex items-center gap-3 border-t border-surface-border pt-3">
                   <Button size="sm" variant="outline" onClick={() => openEdit(address)}>
                     <Pencil aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                     Edit
+                  </Button>
+                  <Button
+                    className="min-h-11 text-text-danger"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setDeleting(address)}
+                  >
+                    Delete
                   </Button>
                 </div>
               </article>
@@ -1054,8 +1013,7 @@ export function AddressesScreen() {
         )}
 
         <p className="mt-5 rounded-2xl border border-dashed border-surface-border bg-surface-raised/50 p-4 text-sm text-text-secondary">
-          Editing an address does not change past orders — each order keeps the address it was
-          placed with.
+          Past orders keep the delivery address they were placed with.
         </p>
 
         <AddressFormModal
@@ -1063,6 +1021,38 @@ export function AddressesScreen() {
           onClose={() => setModalOpen(false)}
           address={editing}
         />
+        <Modal
+          open={deleting !== null}
+          title="Delete this address?"
+          onClose={() => {
+            if (!deleteAddress.isPending) setDeleting(null);
+          }}
+        >
+          <p className="text-sm text-text-secondary">This can&apos;t be undone.</p>
+          <div className="mt-4 flex justify-end gap-3">
+            <Button
+              className="min-h-11"
+              variant="outline"
+              disabled={deleteAddress.isPending}
+              onClick={() => setDeleting(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              aria-label={deleteAddress.isPending ? 'Deleting address' : undefined}
+              className="min-h-11"
+              variant="danger"
+              loading={deleteAddress.isPending}
+              onClick={() => {
+                if (deleting && !deleteAddress.isPending) {
+                  deleteAddress.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </Modal>
       </AccountPanel>
     </div>
   );
@@ -1073,7 +1063,7 @@ export function SettingsScreen() {
 
   const settingsRows = [
     { label: 'Login email', value: user?.email ?? 'Not set' },
-    { label: 'Mobile number', value: user?.phone ?? 'Not added' },
+    { label: 'Mobile number', value: accountPhone(user?.phone) ?? 'Not added' },
     { label: 'Language', value: 'English (India)' },
   ];
 

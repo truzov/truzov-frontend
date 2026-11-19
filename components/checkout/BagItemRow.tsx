@@ -54,7 +54,7 @@ export function BagItemRow({ item, selected = true, onSelect }: { item: CartItem
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            {onSelect && <label className="mb-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-primary"><input type="checkbox" className="h-5 w-5 accent-brand-primary" checked={selected} onChange={(event) => onSelect(event.target.checked)} />Select {item.name} for checkout</label>}
+            {onSelect && <label className="mb-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-primary"><input type="checkbox" className="h-5 w-5 accent-brand-primary" checked={selected} disabled={isBusy} onChange={(event) => onSelect(event.target.checked)} />Select {item.name} for checkout</label>}
             <Link className="text-base font-medium leading-snug hover:text-brand-primary sm:text-lg" href={`/products/${item.slug}`}>
               {item.name}
             </Link>

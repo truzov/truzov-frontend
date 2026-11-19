@@ -32,7 +32,7 @@ export function VariantPills({
       role="group"
     >
       {variants.map((variant) => {
-        const unavailable = variant.inStock === false;
+        const unavailable = variant.inStock === false || variant.stockCount === 0;
         return (
           <button
             key={variant.id}

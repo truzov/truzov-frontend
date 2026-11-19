@@ -4,11 +4,12 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuantitySelector } from '@/components/product/QuantitySelector';
 import { cartLineKey, selectedCart } from '@/lib/cart/selection';
+import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
 import { useCheckoutStore } from '@/store/checkout.store';
 import { useAuthStore } from '@/store/auth.store';
 import type { CartDto } from '@/types/api';
 
-const mocks = vi.hoisted(() => ({ placeOrder: vi.fn(), validate: vi.fn(), push: vi.fn(), logout: vi.fn() }));
+const mocks = vi.hoisted(() => ({ placeOrder: vi.fn(), validate: vi.fn(), push: vi.fn(), logout: vi.fn(), remove: vi.fn() }));
 const cart: CartDto = { items: [
   { id: 'line-a', productId: 'a', name: 'Honey', slug: 'honey', unitPrice: 100, quantity: 2, lineTotal: 200, inStock: true, availableStock: 10 },
   { id: 'line-b', productId: 'b', name: 'Tea', slug: 'tea', unitPrice: 50, quantity: 1, lineTotal: 50, inStock: false, availableStock: 0 },
@@ -17,7 +18,7 @@ const cart: CartDto = { items: [
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }), usePathname: () => '/cart', useSearchParams: () => new URLSearchParams() }));
 vi.mock('@/hooks/api/useCart', () => ({
   useCart: () => ({ cart, isLoading: false, isError: false }), useCartItemCount: () => 3,
-  useUpdateCartItem: () => ({ mutate: vi.fn(), isPending: false }), useRemoveCartItem: () => ({ mutate: vi.fn(), isPending: false }),
+  useUpdateCartItem: () => ({ mutate: vi.fn(), isPending: false }), useRemoveCartItem: () => ({ mutate: mocks.remove, isPending: false }),
 }));
 vi.mock('@/hooks/api/useCommerce', () => ({
   useAddresses: () => ({ addresses: [{ id: 'addr', fullName: 'Buyer', line1: 'Street', city: 'Delhi', postalCode: '110001', country: 'IN' }], isLoading: false }),
@@ -29,7 +30,7 @@ vi.mock('@/hooks/api/useCatalog', () => ({ useCategories: () => ({ data: [] }) }
 vi.mock('@/components/checkout/AddressFormModal', () => ({ AddressFormModal: () => null }));
 vi.mock('@/lib/api/endpoints/coupons', () => ({ getCheckoutQuote: mocks.validate }));
 
-import { BagScreen, PaymentScreen } from '@/components/checkout/CheckoutScreens';
+import { AddressScreen, BagScreen, PaymentScreen } from '@/components/checkout/CheckoutScreens';
 import { Header } from '@/components/layout/Header';
 import { AccountMenu } from '@/components/auth/AccountMenu';
 
@@ -41,7 +42,7 @@ function mount(component: React.ReactNode) {
 beforeEach(() => {
   vi.clearAllMocks();
   useCheckoutStore.getState().resetCheckout();
-  useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer', name: 'Buyer', phoneVerified: true } as never, logout: mocks.logout });
+  useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer', name: 'Buyer', phone: '+919876543210', phoneVerified: true } as never, logout: mocks.logout });
   mocks.validate.mockImplementation(async (code: string) => ({ code: code || null, subtotal: 200, discountAmount: code ? 20 : 0, total: code ? 180 : 200, deliveryFee: 0 }));
 });
 afterEach(cleanup);
@@ -73,6 +74,7 @@ describe('quantity and checkout selection', () => {
   it('unselecting an unavailable product enables checkout and updates summary', async () => {
     mount(<BagScreen />);
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select Tea for checkout' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
     expect(screen.getByText('Subtotal (2 selected units)')).toBeInTheDocument();
@@ -81,9 +83,94 @@ describe('quantity and checkout selection', () => {
     expect(screen.getByText('Select at least one product to continue.')).toBeInTheDocument();
   });
 
+  it('enters and exits signed-in selection mode and removes only the checked line IDs', async () => {
+    useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
+    mount(<BagScreen />);
+    expect(screen.getByText('Subtotal (3 selected units)')).toBeVisible();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Remove (all|selected)/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    const honey = screen.getByRole('checkbox', { name: 'Select Honey for checkout' });
+    const tea = screen.getByRole('checkbox', { name: 'Select Tea for checkout' });
+    expect(honey).toBeChecked();
+    expect(tea).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Remove all' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
+    expect(honey).not.toBeChecked();
+    expect(tea).not.toBeChecked();
+    expect(screen.getByText('0 of 2 products selected')).toBeVisible();
+    expect(screen.getByText('Subtotal (0 selected units)')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^Remove (all|selected)/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    expect(honey).toBeChecked();
+    expect(tea).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Deselect all' })).toBeVisible();
+    fireEvent.click(tea);
+    expect(screen.getByRole('button', { name: 'Select all' })).toBeVisible();
+    expect(screen.getByText('1 of 2 products selected')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.getByText('Subtotal (3 selected units)')).toBeVisible();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Remove (all|selected)/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Tea for checkout' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /^Remove selected/ }));
+    expect(mocks.remove).toHaveBeenCalledExactlyOnceWith(['line-a']);
+  });
+
+  it('removes checked guest lines, preserves unchecked lines, and shows an empty bag after the last removal', () => {
+    useAuthStore.setState({ isLoggedIn: false, status: 'anonymous', user: null });
+    const guest = useGuestCartStore.getState();
+    guest.clear();
+    guest.add({ productId: 'a', variantId: 'small', variantLabel: '500g', name: 'Honey', slug: 'honey', unitPrice: 100, quantity: 2 });
+    guest.add({ productId: 'a', variantId: 'large', variantLabel: '1kg', name: 'Honey', slug: 'honey', unitPrice: 200, quantity: 1 });
+    useCheckoutStore.getState().setLineSelected('guest', cartLineKey({ productId: 'a', variantId: 'large' }), false);
+    mount(<BagScreen />);
+    expect(screen.getByText('Subtotal (3 items)')).toBeVisible();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Remove (all|selected)/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
+    expect(screen.getByRole('button', { name: 'Sign in to continue' })).toBeDisabled();
+    expect(screen.getByText('Subtotal (0 items)')).toBeVisible();
+    const [small, large] = screen.getAllByRole('checkbox', { name: 'Select Honey for checkout' });
+    fireEvent.click(small);
+    fireEvent.click(large);
+    expect(screen.getByRole('button', { name: 'Deselect all' })).toBeVisible();
+    fireEvent.click(large);
+    fireEvent.click(screen.getByRole('button', { name: /^Remove selected/ }));
+    expect(screen.queryByText('500g', { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText('1kg', { exact: true })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Select Honey for checkout' })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Select all' })).toBeVisible();
+    expect(useGuestCartStore.getState().items.map(({ variantId, quantity }) => [variantId, quantity])).toEqual([['large', 1]]);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Honey for checkout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove all' }));
+    expect(screen.getByRole('heading', { name: 'Your bag is empty' })).toBeVisible();
+  });
+
   it('submits selected IDs and coupon without client money, retains key only for unchanged retries', async () => {
     useCheckoutStore.getState().setSelectedAddress('addr');
-    useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
+    const bag = mount(<BagScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Honey for checkout' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(mocks.push).toHaveBeenCalledWith('/checkout/address');
+    bag.unmount();
+
+    const address = mount(<AddressScreen />);
+    expect(screen.getByText('Subtotal (2 selected units)')).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(mocks.push).toHaveBeenCalledWith('/checkout/payment');
+    address.unmount();
+
     mount(<PaymentScreen />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Place order' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Place order' }));
@@ -119,6 +206,7 @@ describe('quantity and checkout selection', () => {
     useCheckoutStore.getState().setLineSelected('another-user', cartLineKey(cart.items[0]), false);
     useCheckoutStore.getState().setCouponCode('another-user', 'PRIVATE');
     mount(<BagScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
     expect(screen.getByRole('checkbox', { name: 'Select Honey for checkout' })).toBeChecked();
     expect(screen.queryByRole('button', { name: 'Remove coupon' })).not.toBeInTheDocument();
   });
@@ -127,6 +215,8 @@ describe('quantity and checkout selection', () => {
     let failed = false; mocks.validate.mockImplementation(async (code: string) => { if (code && !failed) { failed = true; throw new Error('Temporary error'); } return { code: code || null, subtotal: 200, discountAmount: code ? 20 : 0, total: code ? 180 : 200, deliveryFee: 0 }; });
     useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
     mount(<BagScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Tea for checkout' }));
     fireEvent.change(screen.getByLabelText('Have an offer or coupon?'), { target: { value: 'save' } });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));

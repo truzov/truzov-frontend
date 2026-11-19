@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useIsMutating } from '@tanstack/react-query';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
 import { BagItemRow } from '@/components/checkout/BagItemRow';
 import { CheckoutPriceDetails } from '@/components/checkout/CheckoutPriceDetails';
@@ -14,8 +15,9 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState, InlineError } from '@/components/ui/ErrorState';
 import { CartScreenSkeleton, Skeleton } from '@/components/ui/Skeleton';
-import { useCart } from '@/hooks/api/useCart';
+import { useCart, useRemoveCartItem } from '@/hooks/api/useCart';
 import { useCheckoutSelection } from '@/hooks/api/useCheckoutSelection';
+import { accountPhone } from '@/lib/auth/phone';
 import {
   useAddresses,
   useCheckout,
@@ -41,14 +43,50 @@ import type { AddressDto } from '@/types/api';
 
 /* ------------------------------------------------------------------ the bag */
 
+function BagSelectionActions({ owner, lineKeys, selectedCount, editing, onEditingChange, busy, onRemove }: {
+  owner: string;
+  lineKeys: string[];
+  selectedCount: number;
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
+  busy?: boolean;
+  onRemove: () => void;
+}) {
+  const setBagSelection = useCheckoutStore((state) => state.setBagSelection);
+  const allSelected = selectedCount === lineKeys.length;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-end gap-x-4 text-sm">
+      {editing && <span aria-live="polite" className="mr-auto">{selectedCount} of {lineKeys.length} products selected</span>}
+      <div className="flex flex-wrap items-center gap-x-4">
+        <button className="min-h-11 text-brand-primary underline disabled:opacity-50" type="button" disabled={busy} onClick={() => {
+          setBagSelection(owner, editing && allSelected ? lineKeys : []);
+          onEditingChange(true);
+        }}>
+          {editing && allSelected ? 'Deselect all' : 'Select all'}
+        </button>
+        {editing && selectedCount > 0 && (
+          <button className="min-h-11 font-medium text-text-danger disabled:opacity-50" type="button" disabled={busy} onClick={onRemove}>
+            {allSelected ? 'Remove all' : 'Remove selected'}
+          </button>
+        )}
+        {editing && <button className="min-h-11 text-brand-primary underline disabled:opacity-50" type="button" disabled={busy} onClick={() => onEditingChange(false)}>Done</button>}
+      </div>
+    </div>
+  );
+}
+
 export function BagScreen() {
   const router = useRouter();
-  const { cart, isLoading, isError, error, refetch } = useCart();
+  const { cart, isLoading, isLoadingError, error, refetch } = useCart();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const authStatus = useAuthStore((state) => state.status);
-  const { owner, cart: selected } = useCheckoutSelection();
+  const [editingSelection, setEditingSelection] = useState(false);
+  const bagMode = editingSelection ? 'selected' : 'all';
+  const { owner, cart: selected } = useCheckoutSelection(bagMode);
   const setLineSelected = useCheckoutStore((state) => state.setLineSelected);
-  const selectAll = useCheckoutStore((state) => state.selectAll);
+  const removeItems = useRemoveCartItem();
+  const cartBusy = Boolean(useIsMutating({ mutationKey: ['cart-write'] }));
 
   // Session restore is a network round trip, so "not logged in" is only meaningful once it settles.
   if (authStatus === 'idle' || authStatus === 'restoring') {
@@ -59,14 +97,14 @@ export function BagScreen() {
   // (orders are user-owned server-side), so the CTA signs in first; the merge-on-login replays
   // these lines into the server cart and this same page then shows the merged result.
   if (!isLoggedIn) {
-    return <GuestBagScreen />;
+    return <GuestBagScreen editingSelection={editingSelection} setEditingSelection={setEditingSelection} />;
   }
 
   if (isLoading) {
     return <CartScreenSkeleton />;
   }
 
-  if (isError) {
+  if (isLoadingError) {
     return (
       <div className="mx-auto max-w-4xl py-10">
         <ErrorState error={error} title="We could not load your bag" onRetry={() => void refetch()} />
@@ -101,10 +139,7 @@ export function BagScreen() {
               <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">
                 {cart.itemCount} {cart.itemCount === 1 ? 'item' : 'items'} in your bag
               </h1>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-                <span>{selected.items.length} of {cart.items.length} products selected</span>
-                <button className="min-h-11 text-brand-primary underline" type="button" onClick={() => selectAll(owner)}>Select all</button>
-              </div>
+              <BagSelectionActions owner={owner} lineKeys={cart.items.map(cartLineKey)} selectedCount={selected.items.length} editing={editingSelection} onEditingChange={setEditingSelection} busy={cartBusy} onRemove={() => removeItems.mutate(selected.items.map((item) => item.id))} />
             </section>
 
             {blockedItems.length ? (
@@ -116,19 +151,25 @@ export function BagScreen() {
 
             <div className="grid gap-3">
               {cart.items.map((item) => (
-                <BagItemRow key={item.id} item={item} selected={selected.items.some((line) => line.id === item.id)} onSelect={(checked) => setLineSelected(owner, cartLineKey(item), checked)} />
+                <BagItemRow key={item.id} item={item} selected={selected.items.some((line) => line.id === item.id)} onSelect={editingSelection ? (checked) => setLineSelected(owner, cartLineKey(item), checked) : undefined} />
               ))}
             </div>
           </main>
 
           <CheckoutPriceDetails
+            bagMode={bagMode}
             ctaLabel="Continue"
-            disabled={blockedItems.length > 0 || !selected.items.length}
+            disabled={cartBusy || blockedItems.length > 0 || !selected.items.length}
             helperText={
               blockedItems.length > 0 ? 'Unselect out-of-stock items to continue.' : !selected.items.length ? 'Select at least one product to continue.' : undefined
             }
             termsText="By continuing, you agree to truzov's terms and verified marketplace policies."
-            onCta={() => router.push('/checkout/address')}
+            onCta={() => {
+              const checkout = useCheckoutStore.getState();
+              if (editingSelection) checkout.setBuyNow(owner);
+              else checkout.setBagSelection(owner, []);
+              router.push('/checkout/address');
+            }}
           />
         </div>
       </div>
@@ -145,13 +186,16 @@ export function BagScreen() {
  * stock-checks every line through `POST /cart/items`, so what the user sees is an estimate and
  * the CTA deliberately says so rather than implying a total the server never confirmed.
  */
-function GuestBagScreen() {
+function GuestBagScreen({ editingSelection, setEditingSelection }: {
+  editingSelection: boolean;
+  setEditingSelection: (editing: boolean) => void;
+}) {
   const items = useGuestCartStore((state) => state.items);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
   const selectionOwner = useCheckoutStore((state) => state.selectionOwner);
   const excludedKeys = useCheckoutStore((state) => state.excludedLineKeys);
   const setLineSelected = useCheckoutStore((state) => state.setLineSelected);
-  const selectAll = useCheckoutStore((state) => state.selectAll);
+  const removeSelected = useGuestCartStore((state) => state.removeSelected);
 
   // Hydrate from localStorage once on the client; SSR renders an empty frame either way.
   useEffect(() => {
@@ -172,7 +216,7 @@ function GuestBagScreen() {
     );
   }
 
-  const selected = items.filter((item) => selectionOwner !== 'guest' || !excludedKeys.includes(cartLineKey(item)));
+  const selected = items.filter((item) => !editingSelection || selectionOwner !== 'guest' || !excludedKeys.includes(cartLineKey(item)));
   const itemCount = selected.reduce((total, item) => total + item.quantity, 0);
   const subtotal = selected.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
 
@@ -185,12 +229,12 @@ function GuestBagScreen() {
               <h1 className="text-2xl font-medium leading-tight tracking-tight sm:text-3xl">
                 {items.length} {items.length === 1 ? 'product' : 'products'} in your bag
               </h1>
-              <div className="mt-3 flex items-center justify-between text-sm"><span>{selected.length} selected</span><button className="min-h-11 text-brand-primary underline" type="button" onClick={() => selectAll('guest')}>Select all</button></div>
+              <BagSelectionActions owner="guest" lineKeys={items.map(cartLineKey)} selectedCount={selected.length} editing={editingSelection} onEditingChange={setEditingSelection} onRemove={() => removeSelected(selected.map(cartLineKey))} />
             </section>
 
             <div className="grid gap-3">
               {items.map((item) => (
-                <GuestBagItemRow key={cartLineKey(item)} item={item} selected={selected.includes(item)} onSelect={(checked) => setLineSelected('guest', cartLineKey(item), checked)} />
+                <GuestBagItemRow key={cartLineKey(item)} item={item} selected={selected.includes(item)} onSelect={editingSelection ? (checked) => setLineSelected('guest', cartLineKey(item), checked) : undefined} />
               ))}
             </div>
           </main>
@@ -213,7 +257,10 @@ function GuestBagScreen() {
               className="mt-6 w-full"
               variant="primary"
               disabled={!selected.length}
-              onClick={() => openAuthModal({ mode: 'login', redirectTo: '/cart' })}
+              onClick={() => {
+                if (!editingSelection) useCheckoutStore.getState().setBagSelection('guest', []);
+                openAuthModal({ mode: 'login', redirectTo: '/cart' });
+              }}
             >
               Sign in to continue
             </Button>
@@ -228,7 +275,7 @@ function GuestBagScreen() {
 }
 
 /** A guest line: same layout as the server row, local mutations, no stock/line id. */
-function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; selected: boolean; onSelect: (selected: boolean) => void }) {
+function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; selected: boolean; onSelect?: (selected: boolean) => void }) {
   const setQuantity = useGuestCartStore((state) => state.setQuantity);
   const remove = useGuestCartStore((state) => state.remove);
 
@@ -250,7 +297,7 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
       </Link>
 
       <div className="min-w-0">
-        <label className="mb-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-primary"><input type="checkbox" className="h-5 w-5 accent-brand-primary" checked={selected} onChange={(event) => onSelect(event.target.checked)} />Select {item.name} for checkout</label>
+        {onSelect && <label className="mb-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-primary"><input type="checkbox" className="h-5 w-5 accent-brand-primary" checked={selected} onChange={(event) => onSelect(event.target.checked)} />Select {item.name} for checkout</label>}
         <div className="flex items-start justify-between gap-3">
           <Link className="text-base font-medium leading-snug hover:text-brand-primary sm:text-lg" href={`/products/${item.slug}`}>
             {item.name}
@@ -265,6 +312,7 @@ function GuestBagItemRow({ item, selected, onSelect }: { item: GuestCartItem; se
           </Button>
         </div>
 
+        {item.variantLabel ? <p className="text-sm text-text-secondary">{item.variantLabel}</p> : null}
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <div className="inline-flex items-center rounded-xl border border-surface-border bg-surface-raised">
             <Button
@@ -318,8 +366,8 @@ function BlockedCheckoutSelectionState() {
 
 export function AddressScreen() {
   const router = useRouter();
-  const { cart, isLoading: cartLoading } = useCart();
-  const { cart: selectedCart } = useCheckoutSelection();
+  const { cart } = useCart();
+  const { cart: selectedCart, hasItems, isLoading: cartLoading } = useCheckoutSelection();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const authStatus = useAuthStore((state) => state.status);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
@@ -351,7 +399,7 @@ export function AddressScreen() {
     return <BlockedCheckoutAuthState />;
   }
 
-  if (!cart.items.length) {
+  if (!hasItems) {
     return <BlockedCheckoutEmptyState />;
   }
   if (!selectedCart.items.length) return <BlockedCheckoutSelectionState />;
@@ -435,8 +483,7 @@ export function AddressScreen() {
  */
 export function PaymentScreen() {
   const router = useRouter();
-  const { cart, isLoading: cartLoading } = useCart();
-  const { cart: selectedCart, couponCode } = useCheckoutSelection();
+  const { cart: selectedCart, couponCode, hasItems, isLoading: cartLoading, selection } = useCheckoutSelection();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
@@ -469,7 +516,7 @@ export function PaymentScreen() {
     return <BlockedCheckoutAuthState />;
   }
 
-  if (!cart.items.length) {
+  if (!hasItems) {
     return <BlockedCheckoutEmptyState />;
   }
   if (!selectedCart.items.length) return <BlockedCheckoutSelectionState />;
@@ -494,11 +541,21 @@ export function PaymentScreen() {
    * told before they press the button — otherwise the API client's 403 handler bounces them to
    * a verification popup mid-action, which feels like a crash.
    */
-  const phoneUnverified = user ? !user.phoneVerified : false;
+  const phone = accountPhone(user?.phone);
+  const phoneUnverified = !phone || !user?.phoneVerified;
 
   const submit = () => {
+    let key = idempotencyKey;
+    if (selection.buyNow) {
+      const { directAttempt, setDirectAttempt } = useCheckoutStore.getState();
+      if (directAttempt?.intent === checkoutIntent) {
+        key = directAttempt.key;
+      } else {
+        setDirectAttempt({ intent: checkoutIntent, key });
+      }
+    }
     placeOrder.mutate(
-      { addressId: selectedAddress.id, cartItemIds: selectedCart.items.map((item) => item.id), couponCode: couponCode || undefined, idempotencyKey },
+      { addressId: selectedAddress.id, ...selection, couponCode: couponCode || undefined, idempotencyKey: key },
       {
         onSuccess: (order) => {
           resetCheckout();
@@ -550,7 +607,7 @@ export function PaymentScreen() {
 
         {phoneUnverified ? (
           <div className="rounded-2xl border border-brand-accent bg-surface-base p-5 text-sm leading-6">
-            <p className="font-semibold">Verify your phone number to place an order</p>
+            <p className="font-semibold">{phone ? 'Verify your phone number to place an order' : 'Add and verify a phone number to place an order'}</p>
             <p className="mt-1 text-text-secondary">
               Orders require a verified phone number on your account.
             </p>
@@ -560,7 +617,7 @@ export function PaymentScreen() {
               variant="outline"
               onClick={() => openOtpModal({ redirectTo: '/checkout/payment' })}
             >
-              Verify now
+              {phone ? 'Verify now' : 'Add and verify number'}
             </Button>
           </div>
         ) : null}

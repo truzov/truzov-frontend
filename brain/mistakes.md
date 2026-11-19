@@ -113,3 +113,11 @@ Header breakpoint regression: this project customizes Tailwind 2xl to 1440px. Us
 
 2026-10-29: A stale API comment incorrectly said price-filter queries use paise; actual controller/specification compares integer rupees. Trace through DB predicates before converting units. Router updates are asynchronous: disable desktop filter actions during transition rather than compose from stale props. Loading skeleton fixed widths can overflow at320px. A row lock on one refresh token does not serialize ancestors/descendants; nested REQUIRES_NEW revocation behind a family lock can exhaust a small connection pool. Test both with deterministic concurrent fixtures and verify a failing baseline. Mockito callRealMethod cannot delegate an abstract Spring repository interface method; use a real transaction-bound entity manager in that test fixture.
 2026-10-29: A successful recovery screen with a manual login link does not fulfill an explicit automatic return-to-login requirement. Check the destination and success notice, as well as the backend result.
+
+2026-10-30 release verification: Node fetch preferred an unresponsive address for Render while PowerShell worked; setting dns.setDefaultResultOrder('ipv4first') resolved the probe. Authenticate against /api/v1/admin/dashboard/stats, not nonexistent /admin/stats. Never infer Google callback registration from valid client credentials; verify actual Google handoff. Missing callback produced redirect_uri_mismatch until user registered exact canonical URI.
+
+2026-11-10: The guest-specific mobile bar hid four shared destinations. Use a single tab grid and branch only in the account slot, including during session restoration. Before ruling out saved-address deletion for order history, trace order persistence to confirm whether it stores a foreign key or its own snapshot.
+
+2026-11-10: A fixed overlay alone left the background scrollable. Binding modal focus cleanup to the selected image also reran it on each arrow press. Bind scroll and focus setup to the open viewer lifecycle, and reset gesture state separately when the image changes.
+
+- On coarse pointers, immediately showing a fixed bottom bar when an input blurs can intercept the same tap before click dispatch. Delay visibility on reentry while hiding immediately for the keyboard.

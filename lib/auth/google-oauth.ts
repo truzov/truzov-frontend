@@ -13,6 +13,8 @@
  * a link someone sent the user.
  */
 
+import { isValidRedirect } from '@/lib/auth/redirect';
+
 const AUTHORIZE_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 
 /**
@@ -85,7 +87,7 @@ export async function beginGoogleSignIn(redirectTo: string): Promise<string> {
   const verifier = randomUrlSafeString(96);
   const state = randomUrlSafeString(16);
 
-  const pending: PendingFlow = { verifier, state, redirectTo };
+  const pending: PendingFlow = { verifier, state, redirectTo: isValidRedirect(redirectTo) ? redirectTo : '/' };
   sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
 
   const params = new URLSearchParams({
@@ -124,10 +126,16 @@ export function completeGoogleSignIn(returnedState: string | null): PendingFlow 
     );
   }
 
-  let pending: PendingFlow;
+  let pending: Partial<PendingFlow> | null;
   try {
-    pending = JSON.parse(raw) as PendingFlow;
+    pending = JSON.parse(raw) as Partial<PendingFlow> | null;
   } catch {
+    throw new Error('This sign-in could not be completed. Please start again.');
+  }
+
+  if (!pending || typeof pending !== 'object'
+    || typeof pending.verifier !== 'string' || !/^[A-Za-z0-9_-]{128}$/.test(pending.verifier)
+    || typeof pending.state !== 'string' || !/^[A-Za-z0-9_-]{22}$/.test(pending.state)) {
     throw new Error('This sign-in could not be completed. Please start again.');
   }
 
@@ -137,7 +145,12 @@ export function completeGoogleSignIn(returnedState: string | null): PendingFlow 
     throw new Error('This sign-in could not be verified. Please start again.');
   }
 
-  return pending;
+  return {
+    verifier: pending.verifier,
+    state: pending.state,
+    redirectTo: typeof pending.redirectTo === 'string' && isValidRedirect(pending.redirectTo)
+      ? pending.redirectTo : '/',
+  };
 }
 
 /** Discards a pending flow without completing it — used when the user cancels at Google. */

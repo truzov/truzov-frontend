@@ -12,6 +12,7 @@ import { ApiError, ERROR_CODES } from '@/lib/api/errors';
 import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
+import { useCheckoutStore } from '@/store/checkout.store';
 import type { ProductSummaryDto } from '@/types/api';
 
 /**
@@ -38,7 +39,7 @@ vi.mock('@/components/auth/AuthForm', async () => {
 
   return {
     AuthForm: ({ onSuccess }: { onSuccess?: () => void }) =>
-      createElement('button', { type: 'button', onClick: () => { useAuthStore.setState({ isLoggedIn: true, status: 'authenticated' }); onSuccess?.(); } }, 'login succeeded'),
+      createElement('button', { type: 'button', onClick: () => { useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never }); onSuccess?.(); } }, 'login succeeded'),
   };
 });
 
@@ -62,6 +63,7 @@ const SIMPLE_PRODUCT = {
   isBestseller: false,
   isNewArrival: false,
   inStock: true,
+  stockCount: 12,
   images: [],
 } as unknown as ProductSummaryDto;
 
@@ -228,6 +230,7 @@ describe('Buy Now unit paths', () => {
     useAuthModalStore.getState().closeAuthModal();
     useAuthStore.setState({ isLoggedIn: false, status: 'anonymous', user: null });
     useGuestCartStore.setState({ items: [], hydrated: true });
+    useCheckoutStore.getState().resetCheckout();
   });
 
   afterEach(() => {
@@ -254,7 +257,7 @@ describe('Buy Now unit paths', () => {
 
   // 2.5: an authenticated click must not navigate until the mutation resolves, then pushes once.
   it('authenticated click does not navigate until a deferred mutation resolves, then pushes exactly once', async () => {
-    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated' });
+    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never });
 
     let resolveFetch!: (value: Response) => void;
     vi.stubGlobal(
@@ -289,9 +292,9 @@ describe('Buy Now unit paths', () => {
     await act(async () => {
       resolveFetch({
         ok: true,
-        status: 201,
+        status: 200,
         headers: new Headers(),
-        json: () => Promise.resolve({ data: { items: [], itemCount: 0, subtotal: 0 } }),
+        json: () => Promise.resolve({ data: SIMPLE_PRODUCT }),
       } as unknown as Response);
     });
 
@@ -299,8 +302,7 @@ describe('Buy Now unit paths', () => {
     expect(buyNowPush.mock.calls).toStrictEqual([['/checkout/address']]);
   });
 
-  // 2.7: AuthModal's onSuccess carrying a retained intent posts, then pushes.
-  it('modal onSuccess carrying a retained intent posts, then pushes', async () => {
+  it('resumes the exact intent after sign-in without posting to the cart', async () => {
     let capturedBody: unknown;
     vi.stubGlobal(
       'fetch',
@@ -308,9 +310,9 @@ describe('Buy Now unit paths', () => {
         capturedBody = init?.body ? JSON.parse(init.body as string) : undefined;
         return Promise.resolve({
           ok: true,
-          status: 201,
+          status: 200,
           headers: new Headers(),
-          json: () => Promise.resolve({ data: { items: [], itemCount: 0, subtotal: 0 } }),
+          json: () => Promise.resolve({ data: SIMPLE_PRODUCT }),
         } as unknown as Response);
       })
     );
@@ -328,7 +330,8 @@ describe('Buy Now unit paths', () => {
     fireEvent.click(screen.getByRole('button', { name: 'login succeeded' }));
 
     await waitFor(() => expect(buyNowPush).toHaveBeenCalledTimes(1));
-    expect(capturedBody).toStrictEqual({ productId: 'p-honey', quantity: 1 });
+    expect(capturedBody).toBeUndefined();
+    expect(useCheckoutStore.getState().buyNow).toMatchObject({ productId: 'p-honey', quantity: 1 });
     expect(buyNowPush.mock.calls).toStrictEqual([['/checkout/address']]);
   });
 
@@ -351,7 +354,7 @@ describe('Buy Now unit paths', () => {
     ['ApiError(409)', new ApiError({ code: ERROR_CODES.CONFLICT, message: 'Out of stock', status: 409 })],
     ['ApiError(TIMEOUT)', new ApiError({ code: ERROR_CODES.TIMEOUT, message: 'Request timed out', status: 0 })],
   ])('%s toasts and does not navigate', async (_label, thrown) => {
-    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated' });
+    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer' } as never });
     useUiStore.setState({ toasts: [] });
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(thrown)));
 

@@ -1,5 +1,23 @@
 # Release status — 2026-10-30
 
+## Authoritative rollout update
+
+The initial release completed: backend3115733 LIVE, storefront847204a and admin e43dd81 production READY. Nine live public Chromium checks passed: responsive375/768/1440, catalog, mobile/desktop stock-filter persistence/clear, guest cart add/quantity/persistence/remove, recovery form, guest support and seller→/apply. Zero page errors/HTTP5xx/attempted writes. Admin dashboard's valid endpoint is /api/v1/admin/dashboard/stats; the older /api/v1/admin/stats does not exist for authenticated requests.
+
+Both additive Flyway migrations202610270100 and202610280100 were independently verified applied in Neon. Test admin login/me/dashboard/ticket listing returned200 and logout204. A generated private PNG uploaded through /api/v1/support/attachments returned201; Cloudinary metadata confirmed authenticated storage, unsigned delivery401, and the exact asset was deleted200. Existing catalog Cloudinary images returned200. No customer orders, tickets or passwords were changed.
+
+Initial deploys: Render dep-dbiccmm1egvs73e74p6g; Vercel storefront dpl_F1Lr9RSQJMiMmsenTcMirggbYXD5 and admin dpl_5Uy5PhUkHLUpGqtMuqjZiDDUTeiM.
+
+OAuth PR#13 (codex/google-oauth-hardening, e874caa) is stacked above#12. Render settings deploy dep-dbicj79srm7s73dsjuug is LIVE at backend3115733 with Google configuration and a persistent generated JWT signing secret. Frontend e874caa production deploy dpl_7rYgzWsM9typ1XjUSpN15bf72zea is READY on the canonical domain. Fresh165 tests, TypeScript, changed-file lint and independent security review passed. Dummy-code Google exchange returns401 without a session.
+
+Manual browser checks confirmed Google button, actual Google handoff, cancellation→login and unsolicited callback→safe error. Initial Google redirect_uri_mismatch was resolved after user registered the canonical callback/origin. User completed real Google sign-in; the protected account page loaded with the signed-in profile, remained authenticated after reload, and Log out returned to the guest homepage with a success notification. This validates one real existing-account login/session/logout flow, not every account-creation/linking variant.
+
+The nine-case automated browser run validates847204a, not the OAuth revision. Approval review rejected creation of two temporary OAuth helpers with "blocked by policy" and no specific reason; neither executed. The coordinating agent used ordinary visible-page navigation for the manual checks, without reading browser storage or selecting/consenting to an account.
+
+User explicitly requested temporary demo OTP retention and use of screenshot-supplied Google credentials after rotation was recommended. These remain open deployment risks, as do the existing Spring image-scan findings. See oauth-security-review-20261030.md.
+
+Pending statements in the discovery sections below are historical and superseded by this update.
+
 User authorized backend PR, Render backend release, Vercel storefront/admin release, and live integration checks using the connected secondary `truzov` accounts.
 
 ## PR stack and code

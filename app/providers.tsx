@@ -8,7 +8,7 @@ import { VerifyPhoneModal } from '@/components/auth/VerifyPhoneModal';
 import { Toaster } from '@/components/ui/Toaster';
 import { isRetryableError } from '@/lib/api/errors';
 import { useGuestCartMerge } from '@/hooks/api/useCart';
-import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
+import { GUEST_CART_STORAGE_KEY, useGuestCartStore } from '@/lib/cart/guest-cart.store';
 import { useEffect } from 'react';
 
 /**
@@ -22,6 +22,13 @@ function GuestCartSync() {
 
   useEffect(() => {
     hydrate();
+    const sync = (event: StorageEvent) => {
+      if (event.storageArea === window.localStorage && (event.key === GUEST_CART_STORAGE_KEY || event.key === null)) {
+        useGuestCartStore.getState().syncFromStorage();
+      }
+    };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
   }, [hydrate]);
 
   useGuestCartMerge();

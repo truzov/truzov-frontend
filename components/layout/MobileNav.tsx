@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, Home, LogIn, Search, LayoutGrid, CircleUserRound } from 'lucide-react';
+import { Heart, Home, Search, LayoutGrid, CircleUserRound } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
@@ -24,30 +24,13 @@ export function MobileNav() {
     return null;
   }
 
-  const accountActive = pathname.startsWith('/account');
   const resolving = status === 'idle' || status === 'restoring';
-
-  // Guests get a reduced bar: the full tab set (Home/Categories/Search/Wishlist) is only
-  // useful once there is an account behind it — Wishlist and Account both need one, and
-  // Home/Categories/Search work without login anyway but are one tap away via the header.
-  // Two clear paths forward beat five tabs where three lead to the same login prompt.
-  if (!isLoggedIn) {
-    return (
-      <nav aria-label="Bottom navigation" className="navigation-labels mobile-account-nav fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white pb-[env(safe-area-inset-bottom)] text-[#04342c] min-[1536px]:hidden">
-        <div className="grid h-14">
-          {!resolving &&
-          <button
-            className="grid place-items-center gap-0.5 text-[11px] font-semibold text-text-muted"
-            type="button"
-            onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}
-          >
-            <LogIn aria-hidden="true" className="h-5 w-5" />
-            Login / Signup
-          </button>}
-        </div>
-      </nav>
-    );
-  }
+  const accountActive = isLoggedIn ? pathname.startsWith('/account') : pathname === '/login';
+  const accountClassName = cn(
+    'grid min-w-0 place-items-center gap-0.5 px-0.5 text-center text-[10px] font-semibold leading-tight sm:text-[11px]',
+    accountActive ? 'text-brand-primary' : 'text-text-muted'
+  );
+  const accountIcon = <CircleUserRound aria-hidden="true" className="h-5 w-5" />;
 
   return (
     <nav aria-label="Bottom navigation" className="navigation-labels mobile-account-nav fixed bottom-0 left-0 right-0 z-40 border-t border-[#dce6d8] bg-white pb-[env(safe-area-inset-bottom)] text-[#04342c] min-[1536px]:hidden">
@@ -71,16 +54,23 @@ export function MobileNav() {
           );
         })}
 
-        <Link
-          className={cn(
-            'grid place-items-center gap-0.5 text-[11px] font-semibold',
-            accountActive ? 'text-brand-primary' : 'text-text-muted'
-          )}
-          href="/account"
-        >
-          <CircleUserRound aria-hidden="true" className="h-5 w-5" />
-          My Account
-        </Link>
+        {resolving ? (
+          <span className={accountClassName}>{accountIcon}Account</span>
+        ) : isLoggedIn ? (
+          <Link className={accountClassName} href="/account">
+            {accountIcon}
+            My Account
+          </Link>
+        ) : (
+          <button
+            className={accountClassName}
+            type="button"
+            onClick={() => openAuthModal({ mode: 'login', redirectTo: '/account' })}
+          >
+            {accountIcon}
+            <span>Login / Signup</span>
+          </button>
+        )}
       </div>
     </nav>
   );

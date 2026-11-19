@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Tag, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { useCheckoutSelection } from '@/hooks/api/useCheckoutSelection';
+import { useCheckoutSelection, type BagSelectionMode } from '@/hooks/api/useCheckoutSelection';
 import { getCheckoutQuote } from '@/lib/api/endpoints/coupons';
 import { errorMessage } from '@/lib/api/errors';
 import { formatCurrency } from '@/lib/utils/money';
@@ -18,16 +18,17 @@ interface CheckoutPriceDetailsProps {
   termsText?: string;
   onCta?: () => void;
   orderTotals?: { subtotal: number; deliveryFee: number; totalAmount: number; discountAmount?: number; couponCode?: string };
+  bagMode?: BagSelectionMode;
 }
 
 /** A quote is display-only; checkout independently validates eligibility and money. */
-export function CheckoutPriceDetails({ ctaLabel = 'Continue', disabled, loading, helperText, termsText, onCta, orderTotals }: CheckoutPriceDetailsProps) {
-  const { owner, cart, couponCode } = useCheckoutSelection();
+export function CheckoutPriceDetails({ ctaLabel = 'Continue', disabled, loading, helperText, termsText, onCta, orderTotals, bagMode }: CheckoutPriceDetailsProps) {
+  const { owner, cart, couponCode, selection } = useCheckoutSelection(bagMode);
   const setCouponCode = useCheckoutStore((state) => state.setCouponCode);
   const [draft, setDraft] = useState(couponCode);
   const quote = useQuery({
     queryKey: ['coupon-quote', owner, couponCode, cart.items.map((item) => [item.id, item.quantity, item.lineTotal])],
-    queryFn: ({ signal }) => getCheckoutQuote(couponCode, cart.items.map((item) => item.id), signal),
+    queryFn: ({ signal }) => getCheckoutQuote(couponCode, selection, signal),
     enabled: !orderTotals && cart.items.length > 0 && owner !== 'guest',
     retry: false,
     staleTime: 0,

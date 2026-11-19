@@ -105,3 +105,16 @@ Source implemented; runtime validation pending. Featured and publication remain 
 
 2026-10-29: Keep neutral keyboard focus and plain lowercase labels pending design confirmation; existing supported filter set pending Rohit. Public seller-panel /apply reuses the existing initial application/enquiry, with staff follow-up and verified KYC/approval controlling seller access. Automatic invitation/account creation is not introduced. Seller origin is configured by NEXT_PUBLIC_SELLER_PLATFORM_URL; no tokens travel in links.
 2026-10-29: Recovery returns automatically through existing login routes (/login modal bridge in storefront, /signin panel), with existing global success notifications. No new auth-state abstraction or query parameters.
+
+## Google login activation (2026-10-30)
+Reuse existing Google code+S256 PKCE/state flow and backend identity verification; no new auth library/schema. Public client ID only in Vercel, secret and persistent generated JWT signing key in Render. User explicitly retained demo OTP temporarily. Always stack new PRs on the last PR branch. Full review and open limits: docs/oauth-security-review-20261030.md.
+
+## Mobile account slot and saved addresses (2026-11-10)
+
+Use one five-column mobile bottom bar and let session state change only the fifth slot. Add owner-scoped DELETE /api/v1/users/me/addresses/{addressId}, returning 204 on success and the same 403 for a foreign or missing ID. Orders already own an independent delivery-address snapshot, so saved-address deletion needs no schema change.
+
+## Product viewer history (2026-11-10)
+
+Use a slug-tagged, same-URL history entry that preserves the router's existing state. The close control consumes the viewer entry and popstate synchronizes the open state, so browser Back dismisses the viewer before navigating away.
+
+- Buy Now quotes and orders use a separate direct purchase selection. The existing idempotency table protects retries, and cart lines stay intact even when the same variant is already in the bag.

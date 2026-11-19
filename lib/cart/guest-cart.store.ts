@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { cartLineKey } from '@/lib/cart/selection';
 
 /**
  * Guest cart, kept in localStorage.
@@ -16,6 +17,7 @@ export interface GuestCartItem {
   productId: string;
   /** Key part of a line: the same product with two variants is two lines. */
   variantId?: string;
+  variantLabel?: string;
   quantity: number;
   /** Display snapshot — the merge POSTs only productId/variantId/quantity. */
   name: string;
@@ -27,7 +29,7 @@ export interface GuestCartItem {
   addedAt: number;
 }
 
-const STORAGE_KEY = 'truzov.guestCart';
+export const GUEST_CART_STORAGE_KEY = 'truzov.guestCart';
 /** Mirrors the server's `truzov.commerce.max-item-quantity` (20 locally). */
 const MAX_ITEM_QUANTITY = 20;
 
@@ -36,7 +38,7 @@ function load(): GuestCartItem[] {
     return [];
   }
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(GUEST_CART_STORAGE_KEY);
     if (!raw) {
       return [];
     }
@@ -53,7 +55,7 @@ function persist(items: GuestCartItem[]) {
     return;
   }
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    window.localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
   } catch {
     // Storage full or blocked (private mode): the in-memory cart still works for this visit.
   }
@@ -68,9 +70,11 @@ interface GuestCartState {
   hydrated: boolean;
   /** Reads localStorage once on the client. Safe to call repeatedly. */
   hydrate: () => void;
+  syncFromStorage: () => void;
   add: (input: Omit<GuestCartItem, 'addedAt'>) => void;
   setQuantity: (productId: string, variantId: string | undefined, quantity: number) => void;
   remove: (productId: string, variantId: string | undefined) => void;
+  removeSelected: (keys: string[]) => void;
   clear: () => void;
   itemCount: () => number;
   subtotal: () => number;
@@ -86,6 +90,7 @@ export const useGuestCartStore = create<GuestCartState>()((set, get) => ({
     }
     set({ items: load(), hydrated: true });
   },
+  syncFromStorage: () => set({ items: load(), hydrated: true }),
 
   add: (input) => {
     set((state) => {
@@ -93,7 +98,7 @@ export const useGuestCartStore = create<GuestCartState>()((set, get) => ({
       const items = existing
         ? state.items.map((item) =>
             sameLine(input, item)
-              ? { ...item, availableStock: input.availableStock ?? item.availableStock, quantity: Math.min(item.quantity + input.quantity, MAX_ITEM_QUANTITY, input.availableStock ?? item.availableStock ?? MAX_ITEM_QUANTITY) }
+              ? { ...item, variantLabel: input.variantLabel ?? item.variantLabel, availableStock: input.availableStock ?? item.availableStock, quantity: Math.max(item.quantity, Math.min(item.quantity + input.quantity, MAX_ITEM_QUANTITY, input.availableStock ?? item.availableStock ?? MAX_ITEM_QUANTITY)) }
               : item
           )
         : [...state.items, { ...input, quantity: Math.min(input.quantity, MAX_ITEM_QUANTITY, input.availableStock ?? MAX_ITEM_QUANTITY), addedAt: Date.now() }];
@@ -120,6 +125,15 @@ export const useGuestCartStore = create<GuestCartState>()((set, get) => ({
   remove: (productId, variantId) => {
     set((state) => {
       const items = state.items.filter((item) => !sameLine({ productId, variantId }, item));
+      persist(items);
+      return { items };
+    });
+  },
+
+  removeSelected: (keys) => {
+    const selected = new Set(keys);
+    set((state) => {
+      const items = state.items.filter((item) => !selected.has(cartLineKey(item)));
       persist(items);
       return { items };
     });

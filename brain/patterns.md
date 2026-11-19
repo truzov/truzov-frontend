@@ -159,3 +159,19 @@ Validation pattern: run exact local dependency versions under network isolation 
 Keep auth resolving frames neutral, match top/bottom account breakpoints, preserve keyboard focus centrally, and reserve viewport/safe-area space. Navigation label casing is one CSS variable. Shared cart writes serialize per browser cache and reject owner changes; server remains authoritative. Send filter prices as integer rupees (matching DB comparisons); URL navigation is serialized so rapid choices cannot overwrite state.
 Capture image/variant labels on new order lines; never backfill unverifiable old presentation data. Password recovery uses a separate single-use OTP purpose and credential versions on both access and refresh tokens. Serialize refresh/replay by session family in PostgreSQL, not globally; commit revocation in the same connection to avoid nested-transaction pool starvation. Every new multipart route needs the existing bounded upload envelope as well as actual file limits.
 Recovery success reuses app-level notifications and router.replace with a fixed local login path; clear the previous session only after confirmed reset. Keep recovery credentials in memory and out of URL parameters.
+
+OAuth stored flows are untrusted input: consume once, validate verifier/state shape, and apply shared internal redirect guard when both storing and restoring destinations. Reject ASCII controls because URL parsing can normalize them before authority detection.
+
+## Address book writes
+
+Serialize create, update and delete per active owner through the existing user row lock. Resolve the address with the owner-scoped lookup. If deleting a default leaves addresses but no flagged default, promote the first remaining row in repository order within the same transaction. After a successful delete, remove the stale address from the shared React Query list and invalidate it to fetch the server-selected default.
+
+## Fullscreen image viewer
+
+Use the native modal dialog for the browser top layer. In its mount lifecycle, fix the body using the saved scroll offset and compensate for the scrollbar gutter. Remove the temporary styles and restore scroll and trigger focus on teardown. Keep the zoom surface separate from navigation controls. Gate hover on fine-pointer capability and actual mouse input, keep page pinch and vertical scrolling in the gallery, and capture touch pointers only for custom viewer gestures.
+
+- Reset pre-add quantity on successful ADD and on variant changes. Preserve it on a failed request. Guest variant labels are display snapshots only.
+
+* **Bag selection:** Toggle all/none through the same owner-scoped exclusions that feed checkout. Selected removal uses the existing line-scoped guest and server actions, preserving unchecked lines and reporting any partial failure.
+
+Bag selection mode is opt-in. Keep default checkout implicit and show row checkboxes and bulk controls only after Select all opens the mode. Done clears explicit exclusions. Continue retains them for the next checkout steps.

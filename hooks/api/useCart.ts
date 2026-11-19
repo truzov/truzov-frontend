@@ -17,7 +17,9 @@ import { useAuthStore } from '@/store/auth.store';
 import { useAuthModalStore, type BuyNowIntent } from '@/store/auth-modal.store';
 import { useUiStore } from '@/store/ui.store';
 import { useCheckoutStore } from '@/store/checkout.store';
-import { cartLineKey } from '@/lib/cart/selection';
+import { getProduct } from '@/lib/api/endpoints/catalog';
+import { primaryImage } from '@/lib/utils/product';
+import { effectivePrice } from '@/lib/utils/money';
 import type { CartDto } from '@/types/api';
 
 /**
@@ -44,6 +46,8 @@ export function useCart() {
     // Short: stock and quantity caps are enforced server-side, and a stale cart is the one
     // place where showing an old number turns into a wrong price at checkout.
     staleTime: 15_000,
+    refetchOnWindowFocus: 'always',
+    refetchInterval: 30_000,
   });
 
   return {
@@ -87,9 +91,10 @@ export function useAddToCart() {
       if (!useAuthStore.getState().isLoggedIn || useAuthStore.getState().user?.id !== input.ownerId) throw new Error('Your account changed. Please try again.');
       return cart;
     },
-    onSuccess: (cart, input) => {
+    onSuccess: async (cart, input) => {
       // The mutation returns the whole cart, so seed the cache directly instead of
       // invalidating — that keeps the header badge and cart page correct with no extra request.
+      await queryClient.cancelQueries({ queryKey: queryKeys.cart() });
       if (useAuthStore.getState().user?.id === input.ownerId) queryClient.setQueryData(queryKeys.cart(), cart);
     },
     onError: (error) => {
@@ -99,89 +104,90 @@ export function useAddToCart() {
     },
   });
 
-  const add = (input: {
+  const add = async (input: {
     productId: string;
     productName: string;
     variantId?: string;
+    variantLabel?: string;
     quantity?: number;
+    availableStock?: number;
     slug: string;
     imageUrl?: string;
     unitPrice: number;
   }) => {
-    if (queryClient.isMutating({ mutationKey: ['cart-write'] })) return;
+    if (queryClient.isMutating({ mutationKey: ['cart-write'] })) return false;
+    const quantity = input.quantity ?? 1;
     if (!isLoggedIn) {
+      const existing = useGuestCartStore.getState().items.find((item) =>
+        item.productId === input.productId && item.variantId === input.variantId);
+      const remaining = Math.max(0, Math.min(20, input.availableStock ?? existing?.availableStock ?? 20) - (existing?.quantity ?? 0));
+      if (quantity > remaining) {
+        addToast({ type: 'warning', title: remaining ? `Only ${remaining} more can be added` : 'You have reached the limit for this item' });
+        if (!remaining) return false;
+      }
       guestAdd({
         productId: input.productId,
         variantId: input.variantId,
-        quantity: input.quantity ?? 1,
+        variantLabel: input.variantLabel,
+        availableStock: input.availableStock,
+        quantity: Math.min(quantity, remaining),
         name: input.productName,
         slug: input.slug,
         imageUrl: input.imageUrl,
         unitPrice: input.unitPrice,
       });
-      addToast({
-        type: 'success',
-        title: 'Added to cart',
-        message: input.productName,
-        actionLabel: 'View cart',
-        actionHref: '/cart',
-      });
-      return;
-    }
-
-    mutation.mutate(
-      { productId: input.productId, variantId: input.variantId, quantity: input.quantity, ownerId: useAuthStore.getState().user?.id },
-      {
-        onSuccess: () => {
-          addToast({
-            type: 'success',
-            title: 'Added to cart',
-            message: input.productName,
-            actionLabel: 'View cart',
-            actionHref: '/cart',
-          });
-        },
+    } else {
+      try {
+        await mutation.mutateAsync({
+          productId: input.productId, variantId: input.variantId, quantity,
+          ownerId: useAuthStore.getState().user?.id,
+        });
+      } catch {
+        return false;
       }
-    );
+    }
+    addToast({ type: 'success', title: 'Added to cart', message: input.productName, actionLabel: 'View cart', actionHref: '/cart' });
+    return true;
   };
-
-  // addAsync lets a caller await the POST before navigating (Buy Now); `add` stays fire-and-forget.
-  const addAsync = (input: { productId: string; variantId?: string; quantity?: number }) => {
-    if (queryClient.isMutating({ mutationKey: ['cart-write'] })) return Promise.reject(new Error('A cart change is still saving. Please try again.'));
-    return mutation.mutateAsync({ ...input, ownerId: useAuthStore.getState().user?.id });
-  };
-  return { add, addAsync, isPending: mutation.isPending || Boolean(writes) };
+  return { add, isPending: mutation.isPending || Boolean(writes) };
 }
 
-/**
- * Buy Now: add the single item to the server cart, then go to checkout.
- *
- * Logged out, this opens the auth modal carrying the intent instead of writing to the guest bag
- * (Requirement 2.6) — so `useAddToCart`'s guest branch is unreachable from here. `checkout` is
- * returned as well because `AuthModal` resumes the intent after a login (Requirement 2.7).
- */
+/** Prepare a single-item checkout. AuthModal resumes the same intent after sign-in. */
 export function useBuyNow() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const { addAsync, isPending } = useAddToCart();
-
-  const checkout = async (intent: BuyNowIntent) => {
-    try {
-      const cart = await addAsync(intent);
-      const owner = useAuthStore.getState().user?.id;
-      if (owner) {
-        useCheckoutStore.getState().selectAll(owner);
-        for (const line of cart.items) {
-          const same = line.productId === intent.productId && (line.variantId ?? '') === (intent.variantId ?? '');
-          if (!same) useCheckoutStore.getState().setLineSelected(owner, cartLineKey(line), false);
-        }
+  const isPending = Boolean(useIsMutating({ mutationKey: ['buy-now'] }));
+  const mutation = useMutation({
+    mutationKey: ['buy-now'],
+    mutationFn: async (intent: BuyNowIntent) => {
+      const product = await getProduct(intent.productId);
+      const variant = product.variants?.find((option) => option.id === intent.variantId);
+      const availableStock = Math.min(product.stockCount, variant?.stockCount ?? product.stockCount);
+      if ((product.variants?.length || intent.variantId) && !variant) throw new Error('Select an available option.');
+      if (!product.inStock || variant?.inStock === false || intent.quantity > Math.min(20, availableStock)) {
+        throw new Error(availableStock > 0 ? `Only ${Math.min(20, availableStock)} available for this option.` : 'This option is out of stock.');
       }
-      router.push('/checkout/address'); // only after success (R2.5, R2.7)
-    } catch {
-      // useAddToCart.onError already raised the error toast, including the backend message and
-      // the 10s TIMEOUT case. Nothing retained, no navigation (R2.9).
-    }
+      const unitPrice = effectivePrice(product.price, variant);
+      return {
+        ...intent, id: `buy-now:${intent.productId}:${intent.variantId ?? ''}`, variantLabel: variant?.value,
+        name: product.name, slug: product.slug, imageUrl: primaryImage(product)?.url,
+        unitPrice, lineTotal: unitPrice * intent.quantity, inStock: true, availableStock,
+      };
+    },
+    onError: (error) => useUiStore.getState().addToast({ type: 'error', title: 'Could not start checkout', message: errorMessage(error) }),
+  });
+  const checkout = (intent: BuyNowIntent) => {
+    const owner = useAuthStore.getState().user?.id;
+    if (!owner || queryClient.isMutating({ mutationKey: ['buy-now'] })) return;
+    mutation.mutate(intent, {
+      onSuccess: (line) => {
+        if (useAuthStore.getState().user?.id !== owner) return;
+        useCheckoutStore.getState().setBuyNow(owner, line);
+        router.push('/checkout/address');
+      },
+    });
   };
 
   const buyNow = (intent: BuyNowIntent) => {
@@ -189,7 +195,7 @@ export function useBuyNow() {
       openAuthModal({ mode: 'login', buyNow: intent }); // R2.6
       return;
     }
-    void checkout(intent);
+    checkout(intent);
   };
 
   return { buyNow, checkout, isPending };
@@ -280,12 +286,20 @@ export function useRemoveCartItem() {
 
   return useMutation({
     mutationKey: ['cart-write'],
-    mutationFn: (itemId: string) => removeCartItem(itemId),
-    onSuccess: (cart) => {
-      queryClient.setQueryData(queryKeys.cart(), cart);
+    mutationFn: async (selection: string | string[]) => {
+      const owner = useAuthStore.getState().user?.id;
+      for (const itemId of Array.isArray(selection) ? selection : [selection]) {
+        if (!owner || useAuthStore.getState().user?.id !== owner) throw new Error('Your account changed. Please try again.');
+        const cart = await removeCartItem(itemId);
+        if (useAuthStore.getState().user?.id !== owner) return;
+        await queryClient.cancelQueries({ queryKey: queryKeys.cart() });
+        if (useAuthStore.getState().user?.id !== owner) return;
+        queryClient.setQueryData(queryKeys.cart(), cart);
+      }
     },
-    onError: (error) => {
-      addToast({ type: 'error', title: 'Could not remove item', message: errorMessage(error) });
+    onError: (error, selection) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cart() });
+      addToast({ type: 'error', title: Array.isArray(selection) ? 'Could not remove every selected item' : 'Could not remove item', message: errorMessage(error) });
     },
   });
 }

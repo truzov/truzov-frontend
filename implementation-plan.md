@@ -132,3 +132,62 @@ See docs/plans/review-fixes-20261008.md. Check existing work before editing; onl
 Inspect before edits; reuse existing offers, owner-scoped ticket APIs, public seller applications and cart/query stores. Frontend first: central neutral keyboard focus policy, one 1536px navigation account breakpoint with resolving-auth placeholder, compact guest account; gallery/tabs; URL filters/mobile Apply/Clear; shared cart stepper; order item thumbnails on review/payment; copy coupon; configurable seller destination; reset/support frontend. Then implement only missing secure backend reset/support contracts, then admin integration. Product management Task6 is investigation only. Verify locally in isolated Docker with dummy fixtures and no external network, empty allowlisted environment, readonly input/toolchain, scratch tmpfs and bounded resources. No deploy/push in this task.
 
 2026-10-29 remaining-work recheck: Task16 requires automatic return to login after recovery. Replace the manual-only success screen in both apps with their existing success notification and fixed local login route; test failures stay on recovery without success/navigation. No backend or dependency change.
+
+## Google OAuth activation — 2026-10-30
+
+Current release completed before this follow-up: backend3115733, storefront847204a, admin e43dd81 live; nine public browser checks and live private Cloudinary upload/cleanup passed.
+
+Architect: reuse existing Google authorization-code flow, browser S256 PKCE/state, backend Spring/Nimbus signature/issuer/audience/expiry checks, verified identity linking, and standard session store. No new dependency, backend endpoint, or migration.
+
+Developer (ponytail): validate restored pending-flow shape before use; gate the saved and restored destination with shared isValidRedirect. Harden that shared guard against URL-normalized control characters for every caller. Keep valid internal checkout/account routes. Add focused regression cases to existing suites.
+
+Reviewer (secure-code-review): TypeScript/React browser code and Java/Spring existing provider configuration. Trust boundaries: URL parameters, sessionStorage JSON, navigation target, provider authorization response, server-only secret and environment configuration. Applicable ASVS V2/V3/V4/V5/V7/V8/V9/V14. Existing state/PKCE and server identity verification must remain intact. The skill's referenced ../../../docs/fixer-policy.md is absent at its resolved path and named-file searches found no copy; no approval requirement is inferred. Fixes are narrow validation changes, independently reviewed, and reversible by reverting the frontend commit.
+
+QA: existing OAuth and redirect suites plus full storefront tests/typecheck; production build and deployed button, outbound parameters, cancellation and invalid-state handling. Real account consent remains user-controlled. Do not log credentials, authorization codes, state, PKCE verifiers or session tokens. Configure only the public client ID in Vercel; merge server credentials into existing Render settings. New frontend PR targets #12's branch; preserve earlier PRs.
+
+## Mobile navigation and saved-address deletion
+
+- Render the four shared tabs and one account slot in the existing five-column grid. Use the auth store and existing login modal, with the person icon in both states and a neutral slot during session restoration. Keep the checkout exclusion and account route highlighting.
+- Add authenticated DELETE to the existing owner-scoped address controller/service in `database 2`. Delete the saved row and, when removing the sole default, promote the first remaining address in the same transaction. Orders already store an independent delivery-address snapshot.
+- Wire the account cards to the existing modal, API client, React Query address cache, and toast store. Disable repeat confirmation while pending, refresh shared address state after success, and preserve the list on failure.
+- Cover both auth states, narrow layouts, deletion confirmation and failure, ownership, default promotion, the last address, and preservation of prior order snapshots. No new runtime dependencies.
+
+## Product image viewer
+
+- Keep the gallery image, thumbnails and existing selection state. Apply pointer-gated, in-place 2× hover zoom to the main image and viewer. Request enough image pixels for zoom and respect reduced motion.
+- Present the lightbox above the storefront with modal focus containment and restoration. Lock the root and body while open, compensate for the scrollbar, and restore the saved scroll and inline styles on close or teardown. Keep controls inside viewport safe areas.
+- Preserve a same-page history entry while open so Back closes the viewer. Coordinate keyboard, close button and backdrop dismissal with the same lifecycle.
+- Use Pointer Events to distinguish fit-mode swipe, double-tap, pinch, and zoomed pan. Reset zoom on image changes, bound panning, preserve gallery tap and swipe, and load adjacent viewer images ahead of navigation. Keep single-image controls minimal.
+- Verify scroll restoration and repeated opens, keyboard and focus, desktop hover/click, touch swipes and zoom, and Back navigation. No API or schema changes.
+
+## Product detail add to cart
+
+- Replace the buy box's independent cart-line stepper with a persistent ADD button. Send the visible variant and requested quantity through the shared cart hook, reset only on success or variant change, and prevent a second write while pending. Keep bag and product-card quantity controls available to their existing callers.
+- Keep the shared badge on guest quantity totals or the latest server cart. Display 99+ visually when needed. Preserve guest persistence and merge, and check cart refresh after returning to the site or focusing another tab.
+- Keep the server's atomic variant-key upserts and full-cart response. Enforce variant membership, availability, and quantity limits on cart writes. Check remaining headroom for repeated adds and surface stock or quantity limits.
+- Pass the selected variant and quantity through Buy Now and auth resume. Checkout and quote must agree on the exact quantity even if the same variant is already in the bag. Preserve unrelated items and unpurchased units.
+- Verify merging, distinct variants, request failure and pending guards, stock caps, guest merge, quantity reset, badge totals, and Buy Now with a matching item already in the bag.
+## Product detail cart flow
+
+- Keep one pre-add quantity selector and send the selected variant and quantity through the shared add mutation. Reset on successful ADD or a variant change.
+- Retain shared badge totals, guest storage and merge, and exact variant line identity. Enforce variant stock on cart writes.
+- Use a direct purchase intent for Buy Now so checkout and quotes price the exact selection and leave existing bag contents intact.
+
+## Bag selection and removal
+
+- Reuse owner-scoped checkout exclusions for manual and all/none selection. Derive the header count and toggle label from the current bag selection. Preserve the selected lines used by Address and Payment.
+- Confirm removal against a snapshot of selected line keys. Use the existing guest removal action and sequential owner-scoped cart-item DELETE for signed-in users. Keep successful removals, refresh the cart, and report failed removals. Leave unchecked lines alone.
+- Verify the all/none toggle, selection totals, selected-only removal, and checkout continuation.
+
+## Bag selection mode follow-up
+
+- Default to checkout with the full bag and keep checkboxes and bulk actions hidden. Select all enters selection mode with every line checked.
+- In selection mode, keep row and bulk controls available. Done returns to the default full-bag selection. Continue retains the explicit subset for Address and Payment.
+
+## Catalog filters and sorting
+
+Keep URL-backed listing state and add server-side facet counts. Share controls between the desktop sidebar and mobile draft editor. Use a separate desktop sort control and an immediately applied mobile sort sheet.
+
+## Google sign-in phone onboarding
+
+Use a nullable phone for new Google accounts and clear only the exact historical placeholder on Google-linked rows. Keep the authenticated phone-change OTP as the sole way to adopt or change the number. Show the add form directly from Profile and from checkout when a phone is missing.

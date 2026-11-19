@@ -1,8 +1,9 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CartQuantityControl } from '@/components/product/CartQuantityControl';
+import { useRemoveCartItem } from '@/hooks/api/useCart';
 import { queryKeys } from '@/lib/api/queries';
 import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -70,5 +71,33 @@ describe('shared ADD quantity control', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Decrease quantity of Fixture honey' })[0]);
     await waitFor(() => expect(removeCartItem).toHaveBeenCalledWith('line'));
     await waitFor(() => expect(screen.getAllByRole('button', { name: 'Add Fixture honey' })).toHaveLength(2));
+  });
+});
+
+it('keeps completed bag removals when a later selected line fails', async () => {
+  useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'fixture-user' } as UserProfileDto });
+  const [first] = initial.items;
+  const second = { ...first, id: 'line-2', variantId: 'large' };
+  const third = { ...first, id: 'line-3', variantId: 'medium' };
+  const remaining = { items: [second, third], itemCount: 2, subtotal: 200 };
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  clients.push(client);
+  client.setQueryData(queryKeys.cart(), { items: [first, second, third], itemCount: 3, subtotal: 300 });
+  vi.mocked(removeCartItem)
+    .mockResolvedValueOnce(remaining)
+    .mockRejectedValueOnce(new Error('Connection lost'));
+  const { result } = renderHook(useRemoveCartItem, {
+    wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+  });
+
+  act(() => result.current.mutate([first.id, second.id, third.id]));
+
+  await waitFor(() => expect(result.current.isError).toBe(true));
+  expect(vi.mocked(removeCartItem).mock.calls).toEqual([[first.id], [second.id]]);
+  expect(client.getQueryData(queryKeys.cart())).toEqual(remaining);
+  expect(client.getQueryState(queryKeys.cart())?.isInvalidated).toBe(true);
+  expect(useUiStore.getState().toasts.at(-1)).toMatchObject({
+    type: 'error',
+    title: 'Could not remove every selected item',
   });
 });

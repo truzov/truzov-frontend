@@ -21,6 +21,8 @@ export interface ProductFilterState {
   /** Integer rupees, matching the API/database price. */
   minPrice?: number;
   maxPrice?: number;
+  minRating?: number;
+  minDiscount?: number;
   tags?: string[];
   inStock?: boolean;
   labVerified?: boolean;
@@ -35,6 +37,7 @@ const SORTS: readonly ProductSort[] = [
   'best_rated',
   'best_selling',
   'newest',
+  'discount',
 ];
 
 export function parseFilters(params: URLSearchParams): ProductFilterState {
@@ -44,6 +47,8 @@ export function parseFilters(params: URLSearchParams): ProductFilterState {
     sort: params.get('sort') ?? 'relevance',
     minPrice: parseNumber(params.get('minPrice')),
     maxPrice: parseNumber(params.get('maxPrice')),
+    minRating: parseNumber(params.get('minRating')),
+    minDiscount: parseNumber(params.get('minDiscount')),
     tags: params.get('tags')?.split(',').filter(Boolean),
     // Only `true` is meaningful: these are "narrow the results" switches, and sending
     // `inStock=false` would ask the server for out-of-stock items only.
@@ -78,6 +83,8 @@ export function toProductListParams(
     sort: normaliseSort(filters.sort),
     minPrice: priceInRupees(filters.minPrice),
     maxPrice: priceInRupees(filters.maxPrice),
+    minRating: filters.minRating,
+    minDiscount: filters.minDiscount,
     tags: filters.tags,
     inStock: filters.inStock,
     labVerified: filters.labVerified,
@@ -122,6 +129,8 @@ export function activeFilterEntries(filters: ProductFilterState): Array<[string,
   if (filters.brand) entries.push(['brand', filters.brand]);
   if (filters.minPrice !== undefined) entries.push(['min price', `₹${filters.minPrice}`]);
   if (filters.maxPrice !== undefined) entries.push(['max price', `₹${filters.maxPrice}`]);
+  if (filters.minRating !== undefined) entries.push(['rating', `${filters.minRating}+`]);
+  if (filters.minDiscount !== undefined) entries.push(['discount', `${filters.minDiscount}%+`]);
   if (filters.inStock) entries.push(['in stock', 'yes']);
   if (filters.labVerified) entries.push(['lab verified', 'yes']);
   if (filters.tags?.length) entries.push(['tags', filters.tags.join(', ')]);
@@ -151,6 +160,8 @@ export function filtersToSearchParams(filters: ProductFilterState): URLSearchPar
   if (filters.sort && filters.sort !== 'relevance') search.set('sort', filters.sort);
   if (filters.minPrice !== undefined) search.set('minPrice', String(filters.minPrice));
   if (filters.maxPrice !== undefined) search.set('maxPrice', String(filters.maxPrice));
+  if (filters.minRating !== undefined) search.set('minRating', String(filters.minRating));
+  if (filters.minDiscount !== undefined) search.set('minDiscount', String(filters.minDiscount));
   if (filters.tags?.length) search.set('tags', filters.tags.join(','));
   if (filters.inStock) search.set('inStock', 'true');
   if (filters.labVerified) search.set('labVerified', 'true');

@@ -29,7 +29,8 @@ export type ProductSort =
   | 'price_desc'
   | 'best_rated'
   | 'best_selling'
-  | 'newest';
+  | 'newest'
+  | 'discount';
 
 /** Mirrors the documented `GET /products` query parameters, names and units included. */
 export interface ProductListParams {
@@ -39,6 +40,8 @@ export interface ProductListParams {
   /** Integer rupees, compared directly against product price. */
   minPrice?: number;
   maxPrice?: number;
+  minRating?: number;
+  minDiscount?: number;
   /** Any-of match. Max 20 tags. */
   tags?: string[];
   inStock?: boolean;
@@ -47,6 +50,20 @@ export interface ProductListParams {
   q?: string;
   page?: number;
   limit?: number;
+}
+
+export interface ProductFacets {
+  categories: { value: string; count: number }[];
+  brands: { value: string; count: number }[];
+  ratings: { value: number; count: number }[];
+  discounts: { value: number; count: number }[];
+  price: { min: number; max: number };
+  inStock: number;
+  labVerified: number;
+}
+
+export function getProductFacets(params: ProductListParams, signal?: AbortSignal) {
+  return apiRequest<ProductFacets>('/products/facets', { query: toQuery(params), signal });
 }
 
 export function getHome(signal?: AbortSignal): Promise<HomeDto> {
@@ -177,6 +194,8 @@ function toQuery(params: ProductListParams): Record<string, string | number | bo
     sort: params.sort,
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
+    minRating: params.minRating,
+    minDiscount: params.minDiscount,
     // Documented maximum is 20 tags.
     tags: params.tags?.slice(0, 20),
     inStock: params.inStock,

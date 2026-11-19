@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createAddress, getAddresses, updateAddress } from '@/lib/api/endpoints/addresses';
+import { createAddress, deleteAddress, getAddresses, updateAddress } from '@/lib/api/endpoints/addresses';
 import { checkout, getOrder, listOrders, updateOrderStatus } from '@/lib/api/endpoints/orders';
 import { completeMockPayment, createPaymentSession } from '@/lib/api/endpoints/payments';
 import { errorMessage } from '@/lib/api/errors';
@@ -27,9 +27,7 @@ export function useAddresses() {
   return {
     ...query,
     addresses,
-    // The server marks one address default; falling back to the first keeps checkout usable if
-    // none is flagged (possible, since `isDefault` is only set at creation time and there is no
-    // set-default endpoint).
+    // Legacy or manually edited address books may have no default.
     defaultAddress: addresses.find((address) => address.isDefault) ?? addresses[0],
   };
 }
@@ -66,6 +64,26 @@ export function useUpdateAddress() {
     },
     onError: (error) => {
       addToast({ type: 'error', title: 'Could not update address', message: errorMessage(error) });
+    },
+  });
+}
+
+export function useDeleteAddress() {
+  const queryClient = useQueryClient();
+  const addToast = useUiStore((state) => state.addToast);
+  const queryKey = queryKeys.addresses();
+
+  return useMutation({
+    mutationFn: deleteAddress,
+    onSuccess: (_response, addressId) => {
+      queryClient.setQueryData<AddressDto[]>(queryKey, (current) =>
+        current?.filter((address) => address.id !== addressId)
+      );
+      void queryClient.invalidateQueries({ queryKey });
+      addToast({ type: 'success', title: 'Address deleted' });
+    },
+    onError: (error) => {
+      addToast({ type: 'error', title: 'Could not delete address', message: errorMessage(error) });
     },
   });
 }

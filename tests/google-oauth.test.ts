@@ -101,4 +101,24 @@ describe('google-oauth', () => {
 
     expect(sessionStorage.getItem('truzov.googleOAuthPending')).toBeNull();
   });
+
+  it.each(['https://evil.example', '//evil.example', '/\\evil.example', '/\n/evil.example', 'javascript:alert(1)'])(
+    'keeps an unsafe destination on this site: %s', async (redirectTo) => {
+      await beginGoogleSignIn(redirectTo);
+      const pending = JSON.parse(sessionStorage.getItem('truzov.googleOAuthPending')!);
+      expect(pending.redirectTo).toBe('/');
+      pending.redirectTo = redirectTo;
+      sessionStorage.setItem('truzov.googleOAuthPending', JSON.stringify(pending));
+      expect(completeGoogleSignIn(pending.state).redirectTo).toBe('/');
+    }
+  );
+
+  it.each([null, [], {}, { state: 's'.repeat(22), verifier: 42 },
+    { state: 's'.repeat(22), verifier: 'short' }, { state: 42, verifier: 'v'.repeat(128) }])(
+    'rejects malformed stored flow %j and consumes it', (pending) => {
+      sessionStorage.setItem('truzov.googleOAuthPending', JSON.stringify(pending));
+      expect(() => completeGoogleSignIn('s'.repeat(22))).toThrow(/start again/i);
+      expect(sessionStorage.getItem('truzov.googleOAuthPending')).toBeNull();
+    }
+  );
 });

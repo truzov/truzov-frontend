@@ -1,5 +1,48 @@
 # Truzov frontend redesign QA report
 
+## Google account mobile number — 2026-11-10
+
+- All 169 storefront Vitest tests passed. Four targeted Playwright cases passed against the production preview across Chromium and Pixel 7 emulation.
+- The email-only account fixture verifies empty and legacy-placeholder profile display, independent verified email, invalid-number rejection, the checkout add-and-verify prompt, wrong-code feedback, resend, successful phone addition, and a later OTP-verified change. Checkout stayed blocked until successful verification. The signed-in Buy Now regression passed with a verified phone.
+- Browser tests intercepted OAuth-derived profile and OTP responses. They did not use a live Google session or send an SMS.
+
+## Seller KYC layout — 2026-11-10
+
+- Admin Vitest passed all 22 tests. The local production Admin preview passed Chromium checks at 1440 px and Pixel 7 emulated checks at 375 px and 320 px.
+- At each width, 32 measured rectangles and the document dimensions stayed identical when an invalid PAN blurred, all ten required errors appeared, each text field was corrected, invalid file type and size errors appeared, and all three document errors cleared after mocked uploads.
+- Blank GSTIN and GST state code remained valid. Rejected files never reached the upload fixture. The browser checks used synthetic applicant data and intercepted every API request.
+
+## Bag selection mode clarification — 2026-11-10
+
+- All 168 Vitest tests passed across 18 files. The guest and signed-in regressions verify full totals and hidden row checkboxes and bulk removal on entry, even with saved exclusions. Select all opens inline selection with every row checked. The signed-in Done action returns to the full bag view.
+- The checkout regression verifies that continuing from an active partial selection still carries only those lines to Address and Payment.
+
+## Bag bulk selection — 2026-11-10
+
+- The 52-page production build passed. Browser smoke checks passed on the local build for a Pixel 7 guest and a desktop signed-in session with intercepted API responses. Both checked only the intended lines, preserved the unchecked item, and reached the empty state after removing the last checked line.
+
+- All 168 Vitest tests passed across 18 files, including the 11 checkout-selection cases. The new regressions cover signed-in toggles, count and subtotal updates, disabled Continue with no selection, exact selected line IDs for removal, and guest removal preserving the unchecked variant and showing the empty state after the last line is removed.
+- The checkout regression starts in Bag, selects one product, and verifies the Address subtotal and Payment request reflect only that selection.
+
+## Product image viewer — 2026-11-10
+
+- Production build generated 52 static pages. TypeScript and all 165 Vitest tests passed.
+- Targeted Playwright cases passed on the production preview in desktop Chromium, Microsoft Edge, and Pixel 7 emulation. Desktop checks cover hover zoom at five positions, click zoom, image navigation, focus wrap and return, wheel and keyboard scroll lock, exact scroll restoration, ten close cycles, and browser Back. The single-image fixture verifies hidden navigation and a loading placeholder that gives way to the loaded high-resolution image.
+- Touch checks cover gallery swipe followed immediately by tap, fullscreen swipe, pinch, zoomed pan, double-tap, background scroll lock, and landscape close. The final Pixel 7 rerun passed after guarding cancellation on touch events, without the earlier noncancelable-event console warning. A direct smoke check on the seeded product also verified browser Back during touch emulation.
+- The tests use the seeded product slug for server rendering and intercept browser API responses for deterministic images. Firefox, Safari, and physical devices were outside this run.
+
+## Mobile navigation and address deletion — 2026-11-10
+
+- All 165 Vitest tests, TypeScript, and the production build passed. The build generated 52 static pages. The navigation regression verifies the four browsing links, immediate account tab changes when auth state changes, and neutral session restoration.
+- All four targeted Playwright cases passed against the production build in Chromium and Pixel 7 emulation. The navigation checks cover 320 px through desktop, guest sign-in dialog access, and a held session restore without guest-label flash. The address flow covers cancellation, disabled confirmation while pending, a simulated network failure, successful retry, default promotion from the API fixture, and the empty state.
+- ESLint passed for the changed production files. Linting the two test files reports existing console logging and image-mock diagnostics.
+
+## Release and Google OAuth QA — 2026-10-30
+
+Authoritative current detail: docs/release-status-20261030.md and docs/oauth-security-review-20261030.md. Fresh backend CI679 tests/coverage/package/SpotBugs passed; overall image-scan gate fails two existing Spring advisories. Storefront initial154 and admin22 tests/typechecks passed; all three diff checks passed. Production builds READY and nine public Chromium checks passed on storefront847204a/admin e43dd81. Live Neon migrations, public image delivery, test-admin auth/logout and a generated private Cloudinary upload/denied unsigned delivery/exact cleanup passed.
+
+OAuth e874caa:165 tests in18files (20 OAuth cases), standalone TypeScript and changed-file ESLint pass. Independent focused security review found no blocker. Render Google settings and persistent generated JWT key are live; frontend production READY. Dummy Google code rejects401 with no session. Manual browser checks pass button/handoff, cancellation and unsolicited callback error. User fixed Google callback registration; account chooser now appears. Real Google consent/session verification remains pending user action. Temporary automated OAuth browser helper creation was rejected by approval review; it did not execute, and the earlier nine-case browser result does not validate this source revision.
+
 Date: 2026-09-27
 
 ## Result
@@ -225,3 +268,13 @@ All three diff whitespace checks pass. No commit, push, deployment, production l
 Follow-up validation: 154 storefront tests plus TypeScript passed; 22 panel tests plus TypeScript passed. The panel production build passed again (90 generated pages). Chromium checks against that production build passed at 375/768/1440px (3/3), including automatic /signin navigation and the visible global success notification. The storefront recovery regression verifies no navigation/notification on rejection and exactly one fixed /login navigation after confirmation. All three repository whitespace checks pass. Backend source is unchanged by this follow-up; the earlier 295-unit/384-integration results remain its validation. No fresh storefront production build was needed for this routing-only change after TypeScript and the complete storefront suite passed.
 
 Verification used the same isolated Docker controls described above. Initial panel build/browser attempts failed because the runner omitted cached native modules or selected an incompatible libc/SWC combination; the final runner used Node22 Alpine and the existing read-only exact dependency, native, shared binary and font caches. No packages were installed or changed. Follow-up source review was performed by the coordinating agent; a fresh delegated review was unavailable due to the account usage limit. No new security defect was identified in this small routing change. Existing live-provider, current dependency-vulnerability and production-load limitations still apply. No commit, push or deployment.
+
+Final OAuth live verification: user completed Google sign-in after registering the callback. Protected /account displayed the signed-in profile, stayed authenticated after reload, and Log out returned to the guest homepage with a success notification. No browser tokens/storage were inspected. This is one manually verified existing-account flow, not a completed automated OAuth browser suite. Production app code remains e874caa; report-only changes follow.
+
+## Add to cart and Buy Now — 2026-11-10
+
+Passed the 52-page production build with TypeScript, 165 storefront Vitest tests, 295 backend unit tests, and 23 cart and checkout integration tests on Testcontainers PostgreSQL. Ten Playwright checks passed on desktop Chromium and Pixel 7 emulation. They cover the guest quantity and variant flow, badge persistence, failure and duplicate-submit handling, guest merge, and the exact Buy Now quote and order payload. A separate check against the running local catalogue verified 1kg × 5 and badge updates across two guest tabs. Browser checkout used fixtures. Backend integration tests placed orders in disposable PostgreSQL. Physical phones and a separate signed-in device were untested.
+
+## Catalog filters and sorting — 2026-11-10
+
+Production build and TypeScript passed. All 168 storefront tests passed before adding the URL round-trip regression, which then passed in the 21-test utility suite. All 41 targeted backend tests passed against PostgreSQL 16. Four Playwright regressions passed across desktop Chromium and Pixel 7 emulation on the running catalog. Additional live checks exercised the desktop price slider and mobile draft, Apply, and sort sheet. Physical phones were untested.

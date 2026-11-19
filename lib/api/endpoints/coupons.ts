@@ -1,12 +1,12 @@
 import { apiRequest } from '@/lib/api/client';
-import type { CouponQuote } from '@/types/api';
+import type { CheckoutRequest, CouponQuote } from '@/types/api';
 
 export function validateCoupon(code: string, cartItemIds: string[], signal?: AbortSignal) {
   return apiRequest<CouponQuote>('/coupons/validate', { method: 'POST', auth: true, body: { code, cartItemIds }, signal });
 }
 
-export function getCheckoutQuote(code: string, cartItemIds: string[], signal?: AbortSignal) {
-  return apiRequest<CouponQuote>('/coupons/quote', { method: 'POST', auth: true, body: { code, cartItemIds }, signal });
+export function getCheckoutQuote(code: string, selection: Pick<CheckoutRequest, 'cartItemIds' | 'buyNow'>, signal?: AbortSignal) {
+  return apiRequest<CouponQuote>('/coupons/quote', { method: 'POST', auth: true, body: { code, ...selection }, signal });
 }
 
 export interface Offer {
