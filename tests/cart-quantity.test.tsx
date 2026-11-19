@@ -1,15 +1,17 @@
 import React from 'react';
-import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, renderHook, screen, waitFor } from '@testing-library/react';
+import { renderWithRedux as render, reduxWrapper } from './redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { makeStore } from '@/store/redux';
 import { CartQuantityControl } from '@/components/product/CartQuantityControl';
 import { useRemoveCartItem } from '@/hooks/api/useCart';
 import { queryKeys } from '@/lib/api/queries';
-import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
-import { useAuthStore } from '@/store/auth.store';
-import { useUiStore } from '@/store/ui.store';
+import { authChanged } from '@/store/auth.store';
 import { updateCartItem, removeCartItem } from '@/lib/api/endpoints/cart';
 import type { CartDto, UserProfileDto } from '@/types/api';
+
+let store: ReturnType<typeof makeStore>;
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/lib/api/endpoints/cart', () => ({ getCart: vi.fn(), addCartItem: vi.fn(), updateCartItem: vi.fn(), removeCartItem: vi.fn() }));
@@ -21,15 +23,15 @@ function renderControls() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity }, mutations: { retry: false } } });
   clients.push(client);
   client.setQueryData(queryKeys.cart(), initial);
-  render(<QueryClientProvider client={client}><CartQuantityControl max={3} product={product} /><CartQuantityControl max={3} product={product} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><CartQuantityControl max={3} product={product} /><CartQuantityControl max={3} product={product} /></QueryClientProvider>, { store });
   return client;
 }
 
 beforeEach(() => {
+  store = makeStore();
   vi.clearAllMocks();
-  useGuestCartStore.setState({ items: [], hydrated: true });
-  useAuthStore.setState({ user: null, isLoggedIn: false, status: 'anonymous' });
-  useUiStore.setState({ toasts: [] });
+
+  store.dispatch(authChanged({ user: null, isLoggedIn: false, status: 'anonymous' }));
 });
 afterEach(() => clients.splice(0).forEach((client) => client.clear()));
 
@@ -46,11 +48,11 @@ describe('shared ADD quantity control', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Decrease quantity of Fixture honey' })[0]);
     fireEvent.click(screen.getAllByRole('button', { name: 'Decrease quantity of Fixture honey' })[0]);
     expect(screen.getAllByRole('button', { name: 'Add Fixture honey' })).toHaveLength(2);
-    expect(useGuestCartStore.getState().items).toEqual([]);
+    expect(store.getState().guestCart.items).toEqual([]);
   });
 
   it('optimistically updates all views, blocks duplicate saves and rolls back a failed server write', async () => {
-    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'fixture-user' } as UserProfileDto });
+    store.dispatch(authChanged({ isLoggedIn: true, status: 'authenticated', user: { id: 'fixture-user' } as UserProfileDto }));
     let fail!: (reason: Error) => void;
     vi.mocked(updateCartItem).mockImplementation(() => new Promise((_resolve, reject) => { fail = reject; }));
     const client = renderControls();
@@ -61,11 +63,11 @@ describe('shared ADD quantity control', () => {
     await act(async () => { fail(new Error('Fixture stock change')); });
     await waitFor(() => expect(screen.getAllByText('1')).toHaveLength(2));
     expect(client.getQueryData(queryKeys.cart())).toEqual(initial);
-    expect(useUiStore.getState().toasts.at(-1)?.type).toBe('error');
+    expect(store.getState().ui.toasts.at(-1)?.type).toBe('error');
   });
 
   it('uses the owner-scoped server line id for decrement-to-zero', async () => {
-    useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'fixture-user' } as UserProfileDto });
+    store.dispatch(authChanged({ isLoggedIn: true, status: 'authenticated', user: { id: 'fixture-user' } as UserProfileDto }));
     vi.mocked(removeCartItem).mockResolvedValue({ items: [], itemCount: 0, subtotal: 0 });
     renderControls();
     fireEvent.click(screen.getAllByRole('button', { name: 'Decrease quantity of Fixture honey' })[0]);
@@ -75,7 +77,7 @@ describe('shared ADD quantity control', () => {
 });
 
 it('keeps completed bag removals when a later selected line fails', async () => {
-  useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'fixture-user' } as UserProfileDto });
+  store.dispatch(authChanged({ isLoggedIn: true, status: 'authenticated', user: { id: 'fixture-user' } as UserProfileDto }));
   const [first] = initial.items;
   const second = { ...first, id: 'line-2', variantId: 'large' };
   const third = { ...first, id: 'line-3', variantId: 'medium' };
@@ -87,7 +89,7 @@ it('keeps completed bag removals when a later selected line fails', async () => 
     .mockResolvedValueOnce(remaining)
     .mockRejectedValueOnce(new Error('Connection lost'));
   const { result } = renderHook(useRemoveCartItem, {
-    wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+    wrapper: reduxWrapper(store, ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>),
   });
 
   act(() => result.current.mutate([first.id, second.id, third.id]));
@@ -96,7 +98,7 @@ it('keeps completed bag removals when a later selected line fails', async () => 
   expect(vi.mocked(removeCartItem).mock.calls).toEqual([[first.id], [second.id]]);
   expect(client.getQueryData(queryKeys.cart())).toEqual(remaining);
   expect(client.getQueryState(queryKeys.cart())?.isInvalidated).toBe(true);
-  expect(useUiStore.getState().toasts.at(-1)).toMatchObject({
+  expect(store.getState().ui.toasts.at(-1)).toMatchObject({
     type: 'error',
     title: 'Could not remove every selected item',
   });

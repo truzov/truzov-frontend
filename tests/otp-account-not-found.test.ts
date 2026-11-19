@@ -7,9 +7,10 @@ import { ApiError } from '@/lib/api/errors';
  * the rest of the suite tests store logic (see tests/utils.test.ts for the equivalent pattern on
  * pure functions).
  */
-const { verifyOtpRequest, checkAccountExistsRequest } = vi.hoisted(() => ({
+const { verifyOtpRequest, checkAccountExistsRequest, sendOtpRequest } = vi.hoisted(() => ({
   verifyOtpRequest: vi.fn(),
   checkAccountExistsRequest: vi.fn(),
+  sendOtpRequest: vi.fn(),
 }));
 
 vi.mock('@/lib/api/endpoints/auth', () => ({
@@ -18,7 +19,7 @@ vi.mock('@/lib/api/endpoints/auth', () => ({
   // Only verifyOtp/checkAccountExists are under test; the store module imports several sibling
   // functions from this file, so they need to exist even though nothing here calls them.
   signup: vi.fn(),
-  sendOtp: vi.fn(),
+  sendOtp: sendOtpRequest,
   login: vi.fn(),
   loginWithGoogle: vi.fn(),
   getCurrentUser: vi.fn(),
@@ -27,38 +28,39 @@ vi.mock('@/lib/api/endpoints/auth', () => ({
   changePassword: vi.fn(),
 }));
 
-import { useAuthStore } from '@/store/auth.store';
+import { authActions } from '@/store/auth.store';
+import { makeStore } from '@/store/redux';
+
+let store: ReturnType<typeof makeStore>;
+beforeEach(() => { store = makeStore(); });
 
 describe('otp/verify: ACCOUNT_NOT_FOUND (404) on a correct code with no account', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     verifyOtpRequest.mockReset();
-    useAuthStore.setState({
-      otpSessionId: 'session-abc',
-      pendingIdentifier: 'ghost@example.com',
-      otpChannel: 'email',
-      verifiedOtpSessionId: null,
-      errorCode: null,
-      error: null,
-      status: 'anonymous',
-      isLoggedIn: false,
-    });
+    sendOtpRequest.mockResolvedValueOnce({ otpSessionId: 'session-abc', channel: 'email', expiresInSeconds: 300 });
+    await store.dispatch(authActions.sendOtp('ghost@example.com'));
   });
 
-  it('holds the consumed session as a signup voucher and clears otpSessionId', async () => {
+  it('clears the spent challenge and retains the identifier draft', async () => {
     verifyOtpRequest.mockRejectedValueOnce(
       new ApiError({ code: 'ACCOUNT_NOT_FOUND', message: 'No account.', status: 404 })
     );
 
-    await expect(useAuthStore.getState().verifyOtp('123456')).rejects.toThrow();
+    await expect(store.dispatch(authActions.verifyOtp('123456'))).rejects.toThrow();
 
-    const state = useAuthStore.getState();
+    const state = store.getState().auth;
     expect(state.errorCode).toBe('ACCOUNT_NOT_FOUND');
-    // The spent session can never verify anything else, so it must not linger as otpSessionId —
-    // only OTPVerification's `sessionExpired`/`accountNotFound` derivation should see it now.
-    expect(state.otpSessionId).toBeNull();
-    // ...but it is kept under a different name so SignupForm can pre-fill from it and carry it
-    // forward (though signup still requires a fresh OTP — nothing here skips verification).
-    expect(state.verifiedOtpSessionId).toBe('session-abc');
+    expect(state.hasOtpSession).toBe(false);
+    expect(state.pendingIdentifier).toBe('ghost@example.com');
+  });
+
+  it('isolates the challenge to its store outside serialized state', async () => {
+    const otherStore = makeStore();
+    expect(store.getState().auth.hasOtpSession).toBe(true);
+    expect(JSON.stringify(store.getState())).not.toContain('session-abc');
+    expect(otherStore.getState().auth.hasOtpSession).toBe(false);
+    await expect(otherStore.dispatch(authActions.verifyOtp('123456'))).rejects.toMatchObject({ code: 'OTP_SESSION_MISSING' });
+    expect(verifyOtpRequest).not.toHaveBeenCalled();
   });
 
   it('does not log the user in', async () => {
@@ -66,26 +68,25 @@ describe('otp/verify: ACCOUNT_NOT_FOUND (404) on a correct code with no account'
       new ApiError({ code: 'ACCOUNT_NOT_FOUND', message: 'No account.', status: 404 })
     );
 
-    await expect(useAuthStore.getState().verifyOtp('123456')).rejects.toThrow();
+    await expect(store.dispatch(authActions.verifyOtp('123456'))).rejects.toThrow();
 
-    const state = useAuthStore.getState();
+    const state = store.getState().auth;
     expect(state.isLoggedIn).toBe(false);
     expect(state.status).not.toBe('authenticated');
   });
 
-  it('is distinct from OTP_EXPIRED: an expired session does not become a signup voucher', async () => {
+  it('marks an expired challenge with its separate error code', async () => {
     verifyOtpRequest.mockRejectedValueOnce(
       new ApiError({ code: 'OTP_EXPIRED', message: 'Expired.', status: 410 })
     );
 
-    await expect(useAuthStore.getState().verifyOtp('123456')).rejects.toThrow();
+    await expect(store.dispatch(authActions.verifyOtp('123456'))).rejects.toThrow();
 
-    const state = useAuthStore.getState();
+    const state = store.getState().auth;
     expect(state.errorCode).toBe('OTP_EXPIRED');
-    expect(state.otpSessionId).toBeNull();
+    expect(state.hasOtpSession).toBe(false);
     // The whole point of distinguishing the two codes: OTP_EXPIRED must not trigger the
     // "pre-fill and switch to signup" path meant only for a proven-but-unregistered identifier.
-    expect(state.verifiedOtpSessionId).toBeNull();
   });
 
   it('a wrong code (OTP_INVALID) keeps the session open for a retry', async () => {
@@ -93,14 +94,14 @@ describe('otp/verify: ACCOUNT_NOT_FOUND (404) on a correct code with no account'
       new ApiError({ code: 'OTP_INVALID', message: 'Wrong code.', status: 400 })
     );
 
-    await expect(useAuthStore.getState().verifyOtp('000000')).rejects.toThrow();
+    await expect(store.dispatch(authActions.verifyOtp('000000'))).rejects.toThrow();
 
-    const state = useAuthStore.getState();
+    const state = store.getState().auth;
     expect(state.errorCode).toBe('OTP_INVALID');
     // Unlike OTP_EXPIRED/ACCOUNT_NOT_FOUND, a wrong code must not clear the session — the user
     // can simply retype.
-    expect(state.otpSessionId).toBe('session-abc');
-    expect(state.verifiedOtpSessionId).toBeNull();
+    expect(state.hasOtpSession).toBe(true);
+    expect(verifyOtpRequest).toHaveBeenCalledWith({ otpSessionId: 'session-abc', code: '000000' });
   });
 
   it('a real account still logs in normally — the new branch only fires on a null userId', async () => {
@@ -124,42 +125,40 @@ describe('otp/verify: ACCOUNT_NOT_FOUND (404) on a correct code with no account'
       },
     });
 
-    await useAuthStore.getState().verifyOtp('123456');
+    await store.dispatch(authActions.verifyOtp('123456'));
 
-    const state = useAuthStore.getState();
+    const state = store.getState().auth;
     expect(state.isLoggedIn).toBe(true);
     expect(state.status).toBe('authenticated');
     expect(state.user?.id).toBe('usr_real');
     expect(state.errorCode).toBeNull();
-    expect(state.otpSessionId).toBeNull();
-    expect(state.verifiedOtpSessionId).toBeNull();
+    expect(state.hasOtpSession).toBe(false);
   });
 });
 
 describe('auth/account/exists: gating an OTP send on account existence', () => {
   beforeEach(() => {
     checkAccountExistsRequest.mockReset();
-    useAuthStore.setState({ errorCode: null, error: null, isLoading: false });
   });
 
   it('returns true and clears errorCode for a registered identifier', async () => {
     checkAccountExistsRequest.mockResolvedValueOnce({ exists: true });
 
-    const result = await useAuthStore.getState().checkAccountExists('real@example.com');
+    const result = await store.dispatch(authActions.checkAccountExists('real@example.com'));
 
     expect(result).toBe(true);
-    expect(useAuthStore.getState().errorCode).toBeNull();
+    expect(store.getState().auth.errorCode).toBeNull();
   });
 
   it('returns false and sets errorCode to ACCOUNT_NOT_FOUND for an unregistered identifier', async () => {
     checkAccountExistsRequest.mockResolvedValueOnce({ exists: false });
 
-    const result = await useAuthStore.getState().checkAccountExists('ghost@example.com');
+    const result = await store.dispatch(authActions.checkAccountExists('ghost@example.com'));
 
     expect(result).toBe(false);
     // Same code verifyOtp sets on a correct-code-no-account result, so AuthForm's existing
     // "switch to signup" effect fires identically for both entry points.
-    expect(useAuthStore.getState().errorCode).toBe('ACCOUNT_NOT_FOUND');
+    expect(store.getState().auth.errorCode).toBe('ACCOUNT_NOT_FOUND');
   });
 
   it('propagates a rate-limit failure instead of reporting false', async () => {
@@ -167,10 +166,10 @@ describe('auth/account/exists: gating an OTP send on account existence', () => {
       new ApiError({ code: 'RATE_LIMITED', message: 'Too many attempts.', status: 429 })
     );
 
-    await expect(useAuthStore.getState().checkAccountExists('anyone@example.com')).rejects.toThrow();
+    await expect(store.dispatch(authActions.checkAccountExists('anyone@example.com'))).rejects.toThrow();
 
     // Must not be confused with "no account" — a throttled caller gets no answer at all, not a
     // false one, since a false answer here would (via LoginForm) route straight to signup.
-    expect(useAuthStore.getState().errorCode).toBe('RATE_LIMITED');
+    expect(store.getState().auth.errorCode).toBe('RATE_LIMITED');
   });
 });

@@ -278,3 +278,47 @@ Passed the 52-page production build with TypeScript, 165 storefront Vitest tests
 ## Catalog filters and sorting — 2026-11-10
 
 Production build and TypeScript passed. All 168 storefront tests passed before adding the URL round-trip regression, which then passed in the 21-test utility suite. All 41 targeted backend tests passed against PostgreSQL 16. Four Playwright regressions passed across desktop Chromium and Pixel 7 emulation on the running catalog. Additional live checks exercised the desktop price slider and mobile draft, Apply, and sort sheet. Physical phones were untested.
+
+## Redux migration baseline
+
+- Build and standalone type check passed. Vitest passed all 169 tests in 18 files.
+- Lint already fails. Excluding generated output still leaves errors in storefront source and test helpers, as well as the separate nested worktree.
+- Desktop Chromium passed 17 selected Playwright checks with one touch-only skip.
+- Pixel 7 emulation passed 10 checks and skipped one desktop-only check. The remaining filter check failed during concurrent testing and passed on an isolated retry.
+- The browser journey used the production frontend build, the local API, and an isolated Docker PostgreSQL database. It passed browsing, guest cart recovery after reload, signup with mock OTP, cart merge, session refresh, address creation, checkout, simulated payment, order history, logout and password sign-in.
+- Repeated double-click checks submitted twice. One request succeeded and the second returned 422. The database recorded one order per test account. Payment navigation timed out in one repeat despite order creation.
+
+## Redux stage one verification
+
+- The production build and standalone type check passed. All 170 Vitest tests passed, including a regression test that checks a modal close click dispatches no React event.
+- The same Playwright suites passed 17 desktop and 11 Pixel 7 checks, with one device-specific skip per suite.
+- Targeted checks on the rebuilt frontend and Docker API passed sign-in and signup mode switching, toast stacking and dismissal, focus return, and Buy Now quantity transfer after sign-in. The phone verification modal kept checkout gated after an incorrect code and closed after the correct mock code. No browser runtime or Redux serialization errors appeared.
+- At 412 CSS pixels the login toast covers the modal close button until dismissed. A separate browser comparison found the same behavior before and after migration.
+- Lint repeated the baseline 28 errors and 3 warnings with generated folders excluded. The existing checkout double-click issue stays in the baseline.
+
+## Redux stage two verification
+
+- Production build, TypeScript, and all 172 Vitest tests passed. Six focused Playwright regressions passed across desktop Chromium and Pixel 7 emulation.
+- The production frontend and Docker API restored the legacy guest cart after refresh and synced a quantity change to a second tab. After sign-in, the saved exclusion carried into the server cart. Selected-only checkout left the excluded line in the bag.
+- A saved non-default address, selection, and coupon survived refresh. The local API rejected the stale coupon and placement resumed after removal. A simulated previous-owner snapshot could not select a delivery address.
+- Buy Now survived a simulated 503 and refresh. The retry used the same saved idempotency key and placed a single order through the local API. Mock payment, order history, logout cleanup, and corrupted-storage recovery passed.
+- Lint repeated the existing 28 errors and 3 warnings with generated folders excluded. Checkout double-click remains a baseline issue.
+
+## Redux stage three and migration verification
+
+- The production build, TypeScript, and all 173 Vitest tests passed. The storefront source and dependency tree no longer reference Zustand. Eight focused Playwright checks passed across desktop and mobile.
+- A Chromium journey against the Docker API passed signup with mock OTP, password sign-in, protected-page reload and refresh-token rotation, logout, and a second account signing in without seeing the first account's order. It also passed guest cart merge, checkout, mock payment and order history. Google token exchange was tested with fixtures.
+- A saved-checkout rerun exposed a hydration mismatch. React Redux now uses the neutral server snapshot during hydration. The rebuilt app passed the saved checkout, two-tab cart, Buy Now retry, logout, and malformed storage journey without browser runtime errors.
+- Lint reports the same 28 errors and 3 warnings with generated folders excluded. Checkout double-click remains a baseline issue. The final dependency audit reports the same 34 affected package entries as stage two.
+
+## Storefront header icons
+
+Production build and all 173 unit tests passed. Four desktop and mobile Playwright checks verified the responsive account control and session restoration. A local desktop check confirmed icon-only wishlist, account and cart controls at 44px each. Enter opened the sign-in dialog, and Escape returned focus to the account button.
+
+The mobile header search removal and Google callback update passed the production build, 173 unit tests, and six desktop and mobile Playwright checks. The browser tests verified bottom navigation search and a delayed Google exchange that opened the account page without showing the waiting screen. The local Docker database also confirmed a completed Google sign-in with a session.
+
+## Shared storefront and admin design
+
+Both production builds passed. The storefront passed 173 unit tests and six focused Playwright checks. Admin passed 22 unit tests. A direct storefront browser check verified Tab focus, forced-colors mode, mobile bottom navigation, and a successful search through the Docker API. An admin browser check verified the sign-in fields, Inter font, keyboard focus, and the protected product search with a fixture session. The design sync check confirmed that both copies of the stylesheet and fonts match.
+
+With both development servers running, a temporary focus color saved in the storefront stylesheet reached both open browsers. Replacing the source file to restore the original styles also reloaded both apps. The source and admin copies matched after restoration.

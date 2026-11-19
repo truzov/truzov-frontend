@@ -10,10 +10,10 @@ import {
 } from '@/lib/api/endpoints/wishlist';
 import { errorMessage } from '@/lib/api/errors';
 import { queryKeys } from '@/lib/api/queries';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useAuthStore } from '@/store/auth.store';
-import { useUiStore } from '@/store/ui.store';
+import { useAuthModalActions } from '@/store/auth-modal.store';
+import { useToastActions } from '@/store/ui.store';
 import type { WishlistItemDto } from '@/types/api';
+import { useAppSelector } from '@/store/redux';
 
 const EMPTY: WishlistItemDto[] = [];
 
@@ -25,7 +25,7 @@ const EMPTY: WishlistItemDto[] = [];
  * map there is no way to un-save from a listing page.
  */
 export function useWishlist() {
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
 
   const query = useQuery({
     queryKey: queryKeys.wishlist(),
@@ -62,9 +62,9 @@ export function useIsWishlisted(productId: string): boolean {
  */
 export function useToggleWishlist(redirectTo?: string) {
   const queryClient = useQueryClient();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
-  const addToast = useUiStore((state) => state.addToast);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const { openAuthModal } = useAuthModalActions();
+  const { addToast } = useToastActions();
   const { itemIdByProductId } = useWishlist();
 
   const mutation = useMutation({
@@ -104,7 +104,7 @@ export function useToggleWishlist(redirectTo?: string) {
 /** Wishlist -> cart in one server-side step, so the item is never in both lists or neither. */
 export function useMoveWishlistItemToCart() {
   const queryClient = useQueryClient();
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
 
   return useMutation({
     mutationFn: (itemId: string) => moveWishlistItemToCart(itemId),

@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { renderWithRedux as render } from './redux';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -7,13 +8,8 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/login',
 }));
 
-vi.mock('@/store/otp-modal.store', () => ({
-  useOtpModalStore: (selector: (state: { openOtpModal: () => void }) => unknown) =>
-    selector({ openOtpModal: vi.fn() }),
-}));
-
 import { LoginForm } from '@/components/auth/LoginForm';
-import { useAuthStore } from '@/store/auth.store';
+import { authActions } from '@/store/auth.store';
 
 /**
  * Mocks the store actions directly, same pattern as the `LoginForm.resolveRedirect` suite in
@@ -30,17 +26,12 @@ describe('LoginForm: account-existence gate before sending an OTP', () => {
     checkAccountExists.mockReset();
     sendOtp.mockReset();
     onModeChange.mockReset();
-    useAuthStore.setState({
-      checkAccountExists,
-      sendOtp,
-      isLoading: false,
-      error: null,
-      errorCode: null,
-    });
+    vi.spyOn(authActions, 'checkAccountExists').mockImplementation((identifier) => () => checkAccountExists(identifier));
+    vi.spyOn(authActions, 'sendOtp').mockImplementation((identifier, purpose) => () => sendOtp(identifier, purpose));
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   async function submitIdentifier(identifier: string) {

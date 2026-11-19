@@ -8,7 +8,8 @@ import { useCheckoutSelection, type BagSelectionMode } from '@/hooks/api/useChec
 import { getCheckoutQuote } from '@/lib/api/endpoints/coupons';
 import { errorMessage } from '@/lib/api/errors';
 import { formatCurrency } from '@/lib/utils/money';
-import { useCheckoutStore } from '@/store/checkout.store';
+import { setCouponCode } from '@/store/checkout.store';
+import { useAppDispatch } from '@/store/redux';
 
 interface CheckoutPriceDetailsProps {
   ctaLabel?: string;
@@ -24,7 +25,7 @@ interface CheckoutPriceDetailsProps {
 /** A quote is display-only; checkout independently validates eligibility and money. */
 export function CheckoutPriceDetails({ ctaLabel = 'Continue', disabled, loading, helperText, termsText, onCta, orderTotals, bagMode }: CheckoutPriceDetailsProps) {
   const { owner, cart, couponCode, selection } = useCheckoutSelection(bagMode);
-  const setCouponCode = useCheckoutStore((state) => state.setCouponCode);
+  const dispatch = useAppDispatch();
   const [draft, setDraft] = useState(couponCode);
   const quote = useQuery({
     queryKey: ['coupon-quote', owner, couponCode, cart.items.map((item) => [item.id, item.quantity, item.lineTotal])],
@@ -47,13 +48,13 @@ export function CheckoutPriceDetails({ ctaLabel = 'Continue', disabled, loading,
       {discount > 0 && <PriceLine label={`Coupon (${orderTotals?.couponCode ?? activeQuote?.code})`} value={`−${formatCurrency(discount)}`} />}
       {deliveryFee !== undefined && <PriceLine label="Shipping" value={deliveryFee === 0 ? 'Free' : formatCurrency(deliveryFee)} />}
     </div>
-    {!orderTotals && <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); const code = draft.trim().toUpperCase(); if (code) { if (code === couponCode) void quote.refetch(); else setCouponCode(owner, code); } }}>
+    {!orderTotals && <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); const code = draft.trim().toUpperCase(); if (code) { if (code === couponCode) void quote.refetch(); else dispatch(setCouponCode({ owner, code })); } }}>
       <label className="flex items-center gap-2 text-sm font-medium" htmlFor="coupon-code"><Tag aria-hidden="true" size={18} />Have an offer or coupon?</label>
       <div className="flex gap-2">
         <input className="min-w-0 flex-1 rounded-lg border border-surface-border bg-white px-3 py-2 uppercase focus-visible:outline-brand-primary" id="coupon-code" maxLength={100} value={draft} placeholder="Enter coupon code" onChange={(event) => setDraft(event.target.value)} />
         <Button type="submit" variant="outline" disabled={!draft.trim() || !cart.items.length || quote.isFetching}>Apply</Button>
       </div>
-      {couponCode && <button className="min-h-11 w-fit text-sm text-brand-primary underline" type="button" onClick={() => { setCouponCode(owner, ''); setDraft(''); }}>Remove coupon</button>}
+      {couponCode && <button className="min-h-11 w-fit text-sm text-brand-primary underline" type="button" onClick={() => { dispatch(setCouponCode({ owner, code: '' })); setDraft(''); }}>Remove coupon</button>}
       {quote.isFetching && <p className="text-sm text-text-secondary" role="status">Checking totals…</p>}
       {quote.isError && <p className="text-sm text-text-danger" role="alert">{errorMessage(quote.error)} <button type="button" className="underline" onClick={() => void quote.refetch()}>Retry totals</button></p>}
       {activeQuote?.code && <p className="text-sm text-text-success" role="status">{activeQuote.code} applied. You save {formatCurrency(activeQuote.discountAmount)}.</p>}

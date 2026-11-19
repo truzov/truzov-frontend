@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { renderWithRedux as render } from './redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuantitySelector } from '@/components/product/QuantitySelector';
 import { cartLineKey, selectedCart } from '@/lib/cart/selection';
-import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
-import { useCheckoutStore } from '@/store/checkout.store';
-import { useAuthStore } from '@/store/auth.store';
+import { addGuestItem } from '@/lib/cart/guest-cart.store';
+import { setCouponCode, setLineSelected, setSelectedAddress } from '@/store/checkout.store';
+import { makeStore } from '@/store/redux';
+import { authActions, authChanged } from '@/store/auth.store';
 import type { CartDto } from '@/types/api';
 
 const mocks = vi.hoisted(() => ({ placeOrder: vi.fn(), validate: vi.fn(), push: vi.fn(), logout: vi.fn(), remove: vi.fn() }));
@@ -34,18 +36,20 @@ import { AddressScreen, BagScreen, PaymentScreen } from '@/components/checkout/C
 import { Header } from '@/components/layout/Header';
 import { AccountMenu } from '@/components/auth/AccountMenu';
 
+let store: ReturnType<typeof makeStore>;
+
 function mount(component: React.ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={client}>{component}</QueryClientProvider>);
+  return render(<QueryClientProvider client={client}>{component}</QueryClientProvider>, { store });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useCheckoutStore.getState().resetCheckout();
-  useAuthStore.setState({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer', name: 'Buyer', phone: '+919876543210', phoneVerified: true } as never, logout: mocks.logout });
+  store = makeStore();
+  store.dispatch(authChanged({ isLoggedIn: true, status: 'authenticated', user: { id: 'buyer', name: 'Buyer', phone: '+919876543210', phoneVerified: true } as never }));
   mocks.validate.mockImplementation(async (code: string) => ({ code: code || null, subtotal: 200, discountAmount: code ? 20 : 0, total: code ? 180 : 200, deliveryFee: 0 }));
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('quantity and checkout selection', () => {
   it('lets a buyer clear and type quantity, enforcing limits on blur', () => {
@@ -84,7 +88,7 @@ describe('quantity and checkout selection', () => {
   });
 
   it('enters and exits signed-in selection mode and removes only the checked line IDs', async () => {
-    useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
+    store.dispatch(setLineSelected({ owner: 'buyer', key: cartLineKey(cart.items[1]), selected: false }));
     mount(<BagScreen />);
     expect(screen.getByText('Subtotal (3 selected units)')).toBeVisible();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
@@ -123,12 +127,10 @@ describe('quantity and checkout selection', () => {
   });
 
   it('removes checked guest lines, preserves unchecked lines, and shows an empty bag after the last removal', () => {
-    useAuthStore.setState({ isLoggedIn: false, status: 'anonymous', user: null });
-    const guest = useGuestCartStore.getState();
-    guest.clear();
-    guest.add({ productId: 'a', variantId: 'small', variantLabel: '500g', name: 'Honey', slug: 'honey', unitPrice: 100, quantity: 2 });
-    guest.add({ productId: 'a', variantId: 'large', variantLabel: '1kg', name: 'Honey', slug: 'honey', unitPrice: 200, quantity: 1 });
-    useCheckoutStore.getState().setLineSelected('guest', cartLineKey({ productId: 'a', variantId: 'large' }), false);
+    store.dispatch(authChanged({ isLoggedIn: false, status: 'anonymous', user: null }));
+    store.dispatch(addGuestItem({ productId: 'a', variantId: 'small', variantLabel: '500g', name: 'Honey', slug: 'honey', unitPrice: 100, quantity: 2 }));
+    store.dispatch(addGuestItem({ productId: 'a', variantId: 'large', variantLabel: '1kg', name: 'Honey', slug: 'honey', unitPrice: 200, quantity: 1 }));
+    store.dispatch(setLineSelected({ owner: 'guest', key: cartLineKey({ productId: 'a', variantId: 'large' }), selected: false }));
     mount(<BagScreen />);
     expect(screen.getByText('Subtotal (3 items)')).toBeVisible();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
@@ -147,14 +149,14 @@ describe('quantity and checkout selection', () => {
     expect(screen.getByText('1kg', { exact: true })).toBeVisible();
     expect(screen.getByRole('checkbox', { name: 'Select Honey for checkout' })).not.toBeChecked();
     expect(screen.getByRole('button', { name: 'Select all' })).toBeVisible();
-    expect(useGuestCartStore.getState().items.map(({ variantId, quantity }) => [variantId, quantity])).toEqual([['large', 1]]);
+    expect(store.getState().guestCart.items.map(({ variantId, quantity }) => [variantId, quantity])).toEqual([['large', 1]]);
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select Honey for checkout' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remove all' }));
     expect(screen.getByRole('heading', { name: 'Your bag is empty' })).toBeVisible();
   });
 
   it('submits selected IDs and coupon without client money, retains key only for unchanged retries', async () => {
-    useCheckoutStore.getState().setSelectedAddress('addr');
+    store.dispatch(setSelectedAddress('addr'));
     const bag = mount(<BagScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
     fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
@@ -190,8 +192,8 @@ describe('quantity and checkout selection', () => {
 
   it('invalid coupon blocks ordering until removed', async () => {
     mocks.validate.mockImplementation(async (code: string) => { if (code) throw new Error('Coupon expired'); return { code: null, subtotal: 200, discountAmount: 0, total: 200, deliveryFee: 0 }; });
-    useCheckoutStore.getState().setSelectedAddress('addr');
-    useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
+    store.dispatch(setSelectedAddress('addr'));
+    store.dispatch(setLineSelected({ owner: 'buyer', key: cartLineKey(cart.items[1]), selected: false }));
     mount(<PaymentScreen />);
     fireEvent.change(screen.getByLabelText('Have an offer or coupon?'), { target: { value: 'OLD' } });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled());
@@ -203,8 +205,8 @@ describe('quantity and checkout selection', () => {
   });
 
   it('does not inherit another account selection or coupon', () => {
-    useCheckoutStore.getState().setLineSelected('another-user', cartLineKey(cart.items[0]), false);
-    useCheckoutStore.getState().setCouponCode('another-user', 'PRIVATE');
+    store.dispatch(setLineSelected({ owner: 'another-user', key: cartLineKey(cart.items[0]), selected: false }));
+    store.dispatch(setCouponCode({ owner: 'another-user', code: 'PRIVATE' }));
     mount(<BagScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
     expect(screen.getByRole('checkbox', { name: 'Select Honey for checkout' })).toBeChecked();
@@ -213,7 +215,7 @@ describe('quantity and checkout selection', () => {
 
   it('can retry the same coupon after a temporary validation failure', async () => {
     let failed = false; mocks.validate.mockImplementation(async (code: string) => { if (code && !failed) { failed = true; throw new Error('Temporary error'); } return { code: code || null, subtotal: 200, discountAmount: code ? 20 : 0, total: code ? 180 : 200, deliveryFee: 0 }; });
-    useCheckoutStore.getState().setLineSelected('buyer', cartLineKey(cart.items[1]), false);
+    store.dispatch(setLineSelected({ owner: 'buyer', key: cartLineKey(cart.items[1]), selected: false }));
     mount(<BagScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select Tea for checkout' }));
@@ -229,7 +231,8 @@ describe('quantity and checkout selection', () => {
 });
 
 describe('account navigation', () => {
-  it('provides logout in mobile menu using the real auth action', async () => {
+  it('provides logout in the mobile menu through the auth dispatch', async () => {
+    vi.spyOn(authActions, 'logout').mockReturnValue(async () => { mocks.logout(); });
     mount(<Header />);
     fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Log out' }));

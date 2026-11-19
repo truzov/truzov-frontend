@@ -8,10 +8,11 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
 import type { AuthFormProps } from './LoginForm';
 import { isValidRedirect } from '@/lib/auth/redirect';
-import { useOtpModalStore } from '@/store/otp-modal.store';
+import { useOtpModalActions } from '@/store/otp-modal.store';
+import { useAppSelector } from '@/store/redux';
 
 interface SignupFormProps extends AuthFormProps {
   /** Lets the modal swap to its own OTP step instead of navigating to /verify-otp. */
@@ -32,13 +33,13 @@ export function SignupForm({
   onModeChange,
   onOtpSent,
 }: SignupFormProps) {
-  const signup = useAuthStore((state) => state.signup);
-  const isLoading = useAuthStore((state) => state.isLoading);
-  const error = useAuthStore((state) => state.error);
-  const openOtpModal = useOtpModalStore((state) => state.openOtpModal);
+  const { signup } = useAuthActions();
+  const isLoading = useAppSelector((state) => state.auth.isLoading);
+  const error = useAppSelector((state) => state.auth.error);
+  const { openOtpModal } = useOtpModalActions();
   // This is a form draft only. Carrying an identifier never proves ownership.
-  const pendingIdentifier = useAuthStore((state) => state.pendingIdentifier);
-  const pendingChannel = useAuthStore((state) => state.otpChannel);
+  const pendingIdentifier = useAppSelector((state) => state.auth.pendingIdentifier);
+  const pendingChannel = useAppSelector((state) => state.auth.otpChannel);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const carriedEmail = pendingIdentifier?.includes('@') ? pendingIdentifier : '';

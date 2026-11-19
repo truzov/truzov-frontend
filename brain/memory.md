@@ -131,3 +131,11 @@ The product gallery and viewer share pointer-gated hover magnification with larg
 ## Product detail cart flow
 
 PDP ADD uses the existing guest or server add path with a single pre-add selector. The header reads total units from the shared cart. Direct Buy Now sends only product ID, variant ID and quantity to server-priced checkout and quotes.
+
+## Redux stage one (2026-11-17, local)
+
+Migrated toasts, auth modal, and phone verification modal to provider-owned Redux. Build, type check, 170 Vitest cases, and focused desktop and mobile checks against the Docker-backed app passed. Existing lint findings, checkout behavior, and mobile toast overlap are baseline issues. See `qa-report.md`.
+
+## Redux migration complete (2026-11-17, local)
+
+Migrated the persisted guest cart and checkout, then auth. Local browser checks passed login, refresh token rotation, logout, account switching, cart restoration, and Buy Now retry. Zustand is absent from the storefront dependency tree.

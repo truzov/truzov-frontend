@@ -1,0 +1,88 @@
+/* Shared by the storefront and the admin panel. Update the storefront copy first. */
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --truzov-font: Inter, system-ui, sans-serif;
+  --truzov-ink: #04342c;
+  --truzov-muted: #547064;
+  --truzov-hover: #0b5143;
+  --truzov-canvas: #fdfbf7;
+  --truzov-sage: #eaf3de;
+  --truzov-border: #dce6d8;
+  --truzov-control-radius: 12px;
+  --truzov-control-height: 44px;
+  --truzov-focus-outline: #64748b;
+  --truzov-focus-fill: #e3efda;
+  --truzov-focus-error-fill: #fce9e2;
+  --truzov-focus-shadow: 0 0 12px #04342c40;
+  --truzov-search-fill: #eaf0e6;
+  --truzov-search-focus: #fff;
+}
+
+:is(.storefront, .checkout-shell, .auth-surface, .truzov-panel) {
+  color: var(--truzov-ink);
+  font-family: var(--truzov-font);
+}
+
+.search-field {
+  --truzov-focus-fill: var(--truzov-search-focus);
+  background-color: var(--truzov-search-fill);
+  border-radius: var(--truzov-control-radius);
+}
+
+:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--truzov-focus-outline) !important;
+  outline-offset: 3px !important;
+  --tw-ring-color: var(--truzov-focus-outline) !important;
+}
+
+:is(input, textarea, select):focus {
+  border-color: var(--truzov-focus-outline) !important;
+  box-shadow: none !important;
+}
+
+@media (forced-colors: none) {
+  :is(.storefront, .checkout-shell, .auth-surface, .truzov-panel)
+    :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"]), textarea, select):focus {
+    outline: none !important;
+    border-color: transparent !important;
+    background-color: var(--truzov-focus-fill);
+    box-shadow: var(--truzov-focus-shadow) !important;
+  }
+
+  :is(.storefront, .checkout-shell, .auth-surface, .truzov-panel)
+    :is(input, textarea, select)[aria-invalid="true"]:focus {
+    background-color: var(--truzov-focus-error-fill);
+  }
+
+  .search-field:focus-within {
+    background-color: var(--truzov-search-focus);
+    box-shadow: var(--truzov-focus-shadow);
+  }
+
+  .search-field:focus-within .search-input:focus {
+    background-color: transparent;
+    box-shadow: none !important;
+  }
+}

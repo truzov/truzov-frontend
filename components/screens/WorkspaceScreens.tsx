@@ -11,7 +11,7 @@ import { useCategories } from '@/hooks/api/useCatalog';
 import { updateUserRole } from '@/lib/api/endpoints/admin';
 import { createVendorProduct } from '@/lib/api/endpoints/vendor';
 import { errorMessage, fieldError } from '@/lib/api/errors';
-import { useUiStore } from '@/store/ui.store';
+import { useToastActions } from '@/store/ui.store';
 import type { UserRole, VendorProductRequest } from '@/types/api';
 
 /**
@@ -138,7 +138,7 @@ const EMPTY_PRODUCT_FORM = {
  * "Submit for Verification" button wired to nothing.
  */
 export function VendorProductWizardScreen() {
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
   const { data: categories } = useCategories();
   const [form, setForm] = useState(EMPTY_PRODUCT_FORM);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -408,7 +408,7 @@ const ROLES: UserRole[] = ['customer', 'vendor', 'lab', 'admin'];
  * A form that does something real beats a table that shows something false.
  */
 export function AdminRolesScreen() {
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
   const [userId, setUserId] = useState('');
   const [role, setRole] = useState<UserRole>('vendor');
   const [reason, setReason] = useState('');

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { imageHosts } from './lib/config/image-hosts';
 
 const nextConfig: NextConfig = {
   distDir: process.env.VERCEL ? '.next' : '.next-build',
@@ -6,16 +7,7 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'cdn.truzov.com' },
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
-      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
-      // Local/demo only: the backend's seed data (db/seed/data.sql) points product and banner
-      // images at placehold.co. Without this entry next/image throws on every seeded product
-      // and the whole catalogue fails to render against a freshly seeded database.
-      { protocol: 'https', hostname: 'placehold.co' },
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-    ],
+    remotePatterns: imageHosts.map((hostname) => ({ protocol: 'https', hostname })),
     formats: ['image/avif', 'image/webp'],
   },
 };

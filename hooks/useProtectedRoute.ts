@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useAuthStore } from '@/store/auth.store';
+import { useAppSelector } from '@/store/redux';
 
 /**
  * Client-side route guard.
@@ -23,7 +23,7 @@ import { useAuthStore } from '@/store/auth.store';
 export function useProtectedRoute(redirectTo: string | false = '/login') {
   const router = useRouter();
   const pathname = usePathname();
-  const status = useAuthStore((state) => state.status);
+  const status = useAppSelector((state) => state.auth.status);
 
   // 'idle' counts as undecided too: the restore effect in AuthEventBridge may not have run for
   // this render yet, and redirecting in that window is the original bug.

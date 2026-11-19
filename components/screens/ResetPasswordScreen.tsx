@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { confirmPasswordReset, requestPasswordReset } from '@/lib/api/endpoints/auth';
 import { loginIdentifierSchema, otpSchema, passwordSchema } from '@/lib/validations/auth';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
 import { clearSession } from '@/lib/api/token-store';
-import { useUiStore } from '@/store/ui.store';
+import { useToastActions } from '@/store/ui.store';
 
 export function ResetPasswordScreen() {
   const router = useRouter();
+  const { resetSession } = useAuthActions();
+  const { addToast } = useToastActions();
   const [session, setSession] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +43,9 @@ export function ResetPasswordScreen() {
       } else if (session && password.success && code.success) {
         await confirmPasswordReset({ otpSessionId: session, code: code.data.code, password: password.data });
         clearSession('logout');
-        useAuthStore.getState().resetSession();
+        resetSession();
         setSession(null); form.reset();
-        useUiStore.getState().addToast({ type: 'success', title: 'Your password has been changed. Sign in with your new password.' });
+        addToast({ type: 'success', title: 'Your password has been changed. Sign in with your new password.' });
         router.replace('/login');
       }
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not reset your password. Please try again.'); }

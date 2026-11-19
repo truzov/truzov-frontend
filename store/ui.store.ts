@@ -1,6 +1,8 @@
 'use client';
 
-import { create } from 'zustand';
+import { bindActionCreators, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -13,24 +15,28 @@ export interface ToastMessage {
   actionHref?: string;
 }
 
-interface UiStore {
-  searchOpen: boolean;
-  activeModal?: string;
-  toasts: ToastMessage[];
-  addToast: (toast: Omit<ToastMessage, 'id'>) => void;
-  removeToast: (id: string) => void;
-}
+const ui = createSlice({
+  name: 'ui',
+  initialState: { toasts: [] as ToastMessage[] },
+  reducers: {
+    addToast: {
+      prepare(toast: Omit<ToastMessage, 'id'>) {
+        return { payload: { ...toast, id: crypto.randomUUID?.() ?? `${Date.now()}` } };
+      },
+      reducer(state, { payload }: PayloadAction<ToastMessage>) {
+        state.toasts = [payload, ...state.toasts].slice(0, 3);
+      },
+    },
+    removeToast(state, { payload }: PayloadAction<string>) {
+      state.toasts = state.toasts.filter((toast) => toast.id !== payload);
+    },
+  },
+});
 
-export const useUiStore = create<UiStore>((set) => ({
-  searchOpen: false,
-  activeModal: undefined,
-  toasts: [],
-  addToast: (toast) =>
-    set((state) => ({
-      toasts: [
-        { ...toast, id: crypto.randomUUID?.() ?? `${Date.now()}` },
-        ...state.toasts,
-      ].slice(0, 3),
-    })),
-  removeToast: (id) => set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
-}));
+export const uiReducer = ui.reducer;
+export const { addToast, removeToast } = ui.actions;
+
+export function useToastActions() {
+  const dispatch = useDispatch();
+  return useMemo(() => bindActionCreators(ui.actions, dispatch), [dispatch]);
+}

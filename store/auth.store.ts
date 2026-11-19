@@ -1,6 +1,10 @@
 'use client';
 
-import { create } from 'zustand';
+import { bindActionCreators, createSlice, type PayloadAction, type ThunkAction, type UnknownAction } from '@reduxjs/toolkit';
+import { useMemo } from 'react';
+import { useDispatch } from 'react-redux';
+import type { AppStore, RootState } from '@/store/redux';
+import { emitAuthEvent } from '@/lib/api/auth-events';
 import {
   checkAccountExists as checkAccountExistsRequest,
   getCurrentUser,
@@ -19,23 +23,8 @@ import {
   getRefreshToken,
   setSession,
 } from '@/lib/api/token-store';
-import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
-import { useAuthModalStore } from '@/store/auth-modal.store';
-import { useCheckoutStore } from '@/store/checkout.store';
-import { useUiStore, type ToastMessage } from '@/store/ui.store';
-import type { OtpChannel, SignupResponse, UpdateProfileRequest, UserProfileDto } from '@/types/api';
-
-/**
- * Authentication state, backed entirely by the real API.
- *
- * What was removed and why:
- *  - `mockAPI` (fake signup/sendOTP/verifyOTP) — replaced by the documented endpoints.
- *  - `createMockUser` — the user now comes from `TokenResponse.user` / `GET /auth/me`.
- *  - `loginAs(role)` — it let the CLIENT pick its own role and granted a session with no
- *    credentials. The server is the only thing that may decide a role; it arrives in the token
- *    response.
- *  - `persist` middleware — see the note on `status` below.
- */
+import type { ToastMessage } from '@/store/ui.store';
+import type { OtpChannel, SignupRequest, SignupResponse, UpdateProfileRequest, UserProfileDto } from '@/types/api';
 
 /**
  * Where we are in the boot sequence. This exists to fix a real bug rather than for tidiness.
@@ -64,44 +53,13 @@ interface AuthState {
   /** Lets a screen distinguish e.g. OTP_INVALID (retry) from OTP_EXPIRED (start over). */
   errorCode: string | null;
 
-  /** Pending OTP session, set by signup or otp/send and consumed by otp/verify. */
-  otpSessionId: string | null;
+  /** True while a challenge is available in the store runtime. */
+  hasOtpSession: boolean;
   otpChannel: OtpChannel | null;
   /** Shown back to the user ("code sent to ..."), and reused for resend. */
   pendingIdentifier: string | null;
   /** Server-provided lifetime; drives the resend cooldown instead of a hardcoded 30s. */
   otpExpiresInSeconds: number | null;
-  /**
-   * A consumed login session for an unknown identifier. Retained for flow recovery;
-   * never sent as a signup credential. Signup still requires its own OTP.
-   */
-  verifiedOtpSessionId: string | null;
-
-  restoreSession: () => Promise<void>;
-  signup: (input: {
-    fullName: string;
-    phone: string;
-    password: string;
-    email?: string;
-    otpChannel?: OtpChannel;
-  }) => Promise<SignupResponse>;
-  sendOtp: (identifier: string, purpose?: 'login' | 'verify') => Promise<void>;
-  /**
-   * Whether `identifier` has an account. Rate-limited on the backend per IP.
-   * Deliberately scoped to gating an OTP send — see `checkAccountExists` in
-   * lib/api/endpoints/auth.ts for why this must not become a general-purpose lookup.
-   */
-  checkAccountExists: (identifier: string) => Promise<boolean>;
-  verifyOtp: (code: string) => Promise<void>;
-  loginWithPassword: (identifier: string, password: string) => Promise<void>;
-  /** Second half of the Google redirect: exchanges the returned code for a session. */
-  loginWithGoogle: (code: string, codeVerifier: string) => Promise<void>;
-  updateProfile: (updates: UpdateProfileRequest) => Promise<void>;
-  refreshUser: () => Promise<void>;
-  logout: () => Promise<void>;
-  /** Local-only teardown, called by AuthEventBridge when the fetch layer reports a dead session. */
-  resetSession: () => void;
-  clearError: () => void;
 }
 
 /** Shape shared by every "an auth call failed" path. */
@@ -144,23 +102,13 @@ export function loginFailureToast(error: unknown): Omit<ToastMessage, 'id'> {
 }
 
 const CLEARED_OTP = {
-  otpSessionId: null,
+  hasOtpSession: false,
   otpChannel: null,
   pendingIdentifier: null,
   otpExpiresInSeconds: null,
-  verifiedOtpSessionId: null,
 } as const;
 
-/**
- * Deliberately NOT wrapped in `persist`.
- *
- * Persisting the profile would buy a slightly faster first paint of the user's name, at the
- * cost of rendering a possibly-stale identity (or logged-in chrome for a session the server has
- * since revoked) before the first request confirms anything. The access token is in memory and
- * the refresh token is in its own storage key, so a reload already has to make one round trip;
- * showing "Account" for that moment is the honest option.
- */
-export const useAuthStore = create<AuthState>()((set, get) => ({
+const initialState: AuthState = {
   status: 'idle',
   user: null,
   isLoggedIn: false,
@@ -168,40 +116,60 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   error: null,
   errorCode: null,
   ...CLEARED_OTP,
+};
 
-  restoreSession: async () => {
+const auth = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    authChanged: (state, { payload }: PayloadAction<Partial<AuthState>>) => Object.assign(state, payload),
+  },
+});
+
+export const authReducer = auth.reducer;
+export const { authChanged } = auth.actions;
+
+export interface AuthRuntime {
+  otpSessionId: string | null;
+}
+
+type AuthThunk<Result = void> = ThunkAction<Result, RootState, AuthRuntime, UnknownAction>;
+
+// ponytail: hand-written thunks keep credentials in closures, outside Redux action payloads.
+export const authActions = {
+  restoreSession: (): AuthThunk<Promise<void>> => async (dispatch, getState) => {
     // Nothing to restore: no refresh token means no session to recover, so skip the round trip.
-    if (!canRestoreSession() && !get().isLoggedIn) {
+    if (!canRestoreSession() && !getState().auth.isLoggedIn) {
       if (!getRefreshToken()) {
-        set({ status: 'anonymous', user: null, isLoggedIn: false });
+        dispatch(authChanged({ status: 'anonymous', user: null, isLoggedIn: false }));
         return;
       }
     }
 
     // Guard against a second call while one is in flight (React strict mode double-invokes
     // effects in development, and two /auth/me calls would race).
-    if (get().status === 'restoring') {
+    if (getState().auth.status === 'restoring') {
       return;
     }
 
-    set({ status: 'restoring' });
+    dispatch(authChanged({ status: 'restoring' }));
 
     try {
       // Sent with no access token in hand: the server answers 401, and the client's
       // refresh-then-retry-once path exchanges the stored refresh token for a live pair. That
       // is the whole session-restore mechanism — there is no separate "restore" endpoint.
       const user = await getCurrentUser();
-      set({ status: 'authenticated', user, isLoggedIn: true });
+      dispatch(authChanged({ status: 'authenticated', user, isLoggedIn: true }));
     } catch {
       // Refresh token missing, expired, or already rotated away. Not an error worth showing:
       // from the user's point of view they are simply signed out.
       clearSession('unauthorized', { silent: true });
-      set({ status: 'anonymous', user: null, isLoggedIn: false });
+      dispatch(authChanged({ status: 'anonymous', user: null, isLoggedIn: false }));
     }
   },
 
-  signup: async ({ fullName, phone, password, email, otpChannel = 'phone' }) => {
-    set({ isLoading: true, error: null, errorCode: null });
+  signup: ({ fullName, phone, password, email, otpChannel = 'phone' }: SignupRequest): AuthThunk<Promise<SignupResponse>> => async (dispatch, _getState, runtime) => {
+    dispatch(authChanged({ isLoading: true, error: null, errorCode: null }));
 
     try {
       const response = await signupRequest({
@@ -218,23 +186,23 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // unverified and stays unusable (login refuses it with ACCOUNT_NOT_VERIFIED) until the
       // code sent to the chosen channel is entered on the next step. Even when the user came
       // from the ACCOUNT_NOT_FOUND flow, they still verify here — no code is skipped.
-      set({
+      runtime.otpSessionId = response.otpSessionId;
+      dispatch(authChanged({
         isLoading: false,
-        otpSessionId: response.otpSessionId,
+        hasOtpSession: Boolean(response.otpSessionId),
         otpChannel: response.otpChannel,
         pendingIdentifier: otpChannel === 'email' ? (email?.trim() ?? phone) : phone,
         otpExpiresInSeconds: response.expiresInSeconds,
-        verifiedOtpSessionId: null,
-      });
+      }));
       return response;
     } catch (error) {
-      set(toErrorState(error));
+      dispatch(authChanged(toErrorState(error)));
       throw error;
     }
   },
 
-  sendOtp: async (identifier, purpose = 'login') => {
-    set({ isLoading: true, error: null, errorCode: null });
+  sendOtp: (identifier: string, purpose: 'login' | 'verify' = 'login'): AuthThunk<Promise<void>> => async (dispatch, _getState, runtime) => {
+    dispatch(authChanged({ isLoading: true, error: null, errorCode: null }));
 
     // Phone numbers are entered with spaces, dashes and brackets; email is not. Only strip
     // non-digits when the value is clearly not an email, or "a@b.com" would become "".
@@ -243,21 +211,22 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
     try {
       const response = await sendOtpRequest({ identifier: normalised, purpose });
-      set({
+      runtime.otpSessionId = response.otpSessionId;
+      dispatch(authChanged({
         isLoading: false,
-        otpSessionId: response.otpSessionId,
+        hasOtpSession: Boolean(response.otpSessionId),
         otpChannel: response.channel,
         pendingIdentifier: normalised,
         otpExpiresInSeconds: response.expiresInSeconds,
-      });
+      }));
     } catch (error) {
-      set(toErrorState(error));
+      dispatch(authChanged(toErrorState(error)));
       throw error;
     }
   },
 
-  checkAccountExists: async (identifier) => {
-    set({ isLoading: true, error: null, errorCode: null });
+  checkAccountExists: (identifier: string): AuthThunk<Promise<boolean>> => async (dispatch, _getState, runtime) => {
+    dispatch(authChanged({ isLoading: true, error: null, errorCode: null }));
     const trimmed = identifier.trim();
     const normalised = trimmed.includes('@') ? trimmed : trimmed.replace(/[^\d+]/g, '');
 
@@ -265,22 +234,23 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       const { exists } = await checkAccountExistsRequest(normalised);
       // Mirrors verifyOtp's ACCOUNT_NOT_FOUND handling so AuthForm's existing
       // "switch to signup" effect fires the same way for both entry points.
-      set({
+      runtime.otpSessionId = null;
+      dispatch(authChanged({
         ...CLEARED_OTP,
         isLoading: false,
         errorCode: exists ? null : 'ACCOUNT_NOT_FOUND',
         pendingIdentifier: normalised,
         otpChannel: normalised.includes('@') ? 'email' : 'phone',
-      });
+      }));
       return exists;
     } catch (error) {
-      set(toErrorState(error));
+      dispatch(authChanged(toErrorState(error)));
       throw error;
     }
   },
 
-  verifyOtp: async (code) => {
-    const { otpSessionId } = get();
+  verifyOtp: (code: string): AuthThunk<Promise<void>> => async (dispatch, _getState, runtime) => {
+    const { otpSessionId } = runtime;
 
     if (!otpSessionId) {
       const error = new ApiError({
@@ -288,64 +258,59 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         message: 'That verification session has gone. Please request a new code.',
         status: 0,
       });
-      set(toErrorState(error));
+      dispatch(authChanged(toErrorState(error)));
       throw error;
     }
 
-    set({ isLoading: true, error: null, errorCode: null });
+    dispatch(authChanged({ isLoading: true, error: null, errorCode: null }));
 
     try {
       const tokens = await verifyOtpRequest({ otpSessionId, code });
       setSession(tokens);
-      set({
+      runtime.otpSessionId = null;
+      dispatch(authChanged({
         status: 'authenticated',
         user: tokens.user,
         isLoggedIn: true,
         isLoading: false,
         ...CLEARED_OTP,
-      });
-      useUiStore.getState().addToast({ type: 'success', title: 'Login successful' });
+      }));
+      emitAuthEvent({ type: 'toast', toast: { type: 'success', title: 'Login successful' } });
     } catch (error) {
-      useUiStore.getState().addToast(loginFailureToast(error));
+      emitAuthEvent({ type: 'toast', toast: loginFailureToast(error) });
 
       // OTP_EXPIRED (410) means the session is spent, so drop it — leaving it in place would
       // let the user keep submitting codes against a session that can never succeed. A wrong
       // code (400 OTP_INVALID) keeps the session so they can simply try again.
-      if (isApiError(error) && error.code === 'OTP_EXPIRED') {
-        set({ ...toErrorState(error), otpSessionId: null });
-      } else if (isApiError(error) && error.code === 'ACCOUNT_NOT_FOUND') {
-        // The code was correct but the identifier has no account. Keep the draft for
-        // signup; the consumed login session cannot verify a newly created account.
-        set({
-          ...toErrorState(error),
-          otpSessionId: null,
-          verifiedOtpSessionId: otpSessionId,
-        });
+      if (isApiError(error) && (error.code === 'OTP_EXPIRED' || error.code === 'ACCOUNT_NOT_FOUND')) {
+        runtime.otpSessionId = null;
+        dispatch(authChanged({ ...toErrorState(error), hasOtpSession: false }));
       } else {
-        set(toErrorState(error));
+        dispatch(authChanged(toErrorState(error)));
       }
       throw error;
     }
   },
 
-  loginWithPassword: async (identifier, password) => {
-    set({ isLoading: true, error: null, errorCode: null });
+  loginWithPassword: (identifier: string, password: string): AuthThunk<Promise<void>> => async (dispatch, _getState, runtime) => {
+    dispatch(authChanged({ isLoading: true, error: null, errorCode: null }));
 
     try {
       const tokens = await loginRequest({ identifier: identifier.trim(), password });
       setSession(tokens);
-      set({
+      runtime.otpSessionId = null;
+      dispatch(authChanged({
         status: 'authenticated',
         // Role comes from the server. The client never decides it.
         user: tokens.user,
         isLoggedIn: true,
         isLoading: false,
         ...CLEARED_OTP,
-      });
-      useUiStore.getState().addToast({ type: 'success', title: 'Login successful' });
+      }));
+      emitAuthEvent({ type: 'toast', toast: { type: 'success', title: 'Login successful' } });
     } catch (error) {
-      useUiStore.getState().addToast(loginFailureToast(error));
-      set(toErrorState(error));
+      emitAuthEvent({ type: 'toast', toast: loginFailureToast(error) });
+      dispatch(authChanged(toErrorState(error)));
       throw error;
     }
   },
@@ -357,51 +322,53 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
    * Sets the same authenticated state as a password login — deliberately, so no screen has to
    * care which path produced the session.
    */
-  loginWithGoogle: async (code, codeVerifier) => {
-    set({ isLoading: true, error: null, errorCode: null });
+  loginWithGoogle: (code: string, codeVerifier: string): AuthThunk<Promise<void>> => async (dispatch, _getState, runtime) => {
+    dispatch(authChanged({ isLoading: true, error: null, errorCode: null }));
 
     try {
       const tokens = await loginWithGoogleRequest({ code, codeVerifier });
       setSession(tokens);
-      set({
+      runtime.otpSessionId = null;
+      dispatch(authChanged({
         status: 'authenticated',
         user: tokens.user,
         isLoggedIn: true,
         isLoading: false,
         ...CLEARED_OTP,
-      });
-      useUiStore.getState().addToast({ type: 'success', title: 'Login successful' });
+      }));
+      emitAuthEvent({ type: 'toast', toast: { type: 'success', title: 'Login successful' } });
     } catch (error) {
-      useUiStore.getState().addToast(loginFailureToast(error));
-      set(toErrorState(error));
+      emitAuthEvent({ type: 'toast', toast: loginFailureToast(error) });
+      dispatch(authChanged(toErrorState(error)));
       throw error;
     }
   },
 
-  updateProfile: async (updates) => {    set({ isLoading: true, error: null, errorCode: null });
+  updateProfile: (updates: UpdateProfileRequest): AuthThunk<Promise<void>> => async (dispatch) => {
+    dispatch(authChanged({ isLoading: true, error: null, errorCode: null }));
 
     try {
       const user = await updateProfileRequest(updates);
       // Replace wholesale rather than merging: changing email or phone clears that channel's
       // verification flag server-side, and a merge would keep the stale `emailVerified: true`.
-      set({ user, isLoading: false });
+      dispatch(authChanged({ user, isLoading: false }));
     } catch (error) {
-      set(toErrorState(error));
+      dispatch(authChanged(toErrorState(error)));
       throw error;
     }
   },
 
-  refreshUser: async () => {
+  refreshUser: (): AuthThunk<Promise<void>> => async (dispatch) => {
     try {
       const user = await getCurrentUser();
-      set({ user, status: 'authenticated', isLoggedIn: true });
+      dispatch(authChanged({ user, status: 'authenticated', isLoggedIn: true }));
     } catch {
       // Background revalidation. A failure here is handled by the client's own 401 path; there
       // is nothing useful to show the user for a refresh they did not ask for.
     }
   },
 
-  logout: async () => {
+  logout: (): AuthThunk<Promise<void>> => async (dispatch, _getState, runtime) => {
     const refreshToken = getRefreshToken();
 
     try {
@@ -418,11 +385,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // cache BEFORE its `if (event.reason === 'logout') return;`, so emitting here adds no
       // competing navigation.
       clearSession('logout');
-      // The rest of the user-visible state that survives a token clear on its own.
-      useGuestCartStore.getState().clear();
-      useCheckoutStore.getState().resetCheckout();
-      useAuthModalStore.getState().closeAuthModal(); // drops any retained Buy_Now_Intent (R5.9)
-      set({
+      runtime.otpSessionId = null;
+      dispatch(authChanged({
         status: 'anonymous',
         user: null,
         isLoggedIn: false,
@@ -430,20 +394,32 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         error: null,
         errorCode: null,
         ...CLEARED_OTP,
-      });
-      useUiStore.getState().addToast({ type: 'success', title: 'Logged out' });
+      }));
+      emitAuthEvent({ type: 'logout-completed' });
     }
   },
 
-  resetSession: () => {
-    set({
+  resetSession: (): AuthThunk => (dispatch, _getState, runtime) => {
+    runtime.otpSessionId = null;
+    dispatch(authChanged({
       status: 'anonymous',
       user: null,
       isLoggedIn: false,
       isLoading: false,
       ...CLEARED_OTP,
-    });
+    }));
   },
 
-  clearError: () => set({ error: null, errorCode: null }),
-}));
+  clearError: (): AuthThunk => (dispatch) => {
+    dispatch(authChanged({ error: null, errorCode: null }));
+  },
+};
+
+type BoundAuthActions = {
+  [K in keyof typeof authActions]: (...args: Parameters<(typeof authActions)[K]>) => ReturnType<ReturnType<(typeof authActions)[K]>>;
+};
+
+export function useAuthActions() {
+  const dispatch = useDispatch.withTypes<AppStore['dispatch']>()();
+  return useMemo(() => bindActionCreators<typeof authActions, BoundAuthActions>(authActions, dispatch), [dispatch]);
+}

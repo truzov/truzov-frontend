@@ -218,7 +218,8 @@ describe('effective price', () => {
 // already covers the input space, so these are examples/edge cases, not sweeps.
 // ---------------------------------------------------------------------------------------------
 
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
+import { renderWithRedux as render } from './redux';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, beforeEach, afterEach } from 'vitest';

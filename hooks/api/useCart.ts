@@ -12,11 +12,11 @@ import {
 } from '@/lib/api/endpoints/cart';
 import { errorMessage } from '@/lib/api/errors';
 import { queryKeys } from '@/lib/api/queries';
-import { useGuestCartStore } from '@/lib/cart/guest-cart.store';
-import { useAuthStore } from '@/store/auth.store';
-import { useAuthModalStore, type BuyNowIntent } from '@/store/auth-modal.store';
-import { useUiStore } from '@/store/ui.store';
-import { useCheckoutStore } from '@/store/checkout.store';
+import { addGuestItem, clearGuestCart } from '@/lib/cart/guest-cart.store';
+import { useAuthModalActions, type BuyNowIntent } from '@/store/auth-modal.store';
+import { useToastActions } from '@/store/ui.store';
+import { adoptGuestSelection, setBuyNow } from '@/store/checkout.store';
+import { useAppSelector, useAppStore } from '@/store/redux';
 import { getProduct } from '@/lib/api/endpoints/catalog';
 import { primaryImage } from '@/lib/utils/product';
 import { effectivePrice } from '@/lib/utils/money';
@@ -35,7 +35,7 @@ import type { CartDto } from '@/types/api';
 const EMPTY_CART: CartDto = { items: [], itemCount: 0, subtotal: 0 };
 
 export function useCart() {
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
 
   const query = useQuery({
     queryKey: queryKeys.cart(),
@@ -58,8 +58,8 @@ export function useCart() {
 
 /** Header badge count. Guests count their local bag; the merge replaces it after sign-in. */
 export function useCartItemCount(): number {
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const guestItems = useGuestCartStore((state) => state.items);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const guestItems = useAppSelector((state) => state.guestCart.items);
   const guestCount = guestItems.reduce((total, item) => total + item.quantity, 0);
   const { cart } = useCart();
   return isLoggedIn ? cart.itemCount : guestCount;
@@ -74,28 +74,28 @@ export function useCartItemCount(): number {
  */
 export function useAddToCart() {
   const queryClient = useQueryClient();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const addToast = useUiStore((state) => state.addToast);
-  const guestAdd = useGuestCartStore((state) => state.add);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const { addToast } = useToastActions();
+  const store = useAppStore();
   const writes = useIsMutating({ mutationKey: ['cart-write'] });
 
   const mutation = useMutation({
     mutationKey: ['cart-write'],
     mutationFn: async (input: { productId: string; variantId?: string; quantity?: number; ownerId?: string }) => {
-      if (!useAuthStore.getState().isLoggedIn || useAuthStore.getState().user?.id !== input.ownerId) throw new Error('Your account changed. Please try again.');
+      if (!store.getState().auth.isLoggedIn || store.getState().auth.user?.id !== input.ownerId) throw new Error('Your account changed. Please try again.');
       const cart = await addCartItem({
         productId: input.productId,
         variantId: input.variantId,
         quantity: input.quantity ?? 1,
       });
-      if (!useAuthStore.getState().isLoggedIn || useAuthStore.getState().user?.id !== input.ownerId) throw new Error('Your account changed. Please try again.');
+      if (!store.getState().auth.isLoggedIn || store.getState().auth.user?.id !== input.ownerId) throw new Error('Your account changed. Please try again.');
       return cart;
     },
     onSuccess: async (cart, input) => {
       // The mutation returns the whole cart, so seed the cache directly instead of
       // invalidating — that keeps the header badge and cart page correct with no extra request.
       await queryClient.cancelQueries({ queryKey: queryKeys.cart() });
-      if (useAuthStore.getState().user?.id === input.ownerId) queryClient.setQueryData(queryKeys.cart(), cart);
+      if (store.getState().auth.user?.id === input.ownerId) queryClient.setQueryData(queryKeys.cart(), cart);
     },
     onError: (error) => {
       // Surfaced rather than swallowed: the common failures here are meaningful to the user —
@@ -118,14 +118,14 @@ export function useAddToCart() {
     if (queryClient.isMutating({ mutationKey: ['cart-write'] })) return false;
     const quantity = input.quantity ?? 1;
     if (!isLoggedIn) {
-      const existing = useGuestCartStore.getState().items.find((item) =>
+      const existing = store.getState().guestCart.items.find((item) =>
         item.productId === input.productId && item.variantId === input.variantId);
       const remaining = Math.max(0, Math.min(20, input.availableStock ?? existing?.availableStock ?? 20) - (existing?.quantity ?? 0));
       if (quantity > remaining) {
         addToast({ type: 'warning', title: remaining ? `Only ${remaining} more can be added` : 'You have reached the limit for this item' });
         if (!remaining) return false;
       }
-      guestAdd({
+      store.dispatch(addGuestItem({
         productId: input.productId,
         variantId: input.variantId,
         variantLabel: input.variantLabel,
@@ -135,12 +135,12 @@ export function useAddToCart() {
         slug: input.slug,
         imageUrl: input.imageUrl,
         unitPrice: input.unitPrice,
-      });
+      }));
     } else {
       try {
         await mutation.mutateAsync({
           productId: input.productId, variantId: input.variantId, quantity,
-          ownerId: useAuthStore.getState().user?.id,
+          ownerId: store.getState().auth.user?.id,
         });
       } catch {
         return false;
@@ -154,10 +154,12 @@ export function useAddToCart() {
 
 /** Prepare a single-item checkout. AuthModal resumes the same intent after sign-in. */
 export function useBuyNow() {
+  const store = useAppStore();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const openAuthModal = useAuthModalStore((state) => state.openAuthModal);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const { openAuthModal } = useAuthModalActions();
+  const { addToast } = useToastActions();
   const isPending = Boolean(useIsMutating({ mutationKey: ['buy-now'] }));
   const mutation = useMutation({
     mutationKey: ['buy-now'],
@@ -176,15 +178,15 @@ export function useBuyNow() {
         unitPrice, lineTotal: unitPrice * intent.quantity, inStock: true, availableStock,
       };
     },
-    onError: (error) => useUiStore.getState().addToast({ type: 'error', title: 'Could not start checkout', message: errorMessage(error) }),
+    onError: (error) => addToast({ type: 'error', title: 'Could not start checkout', message: errorMessage(error) }),
   });
   const checkout = (intent: BuyNowIntent) => {
-    const owner = useAuthStore.getState().user?.id;
+    const owner = store.getState().auth.user?.id;
     if (!owner || queryClient.isMutating({ mutationKey: ['buy-now'] })) return;
     mutation.mutate(intent, {
       onSuccess: (line) => {
-        if (useAuthStore.getState().user?.id !== owner) return;
-        useCheckoutStore.getState().setBuyNow(owner, line);
+        if (store.getState().auth.user?.id !== owner) return;
+        store.dispatch(setBuyNow({ owner, item: line }));
         router.push('/checkout/address');
       },
     });
@@ -210,22 +212,23 @@ export function useBuyNow() {
  * line and keeps the rest, which is the honest outcome after a price/stock change.
  */
 export function useGuestCartMerge() {
+  const store = useAppStore();
   const queryClient = useQueryClient();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const authStatus = useAuthStore((state) => state.status);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const authStatus = useAppSelector((state) => state.auth.status);
 
   useEffect(() => {
     if (!isLoggedIn || authStatus !== 'authenticated') {
       return;
     }
 
-    const items = useGuestCartStore.getState().items;
+    const { guestCart: { items }, checkout: { selectionOwner } } = store.getState();
     if (items.length === 0) {
       return;
     }
-    const owner = useAuthStore.getState().user?.id;
-    if (owner && useCheckoutStore.getState().selectionOwner === 'guest') {
-      useCheckoutStore.setState({ selectionOwner: owner, couponCode: '' });
+    const owner = store.getState().auth.user?.id;
+    if (owner && selectionOwner === 'guest') {
+      store.dispatch(adoptGuestSelection(owner));
     }
 
     let cancelled = false;
@@ -248,7 +251,7 @@ export function useGuestCartMerge() {
         }
       }
       if (!cancelled) {
-        useGuestCartStore.getState().clear();
+        store.dispatch(clearGuestCart());
       }
     })();
 
@@ -257,12 +260,12 @@ export function useGuestCartMerge() {
     };
     // isLoggedIn/authStatus transitions are the only trigger; re-running on a cache change
     // would re-merge an already-cleared bag (a no-op, but a pointless effect chain).
-  }, [isLoggedIn, authStatus, queryClient]);
+  }, [isLoggedIn, authStatus, queryClient, store]);
 }
 
 export function useUpdateCartItem() {
   const queryClient = useQueryClient();
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
 
   return useMutation({
     mutationKey: ['cart-write'],
@@ -281,19 +284,20 @@ export function useUpdateCartItem() {
 }
 
 export function useRemoveCartItem() {
+  const store = useAppStore();
   const queryClient = useQueryClient();
-  const addToast = useUiStore((state) => state.addToast);
+  const { addToast } = useToastActions();
 
   return useMutation({
     mutationKey: ['cart-write'],
     mutationFn: async (selection: string | string[]) => {
-      const owner = useAuthStore.getState().user?.id;
+      const owner = store.getState().auth.user?.id;
       for (const itemId of Array.isArray(selection) ? selection : [selection]) {
-        if (!owner || useAuthStore.getState().user?.id !== owner) throw new Error('Your account changed. Please try again.');
+        if (!owner || store.getState().auth.user?.id !== owner) throw new Error('Your account changed. Please try again.');
         const cart = await removeCartItem(itemId);
-        if (useAuthStore.getState().user?.id !== owner) return;
+        if (store.getState().auth.user?.id !== owner) return;
         await queryClient.cancelQueries({ queryKey: queryKeys.cart() });
-        if (useAuthStore.getState().user?.id !== owner) return;
+        if (store.getState().auth.user?.id !== owner) return;
         queryClient.setQueryData(queryKeys.cart(), cart);
       }
     },

@@ -16,7 +16,7 @@ Truzov is a verified organic and lab-tested marketplace. Unlike other organic st
 
 * **Frontend:** Next.js (App Router, TypeScript)
 * **Styling:** Vanilla Tailwind CSS with dynamic utility helpers (`tailwind-merge`, `clsx`, `class-variance-authority`).
-* **State Management:** Zustand stores with `persist` middleware.
+* **State Management:** Redux Toolkit for shared client state and TanStack Query for server data.
 * **API Isolation:** Standard fetch API wrapped in custom client `lib/api/client.ts`. MSW (Mock Service Worker) is used to mock backend endpoints locally.
 * **Charts:** Recharts (guarded against Next.js hydration mismatches).
 * **Forms:** React Hook Form + Zod.
@@ -30,7 +30,7 @@ Truzov is a verified organic and lab-tested marketplace. Unlike other organic st
 * `/components/screens`: High-level views (e.g. `CustomerScreens.tsx`, `WorkspaceScreens.tsx`).
 * `/components/dashboard`: Components for layouts, tables, and boards (e.g. `VerificationKanban.tsx`).
 * `/components/ui`: Pure visual elements (`Badge.tsx`, `Button.tsx`).
-* `/store`: Zustand state stores (`auth.store.ts`, `cart.store.ts`).
+* `/store`: Provider-owned Redux store and auth, UI and checkout slices. The guest cart slice lives in `/lib/cart`.
 * `/lib/api/client.ts`: Shared fetching utility.
 * `/mocks`: Mock service worker handlers.
 
@@ -39,7 +39,7 @@ Truzov is a verified organic and lab-tested marketplace. Unlike other organic st
 ## 4. Key Patterns & Decisions
 
 1. **Page-Screen Split:** Keep Next.js page components in `/app` minimal. Put layout content and views inside `/components/screens/`.
-2. **Local Authorization:** Authorization headers are injected automatically by the `apiFetch` wrapper. The client parses state from `localStorage` under `truzov-auth`.
+2. **Local Authorization:** `apiRequest` uses the access token in memory. `lib/api/token-store.ts` stores the JavaScript-readable refresh token under `truzov.refreshToken`.
 3. **Route Security:** Use the `useProtectedRoute()` custom hook in client-rendered secure dashboards to verify logged-in states and handle redirect params.
 4. **Mock API standard:** All mocked endpoints in `mocks/handlers.ts` return payloads in the standardized format: `{ data: T, message?: string }`.
 
@@ -104,3 +104,7 @@ Final local QA2026-10-29: 295backendunit+384IT,154storefront+22admin tests,16Chr
 * Catalog filters use server-computed facets and URL-backed state. Desktop commits selections immediately, while mobile drafts are scoped to the filter screen and commit on Apply.
 
 * Google sign-in verifies email independently. A Google account starts without a phone, and the authenticated phone-change OTP assigns a unique phone only after proof. Checkout offers the same add flow if needed.
+
+* The Redux migration passed local Docker-backed tests. Cart and checkout still use the legacy storage formats, and auth keeps the existing token flow. See `qa-report.md` for results and baseline issues.
+
+* The storefront and standalone admin share the Truzov design stylesheet and local Inter assets. Storefront `npm run dev` syncs these files to the admin checkout on save. Verify affected controls in both apps. See `AGENTS.md`.

@@ -8,28 +8,39 @@ import { VerifyPhoneModal } from '@/components/auth/VerifyPhoneModal';
 import { Toaster } from '@/components/ui/Toaster';
 import { isRetryableError } from '@/lib/api/errors';
 import { useGuestCartMerge } from '@/hooks/api/useCart';
-import { GUEST_CART_STORAGE_KEY, useGuestCartStore } from '@/lib/cart/guest-cart.store';
+import { GUEST_CART_STORAGE_KEY, readGuestCart, restoreGuestCart } from '@/lib/cart/guest-cart.store';
 import { useEffect } from 'react';
+import { Provider } from 'react-redux';
+import { readCheckout, restoreCheckout } from '@/store/checkout.store';
+import { makeStore, useAppStore } from '@/store/redux';
 
 /**
  * Mounted once, inside the query provider, above every page. Two jobs:
  *
- * 1. Hydrate the guest cart from localStorage (client-only; the store is empty during SSR).
+ * 1. Hydrate checkout and the guest cart after SSR, and sync guest tabs.
  * 2. After sign-in, replay the guest bag into the server cart (see `useGuestCartMerge`).
  */
-function GuestCartSync() {
-  const hydrate = useGuestCartStore((state) => state.hydrate);
+function CartStorageSync() {
+  const store = useAppStore();
 
   useEffect(() => {
-    hydrate();
+    if (!store.getState().guestCart.hydrated) {
+      store.dispatch(restoreCheckout(readCheckout()));
+      store.dispatch(restoreGuestCart(readGuestCart()));
+    }
     const sync = (event: StorageEvent) => {
-      if (event.storageArea === window.localStorage && (event.key === GUEST_CART_STORAGE_KEY || event.key === null)) {
-        useGuestCartStore.getState().syncFromStorage();
+      if (event.key !== GUEST_CART_STORAGE_KEY && event.key !== null) return;
+      try {
+        if (event.storageArea === window.localStorage) {
+          store.dispatch(restoreGuestCart(readGuestCart()));
+        }
+      } catch {
+        // Storage access can be blocked.
       }
     };
     window.addEventListener('storage', sync);
     return () => window.removeEventListener('storage', sync);
-  }, [hydrate]);
+  }, [store]);
 
   useGuestCartMerge();
 
@@ -37,6 +48,11 @@ function GuestCartSync() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [{ store, serverState }] = useState(() => {
+    const store = makeStore();
+    // Late-hydrating routes must see the same state as SSR, even after storage or auth restores.
+    return { store, serverState: store.getState() };
+  });
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -65,15 +81,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {/* Restores the session and owns auth-driven redirects. Must sit inside the query
-          provider, since it clears the cache when a session dies. */}
-      <AuthEventBridge />
-      <GuestCartSync />
-      {children}
-      <AuthModal />
-      <VerifyPhoneModal />
-      <Toaster />
-    </QueryClientProvider>
+    <Provider store={store} serverState={serverState}>
+      <QueryClientProvider client={queryClient}>
+        <CartStorageSync />
+        {/* Restores the session and owns auth-driven redirects. Must sit inside the query
+            provider, since it clears the cache when a session dies. */}
+        <AuthEventBridge />
+        {children}
+        <AuthModal />
+        <VerifyPhoneModal />
+        <Toaster />
+      </QueryClientProvider>
+    </Provider>
   );
 }

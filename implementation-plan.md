@@ -191,3 +191,23 @@ Keep URL-backed listing state and add server-side facet counts. Share controls b
 ## Google sign-in phone onboarding
 
 Use a nullable phone for new Google accounts and clear only the exact historical placeholder on Google-linked rows. Keep the authenticated phone-change OTP as the sole way to adopt or change the number. Show the add form directly from Profile and from checkout when a phone is missing.
+
+## Redux migration proposal
+
+1. Make the Redux Toolkit and React Redux versions already in the lockfile direct dependencies. Create one store per App Router provider instance with DevTools disabled and neutral initial state. Migrate toasts and the auth and phone verification modals first.
+2. Migrate checkout and the guest cart. Validate data when reading storage and keep the existing keys and formats so current carts survive refresh and rollback. Keep cross-tab cart sync and carry forward checkout idempotency keys.
+3. Migrate auth and remove Zustand. Keep credentials in the existing token flow and outside Redux actions and state. Reuse the existing API requests, session events, and TanStack Query cache behavior.
+
+Run build, type check, lint, Vitest, and local browser regression checks for each stage. Verify legacy storage, sign-in and refresh, logout and account switching, cart and checkout, and orders. Repeat the dependency audit after the migration. The brief requests approval before implementation and after each stage.
+
+All three stages are implemented and locally verified. Zustand is removed from the storefront source and dependency tree.
+
+## Storefront header icons
+
+Use the shared ghost icon button for menu and account. Apply the same button variant to wishlist and cart. Mobile search starts from the bottom navigation, and the desktop header keeps its search field. Keep the Google callback visually blank during the exchange and replace the URL with the intended destination on success.
+
+## Shared storefront and admin design
+
+Keep the shared palette, Inter typeface, control radius, and focus styles in the storefront stylesheet. Sync it and the licensed fonts to admin so both repositories can build independently. Connect admin’s existing buttons, form controls, and search to those styles and verify both apps locally.
+
+Run the same sync from the storefront development process at startup and whenever a shared file changes. Let the admin development server reload its local copy.

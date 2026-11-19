@@ -54,9 +54,10 @@ import { formatCurrency } from '@/lib/utils/money';
 import { humaniseSlug } from '@/lib/utils/product';
 import { accountPhone } from '@/lib/auth/phone';
 import { cn } from '@/lib/utils/cn';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
 import { AddressFormModal } from '@/components/checkout/AddressFormModal';
 import type { OrderStatus } from '@/types/api';
+import { useAppSelector } from '@/store/redux';
 
 export { HomeScreen } from './HomeScreen';
 
@@ -348,7 +349,7 @@ export function SearchScreen({ query, filters }: { query?: string; filters?: Pro
         <form
           aria-label="Search catalogue"
           role="search"
-          className="flex min-h-12 overflow-hidden rounded-lg border border-outline-variant bg-white"
+          className="search-field flex min-h-12 items-stretch"
           onSubmit={(event) => {
             event.preventDefault();
             const next = draft.trim();
@@ -360,12 +361,12 @@ export function SearchScreen({ query, filters }: { query?: string; filters?: Pro
           <input
             aria-label="Search products"
             autoFocus
-            className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-on-surface outline-none placeholder:text-outline"
+            className="search-input min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-on-surface placeholder:text-outline"
             placeholder="Search verified products, brands, categories..."
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
           />
-          <Button aria-label="Search" className="h-full w-16 rounded-none" size="icon" type="submit">
+          <Button aria-label="Search" className="h-auto w-16 !rounded-l-none" size="icon" type="submit">
             <Search aria-hidden="true" className="h-5 w-5" />
           </Button>
         </form>
@@ -431,7 +432,7 @@ function AccountPanel({
 
 export function AccountSidebar({ userName }: { userName: string }) {
   const pathname = usePathname();
-  const logout = useAuthStore((state) => state.logout);
+  const { logout } = useAuthActions();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -499,10 +500,10 @@ export function AccountSidebar({ userName }: { userName: string }) {
 }
 
 export function AccountScreen() {
-  const user = useAuthStore((state) => state.user);
-  const updateProfile = useAuthStore((state) => state.updateProfile);
-  const isSaving = useAuthStore((state) => state.isLoading);
-  const saveError = useAuthStore((state) => state.error);
+  const user = useAppSelector((state) => state.auth.user);
+  const { updateProfile } = useAuthActions();
+  const isSaving = useAppSelector((state) => state.auth.isLoading);
+  const saveError = useAppSelector((state) => state.auth.error);
   const [editing, setEditing] = useState(false);
   const [phoneModalOpen, setPhoneModalOpen] = useState(false);
   /**
@@ -1059,7 +1060,7 @@ export function AddressesScreen() {
 }
 
 export function SettingsScreen() {
-  const { user } = useAuthStore();
+  const user = useAppSelector((state) => state.auth.user);
 
   const settingsRows = [
     { label: 'Login email', value: user?.email ?? 'Not set' },

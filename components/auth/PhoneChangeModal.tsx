@@ -9,7 +9,8 @@ import { sendPhoneChangeOtp, verifyPhoneChangeOtp } from '@/lib/api/endpoints/au
 import { errorMessage } from '@/lib/api/errors';
 import { setSession } from '@/lib/api/token-store';
 import { accountPhone } from '@/lib/auth/phone';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
+import { useAppSelector } from '@/store/redux';
 
 /** Same rule the signup form enforces: 10 digits, or E.164 with a leading +. */
 const PHONE_PATTERN = /^(?:\d{10}|\+[1-9]\d{7,14})$/;
@@ -26,8 +27,8 @@ const CODE_LENGTH = 6;
  * same write that adopts it.
  */
 export function PhoneChangeModal({ open, onClose, onVerified }: { open: boolean; onClose: () => void; onVerified?: () => void }) {
-  const refreshUser = useAuthStore((state) => state.refreshUser);
-  const currentPhone = useAuthStore((state) => accountPhone(state.user?.phone));
+  const { refreshUser } = useAuthActions();
+  const currentPhone = useAppSelector((state) => accountPhone(state.auth.user?.phone));
 
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [newPhone, setNewPhone] = useState('');

@@ -2,27 +2,24 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { abandonGoogleSignIn, completeGoogleSignIn } from '@/lib/auth/google-oauth';
 import { errorMessage } from '@/lib/api/errors';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthActions } from '@/store/auth.store';
 
 /**
  * Where Google sends the browser back to. Registered in the Google console and configured
  * server-side as TRUZOV_GOOGLE_REDIRECT_URI — the path is part of a contract, so renaming this
  * route breaks the exchange with `invalid_grant` until both are changed too.
  *
- * It renders nothing useful on purpose: its whole job is to trade the `code` in the URL for a
- * session and get the user off this page. Any URL here contains a single-use authorization code,
- * so it must never be bookmarked, shared, or left in history as something worth returning to —
- * hence `router.replace` on every exit rather than `push`.
+ * The callback stays blank while exchanging the single-use code. Replacing the URL
+ * sends the user to their destination without keeping the callback in browser history.
  */
 export default function GoogleCallbackPage() {
   return (
     // useSearchParams needs a Suspense boundary in the App Router; without one this page opts
     // the whole route into client-side rendering and `next build` fails the prerender.
-    <Suspense fallback={<CallbackShell message="Completing sign-in..." />}>
+    <Suspense fallback={null}>
       <GoogleCallback />
     </Suspense>
   );
@@ -31,7 +28,7 @@ export default function GoogleCallbackPage() {
 function GoogleCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
+  const { loginWithGoogle } = useAuthActions();
   const [error, setError] = useState<string | null>(null);
 
   // React strict mode double-invokes effects in development, and the code is single-use: the
@@ -104,16 +101,5 @@ function GoogleCallback() {
     );
   }
 
-  return <CallbackShell message="Completing sign-in..." />;
-}
-
-function CallbackShell({ message }: { message: string }) {
-  return (
-    <AuthLayout subtitle="This will only take a moment." title="Signing you in">
-      <div className="flex items-center justify-center gap-sm py-xl text-body-md font-body text-on-surface-variant">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        {message}
-      </div>
-    </AuthLayout>
-  );
+  return null;
 }

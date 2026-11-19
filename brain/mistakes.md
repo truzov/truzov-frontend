@@ -10,9 +10,9 @@ This document compiles resolved architectural bugs and configuration mistakes to
 * **Verified Fix:** Always guard access to browser APIs or wrapping values. Check `typeof window !== 'undefined'` before accessing storage.
 * **Example Code:**
   ```typescript
-  function getToken(): string | null {
+  function readBrowserPreference(key: string): string | null {
     if (typeof window === 'undefined') return null; // Safe guard
-    return localStorage.getItem('truzov-auth');
+    return window.localStorage.getItem(key);
   }
   ```
 
@@ -121,3 +121,5 @@ Header breakpoint regression: this project customizes Tailwind 2xl to 1440px. Us
 2026-11-10: A fixed overlay alone left the background scrollable. Binding modal focus cleanup to the selected image also reran it on each arrow press. Bind scroll and focus setup to the open viewer lifecycle, and reset gesture state separately when the image changes.
 
 - On coarse pointers, immediately showing a fixed bottom bar when an input blurs can intercept the same tap before click dispatch. Delay visibility on reentry while hiding immediately for the keyboard.
+
+2026-11-17: A no-argument Redux action wired directly to a React callback can receive the event as payload. Use a zero-argument wrapper and verify the dispatched action in a close-button test. At 412 CSS px, the pre-existing toast overlaps the auth dialog close button until dismissed. The baseline and stage-one builds show the same behavior.

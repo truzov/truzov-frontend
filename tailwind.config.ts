@@ -80,7 +80,7 @@ const config: Config = {
 
       fontFamily: {
         heading: ['Lora', 'Georgia', 'serif'],
-        body: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        body: 'var(--truzov-font)',
         mono: ['"JetBrains Mono"', 'monospace'],
       },
 

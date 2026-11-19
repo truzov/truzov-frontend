@@ -1,7 +1,9 @@
 'use client';
 
-import { create } from 'zustand';
+import { createSlice, isAnyOf, type PayloadAction } from '@reduxjs/toolkit';
+import { z } from 'zod';
 import { cartLineKey } from '@/lib/cart/selection';
+import { readCartStorage, savedCartSnapshot, writeCartStorage } from '@/lib/cart/storage';
 
 /**
  * Guest cart, kept in localStorage.
@@ -33,118 +35,81 @@ export const GUEST_CART_STORAGE_KEY = 'truzov.guestCart';
 /** Mirrors the server's `truzov.commerce.max-item-quantity` (20 locally). */
 const MAX_ITEM_QUANTITY = 20;
 
-function load(): GuestCartItem[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-  try {
-    const raw = window.localStorage.getItem(GUEST_CART_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as GuestCartItem[]) : [];
-  } catch {
-    // Corrupt or foreign data: an empty bag is the safe recovery, not a crash.
-    return [];
-  }
+const savedGuestItem = savedCartSnapshot.extend({
+  availableStock: z.number().int().nonnegative().optional().catch(undefined),
+  addedAt: z.number().nonnegative().catch(0),
+});
+
+export function readGuestCart(): GuestCartItem[] {
+  const saved = readCartStorage(GUEST_CART_STORAGE_KEY);
+  if (!Array.isArray(saved)) return [];
+  return saved.flatMap((line) => {
+    const parsed = savedGuestItem.safeParse(line);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
-function persist(items: GuestCartItem[]) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  try {
-    window.localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // Storage full or blocked (private mode): the in-memory cart still works for this visit.
-  }
+export function saveGuestCart(items: GuestCartItem[]) {
+  writeCartStorage(GUEST_CART_STORAGE_KEY, items);
 }
 
-function sameLine(a: Pick<GuestCartItem, 'productId' | 'variantId'>, b: GuestCartItem): boolean {
+type Line = Pick<GuestCartItem, 'productId' | 'variantId'>;
+
+function sameLine(a: Line, b: Line): boolean {
   return a.productId === b.productId && (a.variantId ?? null) === (b.variantId ?? null);
 }
 
-interface GuestCartState {
-  items: GuestCartItem[];
-  hydrated: boolean;
-  /** Reads localStorage once on the client. Safe to call repeatedly. */
-  hydrate: () => void;
-  syncFromStorage: () => void;
-  add: (input: Omit<GuestCartItem, 'addedAt'>) => void;
-  setQuantity: (productId: string, variantId: string | undefined, quantity: number) => void;
-  remove: (productId: string, variantId: string | undefined) => void;
-  removeSelected: (keys: string[]) => void;
-  clear: () => void;
-  itemCount: () => number;
-  subtotal: () => number;
-}
-
-export const useGuestCartStore = create<GuestCartState>()((set, get) => ({
-  items: [],
-  hydrated: false,
-
-  hydrate: () => {
-    if (get().hydrated) {
-      return;
-    }
-    set({ items: load(), hydrated: true });
+const guestCart = createSlice({
+  name: 'guestCart',
+  initialState: { items: [] as GuestCartItem[], hydrated: false },
+  reducers: {
+    restoreGuestCart(_state, { payload }: PayloadAction<GuestCartItem[]>) {
+      return { items: payload, hydrated: true };
+    },
+    addGuestItem: {
+      prepare(item: Omit<GuestCartItem, 'addedAt'>) {
+        return { payload: { ...item, addedAt: Date.now() } };
+      },
+      reducer(state, { payload: item }: PayloadAction<GuestCartItem>) {
+        const matching = state.items.filter((line) => sameLine(item, line));
+        if (!matching.length) {
+          state.items.push({
+            ...item,
+            quantity: Math.min(item.quantity, MAX_ITEM_QUANTITY, item.availableStock ?? MAX_ITEM_QUANTITY),
+          });
+          return;
+        }
+        for (const line of matching) {
+          line.variantLabel = item.variantLabel ?? line.variantLabel;
+          line.availableStock = item.availableStock ?? line.availableStock;
+          const limit = Math.min(MAX_ITEM_QUANTITY, line.availableStock ?? MAX_ITEM_QUANTITY);
+          line.quantity = Math.max(line.quantity, Math.min(line.quantity + item.quantity, limit));
+        }
+      },
+    },
+    setGuestQuantity(state, { payload }: PayloadAction<Line & { quantity: number }>) {
+      for (const item of state.items) {
+        if (sameLine(payload, item)) {
+          item.quantity = Math.min(Math.max(payload.quantity, 0), MAX_ITEM_QUANTITY, item.availableStock ?? MAX_ITEM_QUANTITY);
+        }
+      }
+      state.items = state.items.filter((item) => item.quantity > 0);
+    },
+    removeGuestItem(state, { payload }: PayloadAction<Line>) {
+      state.items = state.items.filter((item) => !sameLine(payload, item));
+    },
+    removeGuestSelection(state, { payload }: PayloadAction<string[]>) {
+      const selected = new Set(payload);
+      state.items = state.items.filter((item) => !selected.has(cartLineKey(item)));
+    },
+    clearGuestCart(state) {
+      state.items = [];
+    },
   },
-  syncFromStorage: () => set({ items: load(), hydrated: true }),
+});
 
-  add: (input) => {
-    set((state) => {
-      const existing = state.items.find((item) => sameLine(input, item));
-      const items = existing
-        ? state.items.map((item) =>
-            sameLine(input, item)
-              ? { ...item, variantLabel: input.variantLabel ?? item.variantLabel, availableStock: input.availableStock ?? item.availableStock, quantity: Math.max(item.quantity, Math.min(item.quantity + input.quantity, MAX_ITEM_QUANTITY, input.availableStock ?? item.availableStock ?? MAX_ITEM_QUANTITY)) }
-              : item
-          )
-        : [...state.items, { ...input, quantity: Math.min(input.quantity, MAX_ITEM_QUANTITY, input.availableStock ?? MAX_ITEM_QUANTITY), addedAt: Date.now() }];
-      persist(items);
-      return { items };
-    });
-  },
-
-  setQuantity: (productId, variantId, quantity) => {
-    set((state) => {
-      const items = state.items
-        .map((item) =>
-          sameLine({ productId, variantId }, item)
-            ? { ...item, quantity: Math.min(Math.max(quantity, 0), MAX_ITEM_QUANTITY, item.availableStock ?? MAX_ITEM_QUANTITY) }
-            : item
-        )
-        // Quantity 0 means remove; the guest store has no separate delete semantics to keep.
-        .filter((item) => item.quantity > 0);
-      persist(items);
-      return { items };
-    });
-  },
-
-  remove: (productId, variantId) => {
-    set((state) => {
-      const items = state.items.filter((item) => !sameLine({ productId, variantId }, item));
-      persist(items);
-      return { items };
-    });
-  },
-
-  removeSelected: (keys) => {
-    const selected = new Set(keys);
-    set((state) => {
-      const items = state.items.filter((item) => !selected.has(cartLineKey(item)));
-      persist(items);
-      return { items };
-    });
-  },
-
-  clear: () => {
-    persist([]);
-    set({ items: [] });
-  },
-
-  itemCount: () => get().items.reduce((total, item) => total + item.quantity, 0),
-
-  subtotal: () => get().items.reduce((total, item) => total + item.unitPrice * item.quantity, 0),
-}));
+export const guestCartReducer = guestCart.reducer;
+export const {
+  restoreGuestCart, addGuestItem, setGuestQuantity, removeGuestItem, removeGuestSelection, clearGuestCart,
+} = guestCart.actions;
+export const isGuestCartMutation = isAnyOf(addGuestItem, setGuestQuantity, removeGuestItem, removeGuestSelection, clearGuestCart);

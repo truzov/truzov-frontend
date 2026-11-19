@@ -5,8 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { useAuthStore } from '@/store/auth.store';
 import { getTicket, listTickets, openTicket, replyToTicket, uploadTicketImage, type SupportTicket } from '@/lib/api/endpoints/support';
+import { useAppSelector } from '@/store/redux';
 
 const fieldClass = 'w-full rounded-lg border border-[#dce6d8] bg-white p-3';
 const ticketKeys = ['support-tickets'];
@@ -14,7 +14,7 @@ const ticketKeys = ['support-tickets'];
 /** ponytail: reuse the existing owner-scoped ticket API for both customers and sellers. */
 export function TicketScreen() {
   const { isLoggedIn, isLoading } = useProtectedRoute(false);
-  const userId = useAuthStore((state) => state.user?.id);
+  const userId = useAppSelector((state) => state.auth.user?.id);
   const client = useQueryClient();
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);

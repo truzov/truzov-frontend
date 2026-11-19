@@ -3,7 +3,8 @@
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { useUiStore, type ToastType } from '@/store/ui.store';
+import { useAppSelector } from '@/store/redux';
+import { useToastActions, type ToastType } from '@/store/ui.store';
 import { Button } from './Button';
 
 const icons: Record<ToastType, React.ElementType> = {
@@ -14,8 +15,8 @@ const icons: Record<ToastType, React.ElementType> = {
 };
 
 export function Toaster() {
-  const toasts = useUiStore((state) => state.toasts);
-  const removeToast = useUiStore((state) => state.removeToast);
+  const toasts = useAppSelector((state) => state.ui.toasts);
+  const { removeToast } = useToastActions();
 
   useEffect(() => {
     const timers = toasts.map((toast) => {
